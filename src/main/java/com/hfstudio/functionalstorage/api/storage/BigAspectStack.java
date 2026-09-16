@@ -1,0 +1,146 @@
+package com.hfstudio.functionalstorage.api.storage;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import java.util.Objects;
+
+import thaumcraft.api.aspects.Aspect;
+
+/**
+ * Immutable essentia snapshot composed of an aspect and a long amount. A zero
+ * amount may retain an aspect to represent a locked filter; negative amounts
+ * are clamped to zero. An absent resource is normalized to {@link #empty()}.
+ */
+public class BigAspectStack implements StorageSnapshot<BigAspectStack, AspectStorageKey> {
+
+    private static final BigAspectStack EMPTY = new BigAspectStack();
+
+    @Nullable
+    private final Aspect aspect;
+    @Nullable
+    private final AspectStorageKey key;
+    private final long amount;
+
+    private BigAspectStack() {
+        this.aspect = null;
+        this.key = null;
+        this.amount = 0L;
+    }
+
+    /**
+     * Creates a snapshot.
+     *
+     * @param aspect represented aspect; {@code null} is empty
+     * @param amount represented amount; negative values are clamped to zero
+     */
+    public BigAspectStack(@Nullable Aspect aspect, long amount) {
+        if (aspect == null) {
+            this.aspect = null;
+            this.key = null;
+            this.amount = 0L;
+            return;
+        }
+        this.aspect = aspect;
+        this.key = new AspectStorageKey(aspect);
+        this.amount = Math.max(0L, amount);
+    }
+
+    /**
+     * @return the shared immutable empty snapshot
+     */
+    @Nonnull
+    public static BigAspectStack empty() {
+        return EMPTY;
+    }
+
+    /**
+     * @return the represented aspect, or {@code null} when unconfigured
+     */
+    @Nullable
+    public Aspect getAspect() {
+        return aspect;
+    }
+
+    /**
+     * @return immutable exact aspect key, or {@code null} when unconfigured
+     */
+    @Nullable
+    @Override
+    public AspectStorageKey getKey() {
+        return key;
+    }
+
+    /**
+     * @return the represented amount
+     */
+    @Override
+    public long getAmount() {
+        return amount;
+    }
+
+    /**
+     * Creates the same essentia snapshot with a different amount.
+     *
+     * @param newAmount new represented amount
+     * @return an immutable snapshot with the requested amount
+     */
+    @Nonnull
+    @Override
+    public BigAspectStack withAmount(long newAmount) {
+        return aspect == null ? empty() : new BigAspectStack(aspect, newAmount);
+    }
+
+    /**
+     * Distinguishes an unfiltered empty snapshot from a zero-amount snapshot
+     * retaining a locked aspect.
+     *
+     * @return whether this snapshot carries a resource template
+     */
+    @Override
+    public boolean hasTemplate() {
+        return key != null;
+    }
+
+    /**
+     * @param other other aspect
+     * @return {@code true} when this snapshot represents the given aspect
+     */
+    public boolean isSameType(@Nullable Aspect other) {
+        return aspect != null && aspect == other;
+    }
+
+    /**
+     * Converts this snapshot to Thaumcraft's int-amount representation.
+     * Amounts above {@link Integer#MAX_VALUE} are saturated at that boundary.
+     *
+     * @return a fresh count value, or zero when nothing is stored
+     */
+    public int toAmount() {
+        if (aspect == null || amount == 0L) {
+            return 0;
+        }
+        return amount >= Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) amount;
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        if (this == object) {
+            return true;
+        }
+        if (!(object instanceof BigAspectStack)) {
+            return false;
+        }
+        BigAspectStack other = (BigAspectStack) object;
+        return amount == other.amount && Objects.equals(key, other.key);
+    }
+
+    @Override
+    public int hashCode() {
+        return 31 * (key == null ? 0 : key.hashCode()) + Long.hashCode(amount);
+    }
+
+    @Override
+    public String toString() {
+        return "BigAspectStack{" + key + " x" + amount + '}';
+    }
+}

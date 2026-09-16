@@ -1,0 +1,21 @@
+{
+  "modListVersion": 2,
+  "modList": [
+    {
+      "modid": "${modId}",
+      "name": "${modName}",
+      "description": "High capacity drawer storage for items, fluids and Thaumcraft essentia. A 1.7.10 port of Functional Storage with More Functional Storage merged in.",
+      "version": "${modVersion}",
+      "mcversion": "${minecraftVersion}",
+      "url": "https://github.com/ABKQPO/FunctionalStorageClassic",
+      "updateUrl": "",
+      "authorList": [
+        "Huan_F"
+      ],
+      "credits": "Based on Functional Storage by Buuz135 and Rid, Functional Storage Legacy by xinyihl, and More Functional Storage by Matyrobbrt.",
+      "logoFile": "assets/functionalstorage/icon.png",
+      "screenshots": [],
+      "parent": ""
+    }
+  ]
+}
