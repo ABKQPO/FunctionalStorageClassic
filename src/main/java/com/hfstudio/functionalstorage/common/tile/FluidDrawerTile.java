@@ -2,6 +2,7 @@ package com.hfstudio.functionalstorage.common.tile;
 
 import javax.annotation.Nonnull;
 
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraftforge.common.util.ForgeDirection;
 import net.minecraftforge.fluids.Fluid;
@@ -11,6 +12,7 @@ import net.minecraftforge.fluids.IFluidHandler;
 
 import com.hfstudio.functionalstorage.api.storage.IBigFluidHandler;
 import com.hfstudio.functionalstorage.api.upgrade.UpgradeAttribute;
+import com.hfstudio.functionalstorage.common.interaction.FluidContainerInteraction;
 import com.hfstudio.functionalstorage.common.inventory.adapter.DrawerFluidHandler;
 import com.hfstudio.functionalstorage.common.inventory.base.BigFluidHandler;
 import com.hfstudio.functionalstorage.common.storage.DrawerLayout;
@@ -29,9 +31,9 @@ public class FluidDrawerTile extends ControllableDrawerTile implements IFluidHan
 
     private static final String KEY_TANKS = "Tanks";
 
-    private final DrawerLayout layout;
-    private final BigFluidHandler handler;
-    private final DrawerFluidHandler fluidHandler;
+    private DrawerLayout layout;
+    private BigFluidHandler handler;
+    private DrawerFluidHandler fluidHandler;
 
     public FluidDrawerTile() {
         this(DrawerLayout.X_1);
@@ -39,11 +41,17 @@ public class FluidDrawerTile extends ControllableDrawerTile implements IFluidHan
 
     public FluidDrawerTile(@Nonnull DrawerLayout layout) {
         this.layout = layout;
-        this.handler = new BigFluidHandler(layout.getSlotCount()) {
+        this.handler = createHandler();
+        this.fluidHandler = new DrawerFluidHandler(handler);
+        bindStorageHandler(handler);
+    }
+
+    private BigFluidHandler createHandler() {
+        return new BigFluidHandler(layout.getSlotCount()) {
 
             @Override
             public double getMultiplier() {
-                return calculateModifier(UpgradeAttribute.FLUID_CAPACITY, 1D);
+                return calculateModifier(UpgradeAttribute.FLUID_CAPACITY, 1D) / layout.getSlotCount();
             }
 
             @Override
@@ -66,8 +74,6 @@ public class FluidDrawerTile extends ControllableDrawerTile implements IFluidHan
                 return FluidDrawerTile.this.hasMaxStorage();
             }
         };
-        this.fluidHandler = new DrawerFluidHandler(handler);
-        bindStorageHandler(handler);
     }
 
     /**
@@ -84,6 +90,23 @@ public class FluidDrawerTile extends ControllableDrawerTile implements IFluidHan
     @Nonnull
     public DrawerLayout getDrawerLayout() {
         return layout;
+    }
+
+    @Override
+    public boolean onSlotActivated(@Nonnull EntityPlayer player, int side, float hitX, float hitY, float hitZ,
+        int slot) {
+        if (worldObj == null || worldObj.isRemote) {
+            return false;
+        }
+        return FluidContainerInteraction.activate(player, handler, slot)
+            || super.onSlotActivated(player, side, hitX, hitY, hitZ, slot);
+    }
+
+    @Override
+    public void onSlotClicked(@Nonnull EntityPlayer player, int slot) {
+        if (worldObj != null && !worldObj.isRemote) {
+            FluidContainerInteraction.activate(player, handler, slot);
+        }
     }
 
     @Override
@@ -124,11 +147,20 @@ public class FluidDrawerTile extends ControllableDrawerTile implements IFluidHan
 
     @Override
     protected void writeStorageData(@Nonnull NBTTagCompound tag) {
+        tag.setString("DrawerLayout", layout.getId());
         tag.setTag(KEY_TANKS, handler.serializeNBT());
     }
 
     @Override
     protected void readStorageData(@Nonnull NBTTagCompound tag) {
+        DrawerLayout restored = DrawerLayout.fromStorage(tag, KEY_TANKS, layout);
+        if (restored != layout) {
+            layout = restored;
+            handler = createHandler();
+            fluidHandler = new DrawerFluidHandler(handler);
+            bindStorageHandler(handler);
+        }
+
         handler.deserializeNBT(tag.hasKey(KEY_TANKS, 10) ? tag.getCompoundTag(KEY_TANKS) : null);
     }
 

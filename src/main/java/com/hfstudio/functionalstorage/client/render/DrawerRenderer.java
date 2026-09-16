@@ -34,6 +34,7 @@ import com.hfstudio.functionalstorage.common.item.ConfigurationToolItem;
 import com.hfstudio.functionalstorage.common.options.DrawerOptions;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 import com.hfstudio.functionalstorage.config.FunctionalStorageConfig;
+import com.hfstudio.functionalstorage.util.HitBoxesUtil;
 import com.hfstudio.functionalstorage.util.NumberUtils;
 
 import thaumcraft.api.aspects.Aspect;
@@ -50,13 +51,15 @@ import thaumcraft.api.aspects.Aspect;
  */
 public class DrawerRenderer extends TileEntitySpecialRenderer {
 
-    private static final float Z_ICON = 0.98F;
-    private static final float Z_TEXT = 0.985F;
-    private static final float Z_INDICATOR = 0.99F;
-    private static final float ICON_HALF_EXTENT = 0.15F;
-    private static final float INDICATOR_HALF_WIDTH = 0.24F;
+    private static final float Z_ICON = 0.002F;
+    private static final float Z_TEXT = 0.003F;
+    private static final float Z_INDICATOR = 0.004F;
+    private static final float ICON_HALF_EXTENT = 0.5F;
+    private static final float INDICATOR_HALF_WIDTH = 0.18F;
     private static final float INDICATOR_HALF_HEIGHT = 0.02F;
-    private static final float TEXT_SCALE = 0.02F;
+    private static final float TEXT_SCALE = 0.007F;
+
+    private final RenderItem itemRenderer = new RenderItem();
 
     @Override
     public void renderTileEntityAt(TileEntity tile, double x, double y, double z, float partialTicks) {
@@ -68,91 +71,105 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
         }
 
         int metadata = tile.getBlockMetadata();
+        float previousLightX = OpenGlHelper.lastBrightnessX;
+        float previousLightY = OpenGlHelper.lastBrightnessY;
+        GL11.glPushAttrib(
+            GL11.GL_ENABLE_BIT | GL11.GL_COLOR_BUFFER_BIT
+                | GL11.GL_CURRENT_BIT
+                | GL11.GL_LIGHTING_BIT
+                | GL11.GL_DEPTH_BUFFER_BIT
+                | GL11.GL_TEXTURE_BIT);
         applyBrightness(tile);
+        GL11.glDisable(GL11.GL_CULL_FACE);
 
         GL11.glPushMatrix();
-        GL11.glTranslated(x, y, z);
-        applyFaceTransform(
-            DrawerBlock.getAttachment(metadata),
-            DrawerBlock.getHorizontalFacing(metadata),
-            block.getFaceLayout());
+        try {
+            GL11.glTranslated(x, y, z);
+            applyFaceTransform(DrawerBlock.getAttachment(metadata), DrawerBlock.getHorizontalFacing(metadata));
 
-        DrawerOptions options = drawer.getDrawerOptions();
-        DrawerFaceLayout layout = block.getFaceLayout();
-        IBigItemHandler itemHandler = drawer.getItemHandler();
-        IBigFluidHandler fluidHandler = drawer.getFluidHandler();
-        IBigAspectHandler aspectHandler = drawer.getAspectHandler();
-        if (itemHandler != null) {
-            renderItemSlots(itemHandler, layout, options);
-        } else if (fluidHandler != null) {
-            renderFluidSlots(fluidHandler, layout, options);
-        } else if (aspectHandler != null) {
-            renderAspectSlots(aspectHandler, layout, options);
+            DrawerOptions options = drawer.getDrawerOptions();
+            DrawerFaceLayout layout = block.getFaceLayout();
+            IBigItemHandler itemHandler = drawer.getItemHandler();
+            IBigFluidHandler fluidHandler = drawer.getFluidHandler();
+            IBigAspectHandler aspectHandler = drawer.getAspectHandler();
+            if (itemHandler != null) {
+                renderItemSlots(itemHandler, layout, options);
+            } else if (fluidHandler != null) {
+                renderFluidSlots(fluidHandler, layout, options);
+            } else if (aspectHandler != null) {
+                renderAspectSlots(aspectHandler, layout, options);
+            }
+
+        } finally {
+            GL11.glPopMatrix();
+            GL11.glPopAttrib();
+            OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, previousLightX, previousLightY);
         }
-
-        GL11.glPopMatrix();
     }
 
     private void renderItemSlots(@Nonnull IBigItemHandler handler, @Nonnull DrawerFaceLayout layout,
         @Nonnull DrawerOptions options) {
-        for (int slot = 0; slot < slotCount(layout); slot++) {
+        for (int slot = 0; slot < Math.min(layout.getSlotCount(), handler.getStorageCount()); slot++) {
             BigItemStack snapshot = handler.getSnapshot(slot);
             if (!snapshot.hasTemplate()) {
                 continue;
             }
             ItemStack stack = snapshot.getTemplate();
-            float[] center = slotCenter(layout, slot);
+            float centerX = layout.getSlotX(slot);
+            float centerY = layout.getSlotY(slot);
             if (options.isShowItemRender()) {
-                renderStack(stack, center[0], center[1], iconScale(layout));
+                renderStack(stack, centerX, centerY, iconScale(layout));
             }
             if (options.isShowItemCount()) {
-                renderText(NumberUtils.formatCompact(snapshot.getAmount()), center[0], center[1]);
+                renderText(NumberUtils.formatCompact(snapshot.getAmount()), centerX, centerY);
             }
-            renderIndicator(center[0], center[1], ratio(snapshot.getAmount(), handler.getCapacity(slot)), options);
+            renderIndicator(centerX, centerY, ratio(snapshot.getAmount(), handler.getCapacity(slot)), options);
         }
     }
 
     private void renderFluidSlots(@Nonnull IBigFluidHandler handler, @Nonnull DrawerFaceLayout layout,
         @Nonnull DrawerOptions options) {
-        for (int slot = 0; slot < slotCount(layout); slot++) {
+        for (int slot = 0; slot < Math.min(layout.getSlotCount(), handler.getStorageCount()); slot++) {
             BigFluidStack snapshot = handler.getSnapshot(slot);
             if (!snapshot.hasTemplate()) {
                 continue;
             }
             FluidStack fluid = snapshot.getTemplate();
-            float[] center = slotCenter(layout, slot);
+            float centerX = layout.getSlotX(slot);
+            float centerY = layout.getSlotY(slot);
             if (options.isShowItemRender()) {
-                renderFluid(fluid, center[0], center[1], iconScale(layout));
+                renderFluid(fluid, centerX, centerY, iconScale(layout));
             }
             if (options.isShowItemCount()) {
-                renderText(NumberUtils.formatFluid(snapshot.getAmount()), center[0], center[1]);
+                renderText(NumberUtils.formatFluid(snapshot.getAmount()), centerX, centerY);
             }
-            renderIndicator(center[0], center[1], ratio(snapshot.getAmount(), handler.getCapacity(slot)), options);
+            renderIndicator(centerX, centerY, ratio(snapshot.getAmount(), handler.getCapacity(slot)), options);
         }
     }
 
     private void renderAspectSlots(@Nonnull IBigAspectHandler handler, @Nonnull DrawerFaceLayout layout,
         @Nonnull DrawerOptions options) {
-        for (int slot = 0; slot < slotCount(layout); slot++) {
+        for (int slot = 0; slot < Math.min(layout.getSlotCount(), handler.getStorageCount()); slot++) {
             BigAspectStack snapshot = handler.getSnapshot(slot);
             Aspect aspect = snapshot.getAspect();
             if (aspect == null) {
                 continue;
             }
-            float[] center = slotCenter(layout, slot);
+            float centerX = layout.getSlotX(slot);
+            float centerY = layout.getSlotY(slot);
             if (options.isShowItemRender()) {
-                renderAspect(aspect, center[0], center[1], iconScale(layout));
+                renderAspect(aspect, centerX, centerY, iconScale(layout));
             }
             if (options.isShowItemCount()) {
-                renderText(NumberUtils.formatAspect(snapshot.getAmount()), center[0], center[1]);
+                renderText(NumberUtils.formatAspect(snapshot.getAmount()), centerX, centerY);
             }
-            renderIndicator(center[0], center[1], ratio(snapshot.getAmount(), handler.getCapacity(slot)), options);
+            renderIndicator(centerX, centerY, ratio(snapshot.getAmount(), handler.getCapacity(slot)), options);
         }
     }
 
     private void applyBrightness(TileEntity tile) {
         int light = tile.getWorldObj()
-            .getLightBrightnessForSkyBlocks(tile.xCoord + 1, tile.yCoord + 1, tile.zCoord + 1, 0);
+            .getLightBrightnessForSkyBlocks(tile.xCoord, tile.yCoord, tile.zCoord, 0);
         OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, light % 65536, light / 65536f);
     }
 
@@ -167,14 +184,6 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
             Minecraft.getMinecraft().thePlayer.posZ) <= range * range;
     }
 
-    private int slotCount(DrawerFaceLayout layout) {
-        return switch (layout) {
-            case X_2 -> 2;
-            case X_4 -> 4;
-            default -> 1;
-        };
-    }
-
     private float iconScale(DrawerFaceLayout layout) {
         return layout == DrawerFaceLayout.X_1 ? 0.5F : 0.25F;
     }
@@ -183,48 +192,15 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
         return capacity <= 0L ? 0F : (float) Math.min(1D, amount / (double) capacity);
     }
 
-    private float[] slotCenter(DrawerFaceLayout layout, int slot) {
-        return switch (layout) {
-            case X_2 -> new float[] { 0.5F, slot == 0 ? 0.25F : 0.75F };
-            case X_4 -> new float[] { slot % 2 == 0 ? 0.25F : 0.75F, slot < 2 ? 0.25F : 0.75F };
-            default -> new float[] { 0.5F, 0.5F };
-        };
-    }
-
-    /**
-     * Rotates the render space so local coordinates match the drawer's front
-     * face regardless of how the block was placed.
-     *
-     * @param attachment surface the drawer is mounted on
-     * @param facing     horizontal rotation stored in metadata
-     * @param layout     face layout, unused by the transform but kept for
-     *                   symmetry with the model transform
-     */
-    private void applyFaceTransform(DrawerAttachment attachment, ForgeDirection facing, DrawerFaceLayout layout) {
+    private void applyFaceTransform(DrawerAttachment attachment, ForgeDirection facing) {
         GL11.glTranslatef(0.5F, 0.5F, 0.5F);
-        GL11.glRotatef(180F - facingAngle(facing), 0F, 1F, 0F);
-        GL11.glTranslated(0D, 0D, 0.5D);
-        switch (attachment) {
-            case FLOOR:
-                GL11.glRotatef(-90F, 1F, 0F, 0F);
-                break;
-            case CEILING:
-                GL11.glRotatef(90F, 1F, 0F, 0F);
-                break;
-            default:
-                break;
+        GL11.glRotatef(-90F * HitBoxesUtil.horizontalIndex(facing), 0F, 1F, 0F);
+        if (attachment != DrawerAttachment.WALL) {
+            GL11.glRotatef(attachment == DrawerAttachment.FLOOR ? 90F : -90F, 1F, 0F, 0F);
         }
         GL11.glTranslatef(-0.5F, -0.5F, -0.5F);
-    }
-
-    private float facingAngle(ForgeDirection facing) {
-        return switch (facing) {
-            case SOUTH -> 0F;
-            case WEST -> 90F;
-            case NORTH -> 180F;
-            case EAST -> 270F;
-            default -> 0F;
-        };
+        GL11.glTranslatef(1F, 1F, 0F);
+        GL11.glScalef(-1F, -1F, -1F);
     }
 
     private void renderStack(ItemStack stack, float centerX, float centerY, float scale) {
@@ -233,10 +209,8 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
         }
         GL11.glPushMatrix();
         GL11.glTranslatef(centerX, centerY, Z_ICON);
-        GL11.glScalef(scale, scale, 0.00001F);
-        GL11.glRotatef(180F, 0F, 0F, 1F);
+        GL11.glScalef(scale / 16F, scale / 16F, 0.00001F);
         RenderHelper.enableStandardItemLighting();
-        RenderItem itemRenderer = new RenderItem();
         itemRenderer.setRenderManager(RenderManager.instance);
         itemRenderer.renderItemAndEffectIntoGUI(
             Minecraft.getMinecraft().fontRenderer,
@@ -326,11 +300,9 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
         int width = font.getStringWidth(text);
         GL11.glPushMatrix();
         GL11.glTranslatef(centerX, centerY + 0.16F, Z_TEXT);
-        GL11.glScalef(TEXT_SCALE, -TEXT_SCALE, TEXT_SCALE);
+        GL11.glScalef(TEXT_SCALE, TEXT_SCALE, TEXT_SCALE);
         GL11.glDisable(GL11.GL_LIGHTING);
-        GL11.glDisable(GL11.GL_DEPTH_TEST);
         font.drawStringWithShadow(text, -width / 2, 0, 0xFFFFFF);
-        GL11.glEnable(GL11.GL_DEPTH_TEST);
         GL11.glEnable(GL11.GL_LIGHTING);
         GL11.glPopMatrix();
     }
@@ -341,7 +313,7 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
             return;
         }
         GL11.glPushMatrix();
-        GL11.glTranslatef(centerX, centerY - 0.17F, Z_INDICATOR);
+        GL11.glTranslatef(centerX, centerY + 0.22F, Z_INDICATOR);
         GL11.glDisable(GL11.GL_LIGHTING);
         GL11.glDisable(GL11.GL_TEXTURE_2D);
         Tessellator tessellator = Tessellator.instance;

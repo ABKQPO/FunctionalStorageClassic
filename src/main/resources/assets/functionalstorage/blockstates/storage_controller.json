@@ -9,49 +9,49 @@
     },
     "attachment=wall,horizontal_facing=west": {
       "model": "functionalstorage:blocks/storage_controller",
-      "y": 270
+      "y": 90
     },
     "attachment=wall,horizontal_facing=east": {
       "model": "functionalstorage:blocks/storage_controller",
-      "y": 90
+      "y": 270
     },
     "attachment=floor,horizontal_facing=north": {
       "model": "functionalstorage:blocks/storage_controller",
-      "x": 270
+      "x": 90
     },
     "attachment=floor,horizontal_facing=east": {
       "model": "functionalstorage:blocks/storage_controller",
-      "x": 270,
-      "y": 90
+      "x": 90,
+      "y": 270
     },
     "attachment=floor,horizontal_facing=south": {
       "model": "functionalstorage:blocks/storage_controller",
-      "x": 270,
+      "x": 90,
       "y": 180
     },
     "attachment=floor,horizontal_facing=west": {
       "model": "functionalstorage:blocks/storage_controller",
-      "x": 270,
-      "y": 270
-    },
-    "attachment=ceiling,horizontal_facing=north": {
-      "model": "functionalstorage:blocks/storage_controller",
-      "x": 90
-    },
-    "attachment=ceiling,horizontal_facing=east": {
-      "model": "functionalstorage:blocks/storage_controller",
       "x": 90,
       "y": 90
     },
+    "attachment=ceiling,horizontal_facing=north": {
+      "model": "functionalstorage:blocks/storage_controller",
+      "x": 270
+    },
+    "attachment=ceiling,horizontal_facing=east": {
+      "model": "functionalstorage:blocks/storage_controller",
+      "x": 270,
+      "y": 270
+    },
     "attachment=ceiling,horizontal_facing=south": {
       "model": "functionalstorage:blocks/storage_controller",
-      "x": 90,
+      "x": 270,
       "y": 180
     },
     "attachment=ceiling,horizontal_facing=west": {
       "model": "functionalstorage:blocks/storage_controller",
-      "x": 90,
-      "y": 270
+      "x": 270,
+      "y": 90
     }
   }
 }

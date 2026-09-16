@@ -236,6 +236,7 @@ public abstract class AbstractStorageHandler<S extends StorageSnapshot<S, K>, K 
         S[] previousTemplates = copyTemplates();
         long[] previousAmounts = amounts.clone();
         S[] restoredTemplates = copyTemplates();
+        Arrays.fill(restoredTemplates, resource.empty());
         long[] restoredAmounts = new long[amounts.length];
 
         if (tag != null && tag.hasKey(ENTRIES)) {

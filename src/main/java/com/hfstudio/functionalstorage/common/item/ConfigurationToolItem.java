@@ -9,7 +9,6 @@ import javax.annotation.Nullable;
 
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.Item;
-import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
@@ -17,7 +16,6 @@ import net.minecraft.util.ChatComponentTranslation;
 import net.minecraft.util.StatCollector;
 import net.minecraft.world.World;
 
-import com.hfstudio.functionalstorage.common.block.FramedDrawerBlock;
 import com.hfstudio.functionalstorage.common.options.DrawerOptions;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 import com.hfstudio.functionalstorage.misc.RegistrationHandler;
@@ -28,8 +26,7 @@ import lombok.Getter;
 
 /**
  * Tool that configures a drawer in place. Right-clicking cycles the drawer's
- * display options, sneaking toggles the lock, and sneaking on a framed drawer
- * with a block in hand applies that block's texture.
+ * display options, and sneaking toggles its lock.
  */
 public class ConfigurationToolItem extends Item {
 
@@ -100,20 +97,8 @@ public class ConfigurationToolItem extends Item {
         if (!(tile instanceof ControllableDrawerTile drawer)) {
             return false;
         }
-        ItemStack held = player.getHeldItem();
 
         if (player.isSneaking()) {
-            if (world.getBlock(x, y, z) instanceof FramedDrawerBlock && held != null
-                && held.getItem() instanceof ItemBlock) {
-                boolean applied = ((FramedDrawerBlock) world.getBlock(x, y, z))
-                    .applyMaterial(world, x, y, z, held, false);
-                if (applied) {
-                    player.addChatMessage(
-                        new ChatComponentTranslation("functionalstorage.configuration_tool.material_applied"));
-                    return true;
-                }
-                return false;
-            }
             drawer.toggleLocking();
             player.addChatMessage(
                 new ChatComponentTranslation(

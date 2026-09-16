@@ -28,8 +28,8 @@ public class WoodDrawerTile extends ControllableDrawerTile implements IInventory
 
     private static final String KEY_ITEMS = "Items";
 
-    private final DrawerLayout layout;
-    private final BigItemHandler handler;
+    private DrawerLayout layout;
+    private BigItemHandler handler;
 
     public WoodDrawerTile() {
         this(DrawerLayout.X_1);
@@ -37,11 +37,16 @@ public class WoodDrawerTile extends ControllableDrawerTile implements IInventory
 
     public WoodDrawerTile(@Nonnull DrawerLayout layout) {
         this.layout = layout;
-        this.handler = new BigItemHandler(layout.getSlotCount()) {
+        this.handler = createHandler();
+        bindStorageHandler(handler);
+    }
+
+    private BigItemHandler createHandler() {
+        return new BigItemHandler(layout.getSlotCount()) {
 
             @Override
             public double getMultiplier() {
-                return calculateModifier(UpgradeAttribute.ITEM_CAPACITY, 1D);
+                return calculateModifier(UpgradeAttribute.ITEM_CAPACITY, 1D) / layout.getSlotCount();
             }
 
             @Override
@@ -69,7 +74,6 @@ public class WoodDrawerTile extends ControllableDrawerTile implements IInventory
                 return WoodDrawerTile.this.hasEquivalentItems();
             }
         };
-        bindStorageHandler(handler);
     }
 
     /**
@@ -88,11 +92,19 @@ public class WoodDrawerTile extends ControllableDrawerTile implements IInventory
 
     @Override
     protected void writeStorageData(@Nonnull NBTTagCompound tag) {
+        tag.setString("DrawerLayout", layout.getId());
         tag.setTag(KEY_ITEMS, handler.serializeNBT());
     }
 
     @Override
     protected void readStorageData(@Nonnull NBTTagCompound tag) {
+        DrawerLayout restored = DrawerLayout.fromStorage(tag, KEY_ITEMS, layout);
+        if (restored != layout) {
+            layout = restored;
+            handler = createHandler();
+            bindStorageHandler(handler);
+        }
+
         handler.deserializeNBT(tag.hasKey(KEY_ITEMS, 10) ? tag.getCompoundTag(KEY_ITEMS) : null);
     }
 

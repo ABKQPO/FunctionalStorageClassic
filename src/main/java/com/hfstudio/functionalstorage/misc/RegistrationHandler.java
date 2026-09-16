@@ -305,9 +305,9 @@ public class RegistrationHandler {
         List<DrawerBlock> blocks = new ArrayList<>();
         blocks.addAll(woodDrawers);
         blocks.addAll(fluidDrawers);
-        if (storageController != null) {
-            blocks.add(storageController);
-        }
+        blocks.addAll(framedDrawers);
+        blocks.addAll(essentiaDrawers);
+        blocks.addAll(specialDrawers);
         return blocks;
     }
 

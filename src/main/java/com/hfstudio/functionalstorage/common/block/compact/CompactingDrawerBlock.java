@@ -19,7 +19,7 @@ import com.hfstudio.functionalstorage.common.tile.compact.CompactingDrawerTile;
 public class CompactingDrawerBlock extends DrawerBlock {
 
     public CompactingDrawerBlock() {
-        super(DrawerFaceLayout.X_4, "functionalstorage.compacting_drawer");
+        super(DrawerFaceLayout.X_3, "functionalstorage.compacting_drawer");
         setBlockTextureName("functionalstorage:compacting_drawer_front");
     }
 

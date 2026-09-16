@@ -17,6 +17,7 @@ import com.hfstudio.functionalstorage.common.block.FluidDrawerBlock;
 import com.hfstudio.functionalstorage.common.block.FramedDrawerBlock;
 import com.hfstudio.functionalstorage.common.block.WoodDrawerBlock;
 import com.hfstudio.functionalstorage.common.item.upgrade.GenerationUpgradeItem;
+import com.hfstudio.functionalstorage.common.recipe.FramedDrawerStyleRecipe;
 import com.hfstudio.functionalstorage.common.storage.DrawerLayout;
 import com.hfstudio.functionalstorage.common.storage.DrawerWoodType;
 import com.hfstudio.functionalstorage.config.FunctionalStorageConfig;
@@ -37,6 +38,7 @@ public class FunctionalStorageRecipes {
     public static void registerEarlyRecipes() {
         registerDrawerRecipes();
         registerFramedRecipes(new ItemStack(Blocks.planks));
+        GameRegistry.addRecipe(new FramedDrawerStyleRecipe());
         registerUpgradeRecipes();
         registerToolRecipes();
     }

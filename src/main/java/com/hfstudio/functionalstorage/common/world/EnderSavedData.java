@@ -44,6 +44,7 @@ public class EnderSavedData extends WorldSavedData {
         BigItemHandler handler = frequencies.get(frequency);
         if (handler == null) {
             handler = new BigItemHandler(Math.max(1, slots));
+            handler.subscribe(change -> markDirty());
             frequencies.put(frequency, handler);
             markDirty();
         }
@@ -92,6 +93,7 @@ public class EnderSavedData extends WorldSavedData {
             NBTTagCompound entry = all.getCompoundTag(key);
             BigItemHandler handler = new BigItemHandler(Math.max(1, entry.getInteger("Slots")));
             handler.deserializeNBT(entry.hasKey("Storage", 10) ? entry.getCompoundTag("Storage") : null);
+            handler.subscribe(change -> markDirty());
             frequencies.put(frequency, handler);
         }
     }

@@ -3,6 +3,9 @@ package com.hfstudio.functionalstorage.common.storage;
 import java.util.HashMap;
 import java.util.Map;
 
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTTagList;
+
 import com.hfstudio.functionalstorage.config.FunctionalStorageConfig;
 
 import lombok.Getter;
@@ -50,6 +53,22 @@ public enum DrawerLayout {
     public static DrawerLayout fromId(String id) {
         DrawerLayout layout = id == null ? null : BY_ID.get(id);
         return layout == null ? X_1 : layout;
+    }
+
+    public static DrawerLayout fromStorage(NBTTagCompound tag, String storageKey, DrawerLayout fallback) {
+        if (tag.hasKey("DrawerLayout")) {
+            return fromId(tag.getString("DrawerLayout"));
+        }
+        int slots = fallback.slotCount;
+        NBTTagList entries = tag.getCompoundTag(storageKey)
+            .getTagList("Entries", 10);
+        for (int index = 0; index < entries.tagCount(); index++) {
+            slots = Math.max(
+                slots,
+                entries.getCompoundTagAt(index)
+                    .getInteger("Index") + 1);
+        }
+        return slots > 2 ? X_4 : slots > 1 ? X_2 : X_1;
     }
 
     /**

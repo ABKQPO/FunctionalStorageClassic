@@ -72,68 +72,24 @@ public class HitBoxesUtil {
      */
     public static int resolveSlot(@Nonnull DrawerFaceLayout layout, @Nonnull DrawerAttachment attachment,
         @Nonnull ForgeDirection facing, double localX, double localY, double localZ) {
-        double horizontal;
-        double vertical;
-
-        if (attachment == DrawerAttachment.WALL) {
-            vertical = 1D - localY;
-            switch (facing) {
-                case NORTH:
-                    horizontal = localX;
-                    break;
-                case SOUTH:
-                    horizontal = 1D - localX;
-                    break;
-                case WEST:
-                    horizontal = localZ;
-                    break;
-                case EAST:
-                    horizontal = 1D - localZ;
-                    break;
-                default:
-                    return -1;
-            }
-        } else {
-            double depth = attachment == DrawerAttachment.FLOOR ? localY : 1D - localY;
-            if (depth < 0.5D) {
-                return -1;
-            }
-            switch (facing) {
-                case NORTH:
-                    horizontal = localX;
-                    vertical = 1D - localZ;
-                    break;
-                case SOUTH:
-                    horizontal = 1D - localX;
-                    vertical = localZ;
-                    break;
-                case WEST:
-                    horizontal = localZ;
-                    vertical = localX;
-                    break;
-                case EAST:
-                    horizontal = 1D - localZ;
-                    vertical = 1D - localX;
-                    break;
-                default:
-                    return -1;
-            }
-        }
-
-        switch (layout) {
-            case X_1:
-                return 0;
-            case X_2:
-                return vertical < 0.5D ? 0 : 1;
-            case X_4:
-                boolean right = horizontal >= 0.5D;
-                boolean bottom = vertical >= 0.5D;
-                if (!bottom) {
-                    return right ? 0 : 1;
-                }
-                return right ? 2 : 3;
-            default:
-                return -1;
-        }
+        ForgeDirection front = switch (attachment) {
+            case FLOOR -> ForgeDirection.UP;
+            case CEILING -> ForgeDirection.DOWN;
+            case WALL -> facing;
+        };
+        ForgeDirection up = switch (attachment) {
+            case FLOOR -> facing.getOpposite();
+            case CEILING -> facing;
+            case WALL -> ForgeDirection.UP;
+        };
+        int rightX = up.offsetY * front.offsetZ - up.offsetZ * front.offsetY;
+        int rightY = up.offsetZ * front.offsetX - up.offsetX * front.offsetZ;
+        int rightZ = up.offsetX * front.offsetY - up.offsetY * front.offsetX;
+        double x = localX - 0.5D;
+        double y = localY - 0.5D;
+        double z = localZ - 0.5D;
+        double horizontal = 0.5D + x * rightX + y * rightY + z * rightZ;
+        double vertical = 0.5D - x * up.offsetX - y * up.offsetY - z * up.offsetZ;
+        return layout.slotAt(horizontal, vertical);
     }
 }

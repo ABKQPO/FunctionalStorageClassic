@@ -61,6 +61,7 @@ public class EnderDrawerTile extends ControllableDrawerTile {
 
     @Override
     protected void writeStorageData(@Nonnull NBTTagCompound tag) {
+        tag.setTag("Items", handler.serializeNBT());
         if (frequency != null) {
             tag.setString(KEY_FREQUENCY, frequency.toString());
         }
@@ -78,6 +79,17 @@ public class EnderDrawerTile extends ControllableDrawerTile {
             frequency = null;
         }
         rebindToSharedHandler();
+        if (frequency == null || worldObj == null || worldObj.isRemote) {
+            handler.deserializeNBT(tag.hasKey("Items", 10) ? tag.getCompoundTag("Items") : null);
+        }
+    }
+
+    @Override
+    public void validate() {
+        super.validate();
+        if (frequency != null && worldObj != null && !worldObj.isRemote) {
+            rebindToSharedHandler();
+        }
     }
 
     @Override
@@ -110,7 +122,7 @@ public class EnderDrawerTile extends ControllableDrawerTile {
     }
 
     private void rebindToSharedHandler() {
-        if (worldObj == null || frequency == null) {
+        if (worldObj == null || worldObj.isRemote || frequency == null) {
             handler = createHandler();
             bindStorageHandler(handler);
             return;

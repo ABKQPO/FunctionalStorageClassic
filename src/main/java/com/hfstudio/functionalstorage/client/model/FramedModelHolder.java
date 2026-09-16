@@ -4,7 +4,6 @@ import javax.annotation.Nonnull;
 
 import com.gtnewhorizon.gtnhlib.client.model.BakedModelQuadContext;
 import com.gtnewhorizon.gtnhlib.client.model.baked.BakedModel;
-import com.gtnewhorizon.gtnhlib.client.model.loading.ModelRegistry;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
@@ -37,7 +36,7 @@ public class FramedModelHolder {
         if (provider == null) {
             provider = new FramedDrawerModelProvider();
         }
-        return provider.wrap(context, ModelRegistry.getBakedModel(context.getBlockState()));
+        return provider.wrap(context, DrawerModelProvider.INSTANCE.getModel(context));
     }
 
     /**

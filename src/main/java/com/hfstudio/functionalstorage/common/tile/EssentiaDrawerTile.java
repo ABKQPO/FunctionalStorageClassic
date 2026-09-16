@@ -2,7 +2,9 @@ package com.hfstudio.functionalstorage.common.tile;
 
 import javax.annotation.Nonnull;
 
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraftforge.common.util.ForgeDirection;
 
 import com.hfstudio.functionalstorage.api.storage.AspectStorageKey;
 import com.hfstudio.functionalstorage.api.storage.BigAspectStack;
@@ -10,6 +12,8 @@ import com.hfstudio.functionalstorage.api.storage.IBigAspectHandler;
 import com.hfstudio.functionalstorage.api.storage.StorageAction;
 import com.hfstudio.functionalstorage.api.storage.TransferResult;
 import com.hfstudio.functionalstorage.api.upgrade.UpgradeAttribute;
+import com.hfstudio.functionalstorage.common.integration.thaumcraft.DrawerEssentiaTransport;
+import com.hfstudio.functionalstorage.common.integration.thaumcraft.EssentiaContainerRegistry;
 import com.hfstudio.functionalstorage.common.inventory.base.BigAspectHandler;
 import com.hfstudio.functionalstorage.common.storage.DrawerLayout;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
@@ -17,18 +21,20 @@ import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 import thaumcraft.api.aspects.Aspect;
 import thaumcraft.api.aspects.AspectList;
 import thaumcraft.api.aspects.IAspectContainer;
+import thaumcraft.api.aspects.IEssentiaTransport;
 
 /**
  * Essentia drawer tile. Stores Thaumcraft essentia with the same long-capacity
  * semantics as item and fluid drawers, and adapts the generic handler to
  * Thaumcraft's integer based {@link IAspectContainer} contract.
  */
-public class EssentiaDrawerTile extends ControllableDrawerTile implements IAspectContainer {
+public class EssentiaDrawerTile extends ControllableDrawerTile implements IAspectContainer, IEssentiaTransport {
 
     private static final String KEY_ASPECTS = "Aspects";
 
-    private final DrawerLayout layout;
-    private final BigAspectHandler handler;
+    private DrawerLayout layout;
+    private BigAspectHandler handler;
+    private final DrawerEssentiaTransport transport = new DrawerEssentiaTransport(this, this::getAspectHandler);
 
     public EssentiaDrawerTile() {
         this(DrawerLayout.X_1);
@@ -36,11 +42,16 @@ public class EssentiaDrawerTile extends ControllableDrawerTile implements IAspec
 
     public EssentiaDrawerTile(@Nonnull DrawerLayout layout) {
         this.layout = layout;
-        this.handler = new BigAspectHandler(layout.getSlotCount()) {
+        this.handler = createHandler();
+        bindStorageHandler(handler);
+    }
+
+    private BigAspectHandler createHandler() {
+        return new BigAspectHandler(layout.getSlotCount()) {
 
             @Override
             public double getMultiplier() {
-                return calculateModifier(UpgradeAttribute.ASPECT_CAPACITY, 1D);
+                return calculateModifier(UpgradeAttribute.ASPECT_CAPACITY, 1D) / layout.getSlotCount();
             }
 
             @Override
@@ -63,7 +74,6 @@ public class EssentiaDrawerTile extends ControllableDrawerTile implements IAspec
                 return EssentiaDrawerTile.this.hasMaxStorage();
             }
         };
-        bindStorageHandler(handler);
     }
 
     /**
@@ -74,6 +84,23 @@ public class EssentiaDrawerTile extends ControllableDrawerTile implements IAspec
         return layout;
     }
 
+    @Override
+    public boolean onSlotActivated(@Nonnull EntityPlayer player, int side, float hitX, float hitY, float hitZ,
+        int slot) {
+        if (worldObj == null || worldObj.isRemote) {
+            return false;
+        }
+        return EssentiaContainerRegistry.activate(player, handler, slot)
+            || super.onSlotActivated(player, side, hitX, hitY, hitZ, slot);
+    }
+
+    @Override
+    public void onSlotClicked(@Nonnull EntityPlayer player, int slot) {
+        if (worldObj != null && !worldObj.isRemote) {
+            EssentiaContainerRegistry.activate(player, handler, slot);
+        }
+    }
+
     @Nonnull
     @Override
     public IBigAspectHandler getAspectHandler() {
@@ -82,11 +109,19 @@ public class EssentiaDrawerTile extends ControllableDrawerTile implements IAspec
 
     @Override
     protected void writeStorageData(@Nonnull NBTTagCompound tag) {
+        tag.setString("DrawerLayout", layout.getId());
         tag.setTag(KEY_ASPECTS, handler.serializeNBT());
     }
 
     @Override
     protected void readStorageData(@Nonnull NBTTagCompound tag) {
+        DrawerLayout restored = DrawerLayout.fromStorage(tag, KEY_ASPECTS, layout);
+        if (restored != layout) {
+            layout = restored;
+            handler = createHandler();
+            bindStorageHandler(handler);
+        }
+
         handler.deserializeNBT(tag.hasKey(KEY_ASPECTS, 10) ? tag.getCompoundTag(KEY_ASPECTS) : null);
     }
 
@@ -167,6 +202,10 @@ public class EssentiaDrawerTile extends ControllableDrawerTile implements IAspec
         if (aspect == null || amount <= 0) {
             return false;
         }
+        if (!handler.extractRouted(new BigAspectStack(aspect, amount), StorageAction.SIMULATE)
+            .isComplete()) {
+            return false;
+        }
         TransferResult<BigAspectStack, AspectStorageKey> result = handler
             .extractRouted(new BigAspectStack(aspect, amount), StorageAction.EXECUTE);
         return result.isComplete();
@@ -220,4 +259,71 @@ public class EssentiaDrawerTile extends ControllableDrawerTile implements IAspec
         }
         return true;
     }
+
+    @Override
+    public void updateEntity() {
+        super.updateEntity();
+        transport.tick();
+    }
+
+    @Override
+    public boolean isConnectable(ForgeDirection side) {
+        return transport.isConnectable(side);
+    }
+
+    @Override
+    public boolean canInputFrom(ForgeDirection side) {
+        return transport.canInputFrom(side);
+    }
+
+    @Override
+    public boolean canOutputTo(ForgeDirection side) {
+        return transport.canOutputTo(side);
+    }
+
+    @Override
+    public void setSuction(Aspect aspect, int amount) {
+        transport.setSuction(aspect, amount);
+    }
+
+    @Override
+    public Aspect getSuctionType(ForgeDirection side) {
+        return transport.getSuctionType(side);
+    }
+
+    @Override
+    public int getSuctionAmount(ForgeDirection side) {
+        return transport.getSuctionAmount(side);
+    }
+
+    @Override
+    public int takeEssentia(Aspect aspect, int amount, ForgeDirection side) {
+        return transport.takeEssentia(aspect, amount, side);
+    }
+
+    @Override
+    public int addEssentia(Aspect aspect, int amount, ForgeDirection side) {
+        return transport.addEssentia(aspect, amount, side);
+    }
+
+    @Override
+    public Aspect getEssentiaType(ForgeDirection side) {
+        return transport.getEssentiaType(side);
+    }
+
+    @Override
+    public int getEssentiaAmount(ForgeDirection side) {
+        return transport.getEssentiaAmount(side);
+    }
+
+    @Override
+    public int getMinimumSuction() {
+        return transport.getMinimumSuction();
+    }
+
+    @Override
+    public boolean renderExtendedTube() {
+        return transport.renderExtendedTube();
+    }
+
 }

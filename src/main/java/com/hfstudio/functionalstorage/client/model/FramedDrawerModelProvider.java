@@ -1,6 +1,7 @@
 package com.hfstudio.functionalstorage.client.model;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -15,14 +16,16 @@ import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.IIcon;
 import net.minecraft.world.IBlockAccess;
+import net.minecraftforge.common.util.ForgeDirection;
 
 import org.jetbrains.annotations.NotNull;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.gtnewhorizon.gtnhlib.api.IBlockModelProvider;
 import com.gtnewhorizon.gtnhlib.client.model.BakedModelQuadContext;
 import com.gtnewhorizon.gtnhlib.client.model.baked.BakedModel;
 import com.gtnewhorizon.gtnhlib.client.model.loading.ModelDeserializer.Position;
-import com.gtnewhorizon.gtnhlib.client.model.loading.ModelRegistry;
 import com.gtnewhorizon.gtnhlib.client.renderer.cel.model.quad.ModelQuad;
 import com.gtnewhorizon.gtnhlib.client.renderer.cel.model.quad.ModelQuadView;
 import com.hfstudio.functionalstorage.common.block.FramedDrawerBlock;
@@ -44,11 +47,23 @@ public class FramedDrawerModelProvider implements IBlockModelProvider {
     private static final String SIDE_MARKER = "functionalstorage:blocks/framed_side";
     private static final String FRONT_MARKER = "functionalstorage:blocks/framed_front_";
 
-    private final Map<String, PartSprites> spriteCache = new ConcurrentHashMap<>();
+    private final Cache<String, PartSprites> spriteCache = CacheBuilder.newBuilder()
+        .maximumSize(256)
+        .build();
+    private final Cache<ModelKey, BakedModel> modelCache = CacheBuilder.newBuilder()
+        .maximumSize(512)
+        .build();
+
+    public record ModelKey(BakedModel parent, PartSprites sprites) {}
+
+    public void clearCache() {
+        spriteCache.invalidateAll();
+        modelCache.invalidateAll();
+    }
 
     @Override
     public BakedModel getModel(BakedModelQuadContext context) {
-        return wrap(context, ModelRegistry.getBakedModel(context.getBlockState()));
+        return wrap(context, DrawerModelProvider.INSTANCE.getModel(context));
     }
 
     /**
@@ -61,11 +76,18 @@ public class FramedDrawerModelProvider implements IBlockModelProvider {
      */
     @Nonnull
     public BakedModel wrap(@Nonnull BakedModelQuadContext context, @Nonnull BakedModel base) {
-        if (!(context instanceof BakedModelQuadContext.World)) {
+        PartSprites sprites = context instanceof BakedModelQuadContext.World world ? spritesAt(world)
+            : context instanceof BakedModelQuadContext.Item item ? spritesFor(item.getItemStack()) : null;
+        if (sprites == null) {
             return base;
         }
-        PartSprites sprites = spritesAt((BakedModelQuadContext.World) context);
-        return sprites == null ? base : new FramedBakedModel(base, sprites);
+        ModelKey key = new ModelKey(base, sprites);
+        BakedModel cached = modelCache.getIfPresent(key);
+        if (cached == null) {
+            cached = new FramedBakedModel(base, sprites);
+            modelCache.put(key, cached);
+        }
+        return cached;
     }
 
     /**
@@ -75,7 +97,7 @@ public class FramedDrawerModelProvider implements IBlockModelProvider {
     @Nullable
     public PartSprites spritesFor(@Nonnull ItemStack stack) {
         FramedDrawerStyle style = FramedDrawerStyle.fromDrawerStack(stack);
-        return style.isConfigured() ? resolve(style) : null;
+        return style.isConfigured() ? resolve(style, 0) : null;
     }
 
     @Nullable
@@ -89,17 +111,20 @@ public class FramedDrawerModelProvider implements IBlockModelProvider {
             return null;
         }
         FramedDrawerStyle style = ((FramedDrawerTile) tile).getStyle();
-        return style.isConfigured() ? resolve(style) : null;
+        return style.isConfigured()
+            ? resolve(style, world.getBlockMetadata(context.getX(), context.getY(), context.getZ()))
+            : null;
     }
 
     @Nonnull
-    private PartSprites resolve(@Nonnull FramedDrawerStyle style) {
-        PartSprites cached = spriteCache.get(style.getCacheKey());
+    private PartSprites resolve(@Nonnull FramedDrawerStyle style, int metadata) {
+        String key = style.getCacheKey() + "/" + metadata;
+        PartSprites cached = spriteCache.getIfPresent(key);
         if (cached != null) {
             return cached;
         }
-        PartSprites resolved = PartSprites.from(style);
-        spriteCache.put(style.getCacheKey(), resolved);
+        PartSprites resolved = PartSprites.from(style, metadata);
+        spriteCache.put(key, resolved);
         return resolved;
     }
 
@@ -122,14 +147,14 @@ public class FramedDrawerModelProvider implements IBlockModelProvider {
      * @param quad candidate quad
      * @return whether the quad is a divider
      */
-    private static boolean isDivider(@Nonnull ModelQuadView quad) {
+    private static boolean isDivider(@Nonnull ModelQuadView quad, TextureAtlasSprite marker) {
         float minU = Float.POSITIVE_INFINITY;
         float maxU = Float.NEGATIVE_INFINITY;
         float minV = Float.POSITIVE_INFINITY;
         float maxV = Float.NEGATIVE_INFINITY;
         for (int vertex = 0; vertex < 4; vertex++) {
-            float u = quad.getTexU(vertex);
-            float v = quad.getTexV(vertex);
+            float u = (quad.getTexU(vertex) - marker.getMinU()) * 16F / (marker.getMaxU() - marker.getMinU());
+            float v = (quad.getTexV(vertex) - marker.getMinV()) * 16F / (marker.getMaxV() - marker.getMinV());
             minU = Math.min(minU, u);
             maxU = Math.max(maxU, u);
             minV = Math.min(minV, v);
@@ -181,11 +206,18 @@ public class FramedDrawerModelProvider implements IBlockModelProvider {
         @Nullable
         public final TextureAtlasSprite divider;
 
+        private final TextureAtlasSprite[] exteriorFaces = new TextureAtlasSprite[6];
+        private final TextureAtlasSprite[] frontFaces = new TextureAtlasSprite[6];
+        private final TextureAtlasSprite[] dividerFaces = new TextureAtlasSprite[6];
+
         public PartSprites(@Nullable TextureAtlasSprite exterior, @Nullable TextureAtlasSprite front,
             @Nullable TextureAtlasSprite divider) {
             this.exterior = exterior;
             this.front = front;
             this.divider = divider;
+            Arrays.fill(exteriorFaces, exterior);
+            Arrays.fill(frontFaces, front);
+            Arrays.fill(dividerFaces, divider);
         }
 
         /**
@@ -196,10 +228,48 @@ public class FramedDrawerModelProvider implements IBlockModelProvider {
          */
         @Nonnull
         public static PartSprites from(@Nonnull FramedDrawerStyle style) {
-            return new PartSprites(
+            return from(style, 0);
+        }
+
+        private static PartSprites from(FramedDrawerStyle style, int metadata) {
+            PartSprites sprites = new PartSprites(
                 spriteFor(style.getExterior()),
                 spriteFor(style.getFront()),
                 spriteFor(style.getDivider()));
+            for (int side = 0; side < 6; side++) {
+                int localSide = localSide(ForgeDirection.getOrientation(side), metadata);
+                sprites.exteriorFaces[side] = spriteFor(style.getExterior(), localSide);
+                sprites.frontFaces[side] = spriteFor(style.getFront(), localSide);
+                sprites.dividerFaces[side] = spriteFor(style.getDivider(), localSide);
+            }
+            return sprites;
+        }
+
+        private static int localSide(ForgeDirection side, int metadata) {
+            int x = side.offsetX;
+            int y = side.offsetY;
+            int z = side.offsetZ;
+            for (int turn = 0; turn < (metadata & 3); turn++) {
+                int previousX = x;
+                x = z;
+                z = -previousX;
+            }
+            int attachment = (metadata & 12) >> 2;
+            if (attachment == 1) {
+                int previousY = y;
+                y = z;
+                z = -previousY;
+            } else if (attachment == 2) {
+                int previousY = y;
+                y = -z;
+                z = previousY;
+            }
+            for (ForgeDirection candidate : ForgeDirection.VALID_DIRECTIONS) {
+                if (candidate.offsetX == x && candidate.offsetY == y && candidate.offsetZ == z) {
+                    return candidate.ordinal();
+                }
+            }
+            return side.ordinal();
         }
 
         /**
@@ -210,6 +280,11 @@ public class FramedDrawerModelProvider implements IBlockModelProvider {
          */
         @Nullable
         public static TextureAtlasSprite spriteFor(@Nullable ItemStack material) {
+            return spriteFor(material, ForgeDirection.NORTH.ordinal());
+        }
+
+        @Nullable
+        public static TextureAtlasSprite spriteFor(@Nullable ItemStack material, int side) {
             if (material == null || material.getItem() == null || !(material.getItem() instanceof ItemBlock)) {
                 return null;
             }
@@ -217,7 +292,10 @@ public class FramedDrawerModelProvider implements IBlockModelProvider {
             if (block == null) {
                 return null;
             }
-            IIcon icon = block.getIcon(0, material.getItemDamage());
+            IIcon icon = block.getIcon(
+                side,
+                material.getItem()
+                    .getMetadata(material.getItemDamage()));
             return icon instanceof TextureAtlasSprite ? (TextureAtlasSprite) icon : null;
         }
 
@@ -237,6 +315,7 @@ public class FramedDrawerModelProvider implements IBlockModelProvider {
 
         private final BakedModel parent;
         private final PartSprites sprites;
+        private final Map<List<ModelQuadView>, List<ModelQuadView>> quads = new ConcurrentHashMap<>();
 
         public FramedBakedModel(@Nonnull BakedModel parent, @Nonnull PartSprites sprites) {
             this.parent = parent;
@@ -249,12 +328,15 @@ public class FramedDrawerModelProvider implements IBlockModelProvider {
             if (original == null || original.isEmpty() || !sprites.isUsable()) {
                 return original;
             }
+            return parent.isDynamic() ? retextureQuads(original)
+                : quads.computeIfAbsent(original, this::retextureQuads);
+        }
+
+        private List<ModelQuadView> retextureQuads(List<ModelQuadView> original) {
             List<ModelQuadView> retextured = new ArrayList<>(original.size());
-            boolean dynamic = false;
             for (ModelQuadView quad : original) {
                 ModelQuadView replaced = retextureQuad(quad);
-                retextured.add(replaced);
-                dynamic |= replaced != quad;
+                retextured.add(parent.isDynamic() && replaced == quad ? new ModelQuad(quad) : replaced);
             }
             return retextured;
         }
@@ -269,21 +351,29 @@ public class FramedDrawerModelProvider implements IBlockModelProvider {
             if (iconName == null) {
                 return quad;
             }
+            int side = quad.getLightFace()
+                .toForgeDir()
+                .ordinal();
+            if (side >= 6) {
+                side = ForgeDirection.NORTH.ordinal();
+            }
             if (isSideMarker(iconName)) {
-                return sprites.exterior == null ? quad : retexture(quad, marker, sprites.exterior);
+                return sprites.exteriorFaces[side] == null ? quad
+                    : retexture(quad, marker, sprites.exteriorFaces[side]);
             }
             if (isFrontMarker(iconName)) {
-                if (isDivider(quad)) {
-                    return sprites.divider == null ? quad : retexture(quad, marker, sprites.divider);
+                if (isDivider(quad, marker)) {
+                    return sprites.dividerFaces[side] == null ? quad
+                        : retexture(quad, marker, sprites.dividerFaces[side]);
                 }
-                return sprites.front == null ? quad : retexture(quad, marker, sprites.front);
+                return sprites.frontFaces[side] == null ? quad : retexture(quad, marker, sprites.frontFaces[side]);
             }
             return quad;
         }
 
         @Override
         public boolean isDynamic() {
-            return true;
+            return parent.isDynamic();
         }
 
         @Override

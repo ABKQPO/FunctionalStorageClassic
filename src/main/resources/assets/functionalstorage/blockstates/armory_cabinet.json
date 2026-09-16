@@ -1,18 +1,56 @@
 {
   "variants": {
-    "facing=north": {
+    "attachment=wall,horizontal_facing=north": {
       "model": "functionalstorage:blocks/armory_cabinet"
     },
-    "facing=south": {
-      "model": "functionalstorage:blocks/armory_cabinet",
-      "y": 180
-    },
-    "facing=west": {
+    "attachment=wall,horizontal_facing=east": {
       "model": "functionalstorage:blocks/armory_cabinet",
       "y": 270
     },
-    "facing=east": {
+    "attachment=wall,horizontal_facing=south": {
       "model": "functionalstorage:blocks/armory_cabinet",
+      "y": 180
+    },
+    "attachment=wall,horizontal_facing=west": {
+      "model": "functionalstorage:blocks/armory_cabinet",
+      "y": 90
+    },
+    "attachment=floor,horizontal_facing=north": {
+      "model": "functionalstorage:blocks/armory_cabinet",
+      "x": 90
+    },
+    "attachment=floor,horizontal_facing=east": {
+      "model": "functionalstorage:blocks/armory_cabinet",
+      "x": 90,
+      "y": 270
+    },
+    "attachment=floor,horizontal_facing=south": {
+      "model": "functionalstorage:blocks/armory_cabinet",
+      "x": 90,
+      "y": 180
+    },
+    "attachment=floor,horizontal_facing=west": {
+      "model": "functionalstorage:blocks/armory_cabinet",
+      "x": 90,
+      "y": 90
+    },
+    "attachment=ceiling,horizontal_facing=north": {
+      "model": "functionalstorage:blocks/armory_cabinet",
+      "x": 270
+    },
+    "attachment=ceiling,horizontal_facing=east": {
+      "model": "functionalstorage:blocks/armory_cabinet",
+      "x": 270,
+      "y": 270
+    },
+    "attachment=ceiling,horizontal_facing=south": {
+      "model": "functionalstorage:blocks/armory_cabinet",
+      "x": 270,
+      "y": 180
+    },
+    "attachment=ceiling,horizontal_facing=west": {
+      "model": "functionalstorage:blocks/armory_cabinet",
+      "x": 270,
       "y": 90
     }
   }

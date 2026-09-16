@@ -12,6 +12,7 @@ import net.minecraft.block.BlockContainer;
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -24,7 +25,11 @@ import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 import net.minecraftforge.fluids.IFluidHandler;
 
+import com.gtnewhorizon.gtnhlib.api.IBlockModelProvider;
+import com.gtnewhorizon.gtnhlib.client.model.BakedModelQuadContext;
 import com.gtnewhorizon.gtnhlib.client.model.ModelISBRH;
+import com.gtnewhorizon.gtnhlib.client.model.baked.BakedModel;
+import com.hfstudio.functionalstorage.client.model.DrawerModelProvider;
 import com.hfstudio.functionalstorage.common.block.DrawerAttachment;
 import com.hfstudio.functionalstorage.common.block.DrawerFaceLayout;
 import com.hfstudio.functionalstorage.common.tile.FluidDrawerTile;
@@ -33,12 +38,15 @@ import com.hfstudio.functionalstorage.config.FunctionalStorageConfig;
 import com.hfstudio.functionalstorage.misc.RegistrationHandler;
 import com.hfstudio.functionalstorage.util.HitBoxesUtil;
 
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
+
 /**
  * Base class for every drawer block. A drawer is a full cube whose metadata
  * encodes the surface it is attached to and its horizontal rotation, so one
  * block instance covers all twelve orientations.
  */
-public abstract class DrawerBlock extends BlockContainer {
+public abstract class DrawerBlock extends BlockContainer implements IBlockModelProvider {
 
     private static final float HARDNESS = 2.5F;
     private static final float RESISTANCE = 8.0F;
@@ -87,7 +95,7 @@ public abstract class DrawerBlock extends BlockContainer {
      */
     @Nonnull
     public static ForgeDirection getHorizontalFacing(int metadata) {
-        return ForgeDirection.getOrientation(2 + ((metadata & 0xF) % 4));
+        return HitBoxesUtil.HORIZONTAL[metadata & 3];
     }
 
     /**
@@ -117,8 +125,15 @@ public abstract class DrawerBlock extends BlockContainer {
     }
 
     @Override
+    @SideOnly(Side.CLIENT)
     public int getRenderType() {
         return ModelISBRH.JSON_ISBRH_ID;
+    }
+
+    @Override
+    @SideOnly(Side.CLIENT)
+    public BakedModel getModel(BakedModelQuadContext context) {
+        return DrawerModelProvider.INSTANCE.getModel(context);
     }
 
     @Override
@@ -160,6 +175,7 @@ public abstract class DrawerBlock extends BlockContainer {
     @Override
     public void onBlockPlacedBy(World world, int x, int y, int z, EntityLivingBase placer, ItemStack stack) {
         super.onBlockPlacedBy(world, x, y, z, placer, stack);
+        world.setBlockMetadataWithNotify(x, y, z, metadataForPlacement(0, placer), 2);
         TileEntity tile = world.getTileEntity(x, y, z);
         if (tile instanceof ControllableDrawerTile && stack != null) {
             ((ControllableDrawerTile) tile).loadFromItemStack(stack);
@@ -227,7 +243,7 @@ public abstract class DrawerBlock extends BlockContainer {
         if (!(tile instanceof ControllableDrawerTile drawer)) {
             return false;
         }
-        int slot = getHitSlot(world, x, y, z, player);
+        int slot = getHitSlot(world.getBlockMetadata(x, y, z), side, hitX, hitY, hitZ);
         return drawer.onSlotActivated(player, side, hitX, hitY, hitZ, slot);
     }
 
@@ -244,6 +260,17 @@ public abstract class DrawerBlock extends BlockContainer {
         if (slot >= 0) {
             ((ControllableDrawerTile) tile).onSlotClicked(player, slot);
         }
+    }
+
+    @Override
+    public boolean removedByPlayer(World world, EntityPlayer player, int x, int y, int z, boolean willHarvest) {
+        return willHarvest || super.removedByPlayer(world, player, x, y, z, false);
+    }
+
+    @Override
+    public void harvestBlock(World world, EntityPlayer player, int x, int y, int z, int metadata) {
+        super.harvestBlock(world, player, x, y, z, metadata);
+        world.setBlockToAir(x, y, z);
     }
 
     @Override
@@ -290,22 +317,27 @@ public abstract class DrawerBlock extends BlockContainer {
     public int getHitSlot(World world, int x, int y, int z, EntityPlayer player) {
         int metadata = world.getBlockMetadata(x, y, z);
         Vec3 start = Vec3.createVectorHelper(player.posX, player.posY + player.getEyeHeight(), player.posZ);
-        Vec3 end = start.addVector(
-            player.getLookVec().xCoord * 6D,
-            player.getLookVec().yCoord * 6D,
-            player.getLookVec().zCoord * 6D);
+        double reach = player instanceof EntityPlayerMP serverPlayer
+            ? serverPlayer.theItemInWorldManager.getBlockReachDistance()
+            : 5D;
+        Vec3 look = player.getLookVec();
+        Vec3 end = start.addVector(look.xCoord * reach, look.yCoord * reach, look.zCoord * reach);
         MovingObjectPosition hit = world.rayTraceBlocks(start, end, false);
         if (hit == null || hit.blockX != x || hit.blockY != y || hit.blockZ != z) {
-            return -1;
-        }
-        if (hit.sideHit != getFrontFacing(metadata).ordinal()) {
             return -1;
         }
         double localX = hit.hitVec.xCoord - x;
         double localY = hit.hitVec.yCoord - y;
         double localZ = hit.hitVec.zCoord - z;
+        return getHitSlot(metadata, hit.sideHit, localX, localY, localZ);
+    }
+
+    public int getHitSlot(int metadata, int side, double hitX, double hitY, double hitZ) {
+        if (side != getFrontFacing(metadata).ordinal()) {
+            return -1;
+        }
         return HitBoxesUtil
-            .resolveSlot(faceLayout, getAttachment(metadata), getHorizontalFacing(metadata), localX, localY, localZ);
+            .resolveSlot(faceLayout, getAttachment(metadata), getHorizontalFacing(metadata), hitX, hitY, hitZ);
     }
 
     @Override
@@ -314,17 +346,20 @@ public abstract class DrawerBlock extends BlockContainer {
     }
 
     /**
-     * Reads the safe metadata value from a placement face.
+     * Faces the drawer towards the placer, including floor and ceiling mounting.
      *
-     * @param placedOn face that was clicked during placement
+     * @param placedOn clicked support face, retained for placement integrations
      * @param placer   placing entity
      * @return the metadata to store
      */
     public int metadataForPlacement(int placedOn, @Nonnull EntityLivingBase placer) {
-        DrawerAttachment attachment = HitBoxesUtil.attachmentForFace(placedOn);
+        Vec3 look = placer.getLookVec();
+        double horizontal = Math.max(Math.abs(look.xCoord), Math.abs(look.zCoord));
+        DrawerAttachment attachment = Math.abs(look.yCoord) > horizontal
+            ? (look.yCoord < 0D ? DrawerAttachment.FLOOR : DrawerAttachment.CEILING)
+            : DrawerAttachment.WALL;
         int quadrant = MathHelper.floor_double((placer.rotationYaw * 4.0F / 360.0F) + 0.5D) & 3;
-        ForgeDirection facing = attachment == DrawerAttachment.WALL ? HitBoxesUtil.horizontalFromQuadrant(quadrant + 2)
-            : HitBoxesUtil.horizontalFromQuadrant(quadrant);
+        ForgeDirection facing = HitBoxesUtil.HORIZONTAL[quadrant];
         return getMetadata(attachment, facing);
     }
 

@@ -27,6 +27,7 @@ import cpw.mods.fml.common.network.simpleimpl.SimpleNetworkWrapper;
     modid = Tags.MODID,
     version = Tags.VERSION,
     name = Tags.MODNAME,
+    dependencies = "required-after:gtnhlib@[0.11.48,)",
     guiFactory = "com.hfstudio.functionalstorage.misc.ConfigGuiFactory",
     acceptableRemoteVersions = "*",
     acceptedMinecraftVersions = "[1.7.10]")

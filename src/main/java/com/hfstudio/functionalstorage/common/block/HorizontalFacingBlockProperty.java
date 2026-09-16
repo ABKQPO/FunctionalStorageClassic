@@ -1,6 +1,7 @@
 package com.hfstudio.functionalstorage.common.block;
 
 import java.lang.reflect.Type;
+import java.util.Locale;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -57,7 +58,7 @@ public class HorizontalFacingBlockProperty
      * @return whether the direction is horizontal
      */
     public boolean isHorizontal(@Nonnull ForgeDirection value) {
-        return value.offsetY == 0;
+        return value != ForgeDirection.UNKNOWN && value.offsetY == 0;
     }
 
     @Override
@@ -73,7 +74,7 @@ public class HorizontalFacingBlockProperty
 
     @Override
     public ForgeDirection getValue(int meta) {
-        return VALUES[meta & 0b11];
+        return DrawerBlock.getHorizontalFacing(meta);
     }
 
     @Nonnull
@@ -86,13 +87,13 @@ public class HorizontalFacingBlockProperty
     @Override
     public String stringify(ForgeDirection value) {
         return value.name()
-            .toLowerCase();
+            .toLowerCase(Locale.ROOT);
     }
 
     @Override
     public ForgeDirection parse(String text) {
         try {
-            ForgeDirection direction = ForgeDirection.valueOf(text.toUpperCase());
+            ForgeDirection direction = ForgeDirection.valueOf(text.toUpperCase(Locale.ROOT));
             return isHorizontal(direction) ? direction : ForgeDirection.NORTH;
         } catch (IllegalArgumentException ignored) {
             return ForgeDirection.NORTH;

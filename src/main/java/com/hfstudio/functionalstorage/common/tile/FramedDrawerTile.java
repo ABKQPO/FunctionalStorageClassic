@@ -6,23 +6,14 @@ import javax.annotation.Nullable;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 
-import com.hfstudio.functionalstorage.api.storage.IBigItemHandler;
-import com.hfstudio.functionalstorage.api.upgrade.UpgradeAttribute;
-import com.hfstudio.functionalstorage.common.inventory.base.BigItemHandler;
 import com.hfstudio.functionalstorage.common.storage.DrawerLayout;
 import com.hfstudio.functionalstorage.common.storage.FramedDrawerStyle;
-import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 
 /**
  * Framed drawer tile. Behaves exactly like a wooden drawer but carries a
  * material selection used to retexture its exterior, fronts, and divider.
  */
-public class FramedDrawerTile extends ControllableDrawerTile {
-
-    private static final String KEY_ITEMS = "Items";
-
-    private final DrawerLayout layout;
-    private final BigItemHandler handler;
+public class FramedDrawerTile extends WoodDrawerTile {
 
     private FramedDrawerStyle style = FramedDrawerStyle.EMPTY;
 
@@ -31,48 +22,7 @@ public class FramedDrawerTile extends ControllableDrawerTile {
     }
 
     public FramedDrawerTile(@Nonnull DrawerLayout layout) {
-        this.layout = layout;
-        this.handler = new BigItemHandler(layout.getSlotCount()) {
-
-            @Override
-            public double getMultiplier() {
-                return calculateModifier(UpgradeAttribute.ITEM_CAPACITY, 1D);
-            }
-
-            @Override
-            public boolean isLocked() {
-                return FramedDrawerTile.this.isLocked();
-            }
-
-            @Override
-            public boolean voidsOverflow() {
-                return FramedDrawerTile.this.voidsOverflow();
-            }
-
-            @Override
-            public boolean isCreative() {
-                return FramedDrawerTile.this.isCreative();
-            }
-
-            @Override
-            public boolean hasMaxStorage() {
-                return FramedDrawerTile.this.hasMaxStorage();
-            }
-
-            @Override
-            protected boolean allowsEquivalentItems() {
-                return FramedDrawerTile.this.hasEquivalentItems();
-            }
-        };
-        bindStorageHandler(handler);
-    }
-
-    /**
-     * @return the slot layout of this drawer
-     */
-    @Nonnull
-    public DrawerLayout getDrawerLayout() {
-        return layout;
+        super(layout);
     }
 
     /**
@@ -111,9 +61,9 @@ public class FramedDrawerTile extends ControllableDrawerTile {
         if (material == null || material.getItem() == null) {
             return false;
         }
-        ItemStack exterior = front ? style.getExterior() : material;
-        ItemStack frontStack = front ? material : style.getFront();
-        ItemStack divider = front ? material : style.getDivider();
+        ItemStack exterior = front && style.isConfigured() ? style.getExterior() : material;
+        ItemStack frontStack = front || !style.isConfigured() ? material : style.getFront();
+        ItemStack divider = front || !style.isConfigured() ? material : style.getDivider();
         FramedDrawerStyle updated = new FramedDrawerStyle(exterior, frontStack, divider);
         if (!updated.isConfigured() || updated.equals(style)) {
             return false;
@@ -122,15 +72,9 @@ public class FramedDrawerTile extends ControllableDrawerTile {
         return true;
     }
 
-    @Nonnull
-    @Override
-    public IBigItemHandler getItemHandler() {
-        return handler;
-    }
-
     @Override
     protected void writeStorageData(@Nonnull NBTTagCompound tag) {
-        tag.setTag(KEY_ITEMS, handler.serializeNBT());
+        super.writeStorageData(tag);
         if (style.isConfigured()) {
             tag.setTag(FramedDrawerStyle.NBT_KEY, style.writeToNBT());
         }
@@ -138,27 +82,10 @@ public class FramedDrawerTile extends ControllableDrawerTile {
 
     @Override
     protected void readStorageData(@Nonnull NBTTagCompound tag) {
-        handler.deserializeNBT(tag.hasKey(KEY_ITEMS, 10) ? tag.getCompoundTag(KEY_ITEMS) : null);
+        super.readStorageData(tag);
         style = tag.hasKey(FramedDrawerStyle.NBT_KEY, 10)
             ? FramedDrawerStyle.fromNBT(tag.getCompoundTag(FramedDrawerStyle.NBT_KEY))
             : FramedDrawerStyle.EMPTY;
-    }
-
-    @Override
-    protected void reconcileStorageConfiguration() {
-        handler.applyLockConfiguration(isLocked());
-    }
-
-    @Override
-    protected int calculateRedstoneSignal() {
-        long total = 0L;
-        long capacity = 0L;
-        for (int index = 0; index < handler.getStorageCount(); index++) {
-            total += handler.getSnapshot(index)
-                .getAmount();
-            capacity += handler.getCapacity(index);
-        }
-        return capacity <= 0L ? 0 : redstoneForRatio(total / (double) capacity);
     }
 
     @Override

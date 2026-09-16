@@ -1,8 +1,14 @@
 package com.hfstudio.functionalstorage.misc;
 
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.resources.IReloadableResourceManager;
+
 import com.gtnewhorizon.gtnhlib.client.model.loading.ModelRegistry;
 import com.hfstudio.functionalstorage.FunctionalStorage;
+import com.hfstudio.functionalstorage.client.model.DrawerModelProvider;
+import com.hfstudio.functionalstorage.client.render.DrawerItemRenderer;
 import com.hfstudio.functionalstorage.client.render.DrawerRenderer;
+import com.hfstudio.functionalstorage.common.tile.EnderDrawerTile;
 import com.hfstudio.functionalstorage.common.tile.EssentiaDrawerTile;
 import com.hfstudio.functionalstorage.common.tile.FluidDrawerTile;
 import com.hfstudio.functionalstorage.common.tile.FramedDrawerTile;
@@ -22,6 +28,13 @@ public class DrawerClientRegistry {
 
     private DrawerClientRegistry() {}
 
+    public static void registerItemRenderer() {
+        if (Minecraft.getMinecraft()
+            .getResourceManager() instanceof IReloadableResourceManager manager) {
+            manager.registerReloadListener(new DrawerItemRenderer());
+        }
+    }
+
     /**
      * Registers tile entity special renderers for every drawer kind.
      */
@@ -32,6 +45,7 @@ public class DrawerClientRegistry {
         ClientRegistry.bindTileEntitySpecialRenderer(FluidDrawerTile.class, renderer);
         ClientRegistry.bindTileEntitySpecialRenderer(EssentiaDrawerTile.class, renderer);
         ClientRegistry.bindTileEntitySpecialRenderer(CompactingDrawerTile.class, renderer);
+        ClientRegistry.bindTileEntitySpecialRenderer(EnderDrawerTile.class, renderer);
     }
 
     /**
@@ -41,6 +55,10 @@ public class DrawerClientRegistry {
      */
     public static void registerModelSource() {
         ModelRegistry.registerModid(FunctionalStorage.MOD_ID);
+        if (Minecraft.getMinecraft()
+            .getResourceManager() instanceof IReloadableResourceManager manager) {
+            manager.registerReloadListener(DrawerModelProvider.INSTANCE);
+        }
     }
 
     /**

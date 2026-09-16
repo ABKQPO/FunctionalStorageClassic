@@ -124,7 +124,7 @@ functionalstorage.direction.down=下方
 
 # 工具
 item.functionalstorage.configuration_tool.name=配置工具
-item.functionalstorage.configuration_tool.tooltip=循环切换抽屉显示选项。潜行时对整个控制器生效。
+item.functionalstorage.configuration_tool.tooltip=右键切换抽屉显示选项，潜行右键切换锁定状态。
 item.functionalstorage.linking_tool.name=链接工具
 item.functionalstorage.linking_tool.tooltip=右击控制器，再右击抽屉即可建立链接。
 item.functionalstorage.linking_tool.tooltip.target=已链接到位于 %d, %d, %d 的控制器

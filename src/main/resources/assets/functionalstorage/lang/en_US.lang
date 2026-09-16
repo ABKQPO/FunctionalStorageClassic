@@ -124,7 +124,7 @@ functionalstorage.direction.down=Down
 
 # Tools
 item.functionalstorage.configuration_tool.name=Configuration Tool
-item.functionalstorage.configuration_tool.tooltip=Cycles drawer display options. Sneak to apply to a whole controller.
+item.functionalstorage.configuration_tool.tooltip=Cycles drawer display options. Sneak to toggle locking.
 item.functionalstorage.linking_tool.name=Linking Tool
 item.functionalstorage.linking_tool.tooltip=Right-click a controller, then right-click drawers to link them.
 item.functionalstorage.linking_tool.tooltip.target=Linked to controller at %d, %d, %d

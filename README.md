@@ -53,8 +53,8 @@ synchronization behaviour.
   multiplicatively instead of overwriting each other.
 * **Contents survive breakage** — stored contents, filters, lock state, and installed upgrades
   are written into the dropped block's NBT.
-* **Native Forge capabilities** — drawers expose item and fluid handlers, so pipes and
-  automation from other mods work without special casing.
+* **1.7.10 automation interfaces** — item drawers expose vanilla `IInventory`; fluid drawers
+  expose Forge `IFluidHandler`; essentia drawers use Thaumcraft's aspect and tube interfaces.
 * **Controller networks** — a storage controller aggregates every linked drawer into one
   logical inventory for automation.
 
@@ -76,7 +76,8 @@ synchronization behaviour.
 | Armory Cabinet | 1 block | Bulk storage for gear and tools |
 
 Every drawer is a full cube that can be mounted on a **wall**, a **floor**, or a **ceiling**.
-Placement drives the orientation; the model and the rendered contents rotate to match.
+The front faces the player. Looking steeply down or up selects floor or ceiling mounting,
+following FunctionalStorageLegacy. Models, contents and clickable regions rotate together.
 
 ### Controllers
 
@@ -88,10 +89,10 @@ right-click drawers to bind them.
 
 ### Framed Drawers
 
-A framed drawer borrows the look of any block. Craft it from four identical blocks plus a
-matching wooden drawer, or apply a block to a placed framed drawer with the Configuration
-Tool. Sneaking while applying sets the exterior; applying normally sets the fronts and the
-divider.
+Craft an unstyled framed drawer from three oak planks and a matching oak drawer in a 2×2
+grid. Apply materials with the Legacy styling recipe: exterior and front blocks on the top
+row, the framed drawer and an optional divider block below. This preserves the drawer's
+contents and upgrades. Each face uses the corresponding material texture, including log ends.
 
 <hr>
 
@@ -110,8 +111,8 @@ Each drawer has four **storage upgrade** slots and three **utility upgrade** slo
 | Netherite Upgrade | ×32 |
 | Max Storage Upgrade | removes the capacity ceiling |
 
-Equipping a higher tier over a lower one is done by right-clicking the drawer with the new
-upgrade in hand; the replaced upgrade is returned to the player.
+Right-clicking installs an upgrade into an available slot. Use the drawer interface to
+remove an installed upgrade or exchange tiers.
 
 ### Functional Upgrades
 
@@ -151,11 +152,11 @@ The following upgrades from **More Functional Storage** are merged into this mod
 
 ## 🧪 Storage Kinds
 
-| Kind | Container | Capability |
+| Kind | Container | Interface |
 |:-----|:----------|:-----------|
-| Items | Wood, compacting, ender drawers, armory cabinet | Forge item bridge and AE2 ME inventory |
+| Items | Wood, compacting, ender drawers, armory cabinet | Vanilla `IInventory` and AE2 ME inventory |
 | Fluids | Fluid drawers | Forge `IFluidHandler` |
-| Essentia | Essentia drawers | Thaumcraft `IAspectContainer` |
+| Essentia | Essentia drawers | Thaumcraft `IAspectContainer` and `IEssentiaTransport` |
 
 All three kinds share one storage core. A resource kind only has to describe its identity,
 capacity, and persistence, and it inherits routing, overflow voiding, creative mode,
@@ -170,7 +171,9 @@ shipping any Thaumcraft assets.
 * **Applied Energistics 2** — drawers are registered with AE2's
   `IExternalStorageRegistry`, so storage buses can address them as ME storage.
 * **Waila** — hover any drawer to see its contents, capacity, and installed upgrades.
-* **Thaumcraft** — essentia storage through the native `IAspectContainer` interface.
+* **Thaumcraft** — essentia phials exchange eight units with the clicked slot; tubes use
+  `IEssentiaTransport` suction and transfer, alongside `IAspectContainer`. Addons can register
+  explicit container capacities through `EssentiaContainerRegistry`.
 * **Hoppers and pipes** — drawers implement vanilla `IInventory` and Forge `IFluidHandler`
   directly, which is how 1.7.10 automation discovers inventories.
 * **Comparators** — a drawer emits a comparator signal based on how full it is.
@@ -188,8 +191,13 @@ Sneak and right-click a drawer with an empty hand to open its interface. It show
 drawer's storage slots, its storage and utility upgrade slots, and your inventory, so
 upgrades can be swapped without breaking the block.
 
-Right-clicking a drawer with an upgrade in hand installs it directly, and left-clicking a
-slot extracts one item (a full stack while sneaking).
+Right-click a slot with an item to insert the held stack. A second click within six ticks
+inserts matching items from your inventory. Left-click extracts one item, or one stack while
+sneaking. Buckets and registered fluid containers exchange with the clicked tank; Thaumcraft
+phials exchange with the clicked essentia slot.
+
+Right-clicking with an upgrade installs it in the appropriate upgrade group. Sneak with the
+Configuration Tool to toggle locking; use it normally to cycle display options.
 
 <hr>
 
@@ -223,7 +231,7 @@ configuration entry.
 ## 📥 Installation
 
 1. Install **Minecraft 1.7.10** with **Forge 10.13.4.1614**.
-2. Install **GTNHLib** — it is a hard requirement.
+2. Install **GTNHLib 0.11.48 or newer** — it is a hard requirement.
 3. Drop the Functional Storage Classic jar into your `mods` folder.
 4. Optional: install Applied Energistics 2, Waila, and Thaumcraft for their integrations.
 
@@ -235,7 +243,7 @@ configuration entry.
 
 * **Minecraft**: `1.7.10`
 * **Forge**: `10.13.4.1614`
-* **GTNHLib**: required
+* **GTNHLib**: `0.11.48` or newer, required
 
 Optional integrations activate automatically when the relevant mod is present.
 
@@ -250,10 +258,10 @@ Optional integrations activate automatically when the relevant mod is present.
 
 ```bash
 # Windows
-gradlew.bat clean build
+gradlew.bat clean build -x test
 
 # Linux / macOS
-./gradlew clean build
+./gradlew clean build -x test
 ```
 
 <hr>
@@ -268,7 +276,7 @@ projects, all of which permit reuse under the terms below.
 | **Functional Storage** | [Buuz135](https://github.com/Buuz135), Rid | [MIT](https://mit-license.org/) | Original design, drawer and upgrade behaviour, textures |
 | **Functional Storage Legacy** | [xinyihl](https://github.com/xinyihl) | [MIT](https://mit-license.org/) | 1.12.2 port used as the primary reference, textures, models |
 | **More Functional Storage** | [Matyrobbrt](https://github.com/Matyrobbrt) | [MIT](https://mit-license.org/) | Breaker, placer, refill, dimensional refill, and stonecutting upgrades |
-| **GTNHLib** | [GTNewHorizons](https://github.com/GTNewHorizons/GTNHLib) | [LGPLv3](https://www.gnu.org/licenses/lgpl-3.0.html) | Configuration system, block state API, JSON model pipeline, capabilities |
+| **GTNHLib** | [GTNewHorizons](https://github.com/GTNewHorizons/GTNHLib) | [LGPLv3](https://www.gnu.org/licenses/lgpl-3.0.html) | Configuration system, block state API, JSON model pipeline |
 | **Applied Energistics 2** | [AlgorithmX2](https://github.com/AppliedEnergistics) and contributors | [LGPLv3](https://www.gnu.org/licenses/lgpl-3.0.html) | Compile-time API for the storage bridge |
 
 ### Notes on Thaumcraft

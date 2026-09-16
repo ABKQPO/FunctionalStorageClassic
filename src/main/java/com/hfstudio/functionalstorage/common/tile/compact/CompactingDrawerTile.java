@@ -31,7 +31,7 @@ public class CompactingDrawerTile extends ControllableDrawerTile {
     private static final String KEY_COMPACTING = "Compacting";
 
     @Getter
-    private final int slotCount;
+    private int slotCount;
     private CompactingItemHandler handler;
     private boolean recipesChecked;
 
@@ -172,11 +172,18 @@ public class CompactingDrawerTile extends ControllableDrawerTile {
 
     @Override
     protected void writeStorageData(@Nonnull NBTTagCompound tag) {
+        tag.setInteger("DrawerSlots", slotCount);
         tag.setTag(KEY_COMPACTING, handler.serializeNBT());
     }
 
     @Override
     protected void readStorageData(@Nonnull NBTTagCompound tag) {
+        int restored = tag.hasKey("DrawerSlots") ? Math.max(2, Math.min(3, tag.getInteger("DrawerSlots"))) : slotCount;
+        if (restored != slotCount) {
+            slotCount = restored;
+            handler = createHandler();
+            bindStorageHandler(handler);
+        }
         handler.deserializeNBT(tag.hasKey(KEY_COMPACTING, 10) ? tag.getCompoundTag(KEY_COMPACTING) : null);
         recipesChecked = false;
     }

@@ -11,71 +11,73 @@ import net.minecraft.item.ItemStack;
 
 import com.hfstudio.functionalstorage.api.storage.BigItemStack;
 import com.hfstudio.functionalstorage.api.storage.IBigItemHandler;
-import com.hfstudio.functionalstorage.api.storage.ItemStorageKey;
 import com.hfstudio.functionalstorage.api.storage.ItemStorageView;
 import com.hfstudio.functionalstorage.api.storage.StorageAction;
-import com.hfstudio.functionalstorage.api.storage.TransferResult;
 
-/**
- * Exposes a long-capacity item drawer through vanilla's {@link ISidedInventory}
- * so hoppers, pipes, and other 1.7.10 automation can address it.
- *
- * <p>
- * Minecraft 1.7.10 has no {@code IItemHandler}; {@code IInventory} is the
- * only common item contract, so this adapter presents one virtual slot per
- * distinct stored item type. A leading empty slot is reserved while the drawer
- * can still accept an unconfigured insertion, which is how automated systems
- * discover that a new item type may be introduced.
- * </p>
- */
+/** Presents stable physical slots and commits vanilla's mutable stack edits as storage deltas. */
 public class DrawerItemInventory implements ISidedInventory {
 
     private final IBigItemHandler handler;
     private final String name;
     private final Runnable changeListener;
+    private final ItemStack[] exposed;
+    private final ItemStack[] baseline;
+    private boolean synchronizing;
 
     public DrawerItemInventory(@Nonnull IBigItemHandler handler, @Nonnull String name,
         @Nonnull Runnable changeListener) {
         this.handler = handler;
         this.name = name;
         this.changeListener = changeListener;
+        exposed = new ItemStack[handler.getStorageCount()];
+        baseline = new ItemStack[exposed.length];
     }
 
     @Override
     public int getSizeInventory() {
-        return ItemStorageView.storages(handler)
-            .size() + offset();
+        return exposed.length;
     }
 
     @Nullable
     @Override
     public ItemStack getStackInSlot(int index) {
-        if (hasEmptySlot() && index == 0) {
+        flushChanges();
+        if (!valid(index)) {
             return null;
         }
-        ItemStorageView view = ItemStorageView.storageAt(index, hasEmptySlot(), ItemStorageView.storages(handler));
-        return view == null ? null : view.toItemStack();
+        refresh(index);
+        return exposed[index];
     }
 
-    /**
-     * Inserts into the drawer, ignoring the requested slot so a routed
-     * insertion behaves like a normal inventory write.
-     *
-     * @param index destination slot, treated as a hint only
-     * @param stack stack to store
-     */
     @Override
     public void setInventorySlotContents(int index, @Nullable ItemStack stack) {
-        if (stack == null || stack.getItem() == null || stack.stackSize <= 0) {
+        if (!valid(index)) {
             return;
         }
-        transfer(stack, StorageAction.EXECUTE);
+        // A caller may pass back the same stack it just edited. Keep the original baseline.
+        if (baseline[index] == null && exposed[index] == null) {
+            refresh(index);
+        }
+        exposed[index] = stack == null ? null : stack.copy();
+        flushChanges();
     }
 
     @Nullable
     @Override
     public ItemStack decrStackSize(int index, int count) {
-        return count <= 0 ? null : extract(index, count, StorageAction.EXECUTE);
+        flushChanges();
+        if (!valid(index) || count <= 0) {
+            return null;
+        }
+        ItemStack current = getStackInSlot(index);
+        if (current == null) {
+            return null;
+        }
+        ItemStack result = handler.extract(index, Math.min(count, current.stackSize), StorageAction.EXECUTE)
+            .getProcessed()
+            .toItemStack();
+        refresh(index);
+        return result;
     }
 
     @Nullable
@@ -101,7 +103,43 @@ public class DrawerItemInventory implements ISidedInventory {
 
     @Override
     public void markDirty() {
+        flushChanges();
         changeListener.run();
+    }
+
+    /** Commits stack-size changes made directly by vanilla slots and hoppers. */
+    public void flushChanges() {
+        if (synchronizing) {
+            return;
+        }
+        synchronizing = true;
+        try {
+            for (int index = 0; index < exposed.length; index++) {
+                ItemStack before = baseline[index];
+                ItemStack after = exposed[index];
+                if (ItemStack.areItemStacksEqual(before, after)) {
+                    continue;
+                }
+                int oldCount = count(before);
+                int newCount = count(after);
+                if (sameType(before, after)) {
+                    int delta = newCount - oldCount;
+                    if (delta > 0) {
+                        handler.insert(index, new BigItemStack(after, delta), StorageAction.EXECUTE);
+                    } else if (delta < 0) {
+                        handler.extract(index, -delta, StorageAction.EXECUTE);
+                    }
+                } else if (oldCount == 0) {
+                    handler.insert(index, new BigItemStack(after, newCount), StorageAction.EXECUTE);
+                } else if (newCount == 0) {
+                    handler.extract(index, oldCount, StorageAction.EXECUTE);
+                }
+                // Replacing a populated drawer with a different type would hide its reserve.
+                refresh(index);
+            }
+        } finally {
+            synchronizing = false;
+        }
     }
 
     @Override
@@ -117,18 +155,21 @@ public class DrawerItemInventory implements ISidedInventory {
 
     @Override
     public boolean isItemValidForSlot(int index, @Nonnull ItemStack stack) {
-        if (stack.getItem() == null) {
+        flushChanges();
+        ItemStack current = valid(index) ? handler.getSnapshot(index)
+            .toItemStack() : null;
+        if (current != null && !sameType(current, stack)) {
             return false;
         }
-        return handler.insertRouted(new BigItemStack(stack, 1L), StorageAction.SIMULATE)
-            .getProcessedAmount() > 0L;
+        return valid(index) && stack.getItem() != null
+            && handler.insert(index, new BigItemStack(stack, 1L), StorageAction.SIMULATE)
+                .getProcessedAmount() > 0L;
     }
 
     @Override
     public int[] getAccessibleSlotsFromSide(int side) {
-        int size = getSizeInventory();
-        int[] slots = new int[size];
-        for (int index = 0; index < size; index++) {
+        int[] slots = new int[exposed.length];
+        for (int index = 0; index < slots.length; index++) {
             slots[index] = index;
         }
         return slots;
@@ -141,47 +182,46 @@ public class DrawerItemInventory implements ISidedInventory {
 
     @Override
     public boolean canExtractItem(int index, @Nonnull ItemStack stack, int side) {
-        return true;
+        return valid(index);
     }
 
-    /**
-     * @return the current aggregated views, for diagnostics and tooltips
-     */
     @Nonnull
     public List<ItemStorageView> getViews() {
+        flushChanges();
         return ItemStorageView.storages(handler);
     }
 
-    private boolean hasEmptySlot() {
-        return ItemStorageView.hasEmptyStorage(handler);
-    }
-
-    private int offset() {
-        return hasEmptySlot() ? 1 : 0;
-    }
-
-    @Nullable
-    private ItemStack transfer(@Nonnull ItemStack stack, @Nonnull StorageAction action) {
-        TransferResult<BigItemStack, ItemStorageKey> result = handler
-            .insertRouted(new BigItemStack(stack, stack.stackSize), action);
-        if (result.isComplete()) {
-            return null;
+    private void refresh(int index) {
+        BigItemStack snapshot = handler.getSnapshot(index);
+        ItemStack stack = snapshot.toItemStack();
+        if (stack != null) {
+            int limit = Math.min(64, stack.getMaxStackSize());
+            long space = Math.max(0L, handler.getCapacity(index) - snapshot.getAmount());
+            // Leave room for vanilla hopper insertion while retaining an extractable stack.
+            if (space > 0L && limit > 1 && stack.stackSize >= limit) {
+                limit--;
+            }
+            stack.stackSize = Math.min(stack.stackSize, limit);
         }
-        ItemStack remainder = stack.copy();
-        remainder.stackSize = (int) Math.min(result.getRemainingAmount(), stack.stackSize);
-        return remainder;
+        if (!ItemStack.areItemStacksEqual(stack, baseline[index])) {
+            exposed[index] = stack;
+            baseline[index] = stack == null ? null : stack.copy();
+        } else if (!ItemStack.areItemStacksEqual(exposed[index], baseline[index])) {
+            exposed[index] = stack;
+        }
     }
 
-    @Nullable
-    private ItemStack extract(int index, int count, @Nonnull StorageAction action) {
-        ItemStack template = getStackInSlot(index);
-        if (template == null) {
-            return null;
-        }
-        int requested = Math.min(count, Math.max(1, template.getMaxStackSize()));
-        TransferResult<BigItemStack, ItemStorageKey> result = handler
-            .extractRouted(new BigItemStack(template, requested), action);
-        return result.getProcessed()
-            .toItemStack();
+    private boolean valid(int index) {
+        return index >= 0 && index < exposed.length;
+    }
+
+    private static int count(ItemStack stack) {
+        return stack == null ? 0 : Math.max(0, stack.stackSize);
+    }
+
+    private static boolean sameType(ItemStack first, ItemStack second) {
+        return first != null && second != null
+            && first.isItemEqual(second)
+            && ItemStack.areItemStackTagsEqual(first, second);
     }
 }

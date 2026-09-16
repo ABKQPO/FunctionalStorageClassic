@@ -82,7 +82,9 @@ public class ContainerDrawer extends Container {
 
     @Override
     public boolean canInteractWith(@Nonnull EntityPlayer player) {
-        return true;
+        return tile.getWorldObj() != null && tile.getWorldObj()
+            .getTileEntity(tile.xCoord, tile.yCoord, tile.zCoord) == tile
+            && player.getDistanceSq(tile.xCoord + 0.5D, tile.yCoord + 0.5D, tile.zCoord + 0.5D) <= 64D;
     }
 
     @Nullable

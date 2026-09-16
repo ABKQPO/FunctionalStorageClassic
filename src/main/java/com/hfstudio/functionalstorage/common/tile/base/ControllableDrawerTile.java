@@ -1,10 +1,12 @@
 package com.hfstudio.functionalstorage.common.tile.base;
 
 import java.util.Arrays;
+import java.util.UUID;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import net.minecraft.block.Block;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemStack;
@@ -28,11 +30,16 @@ import com.hfstudio.functionalstorage.api.upgrade.IStorageUpgrade;
 import com.hfstudio.functionalstorage.api.upgrade.StorageFeature;
 import com.hfstudio.functionalstorage.api.upgrade.UpgradeAttribute;
 import com.hfstudio.functionalstorage.api.upgrade.UpgradeState;
+import com.hfstudio.functionalstorage.common.block.base.DrawerBlock;
 import com.hfstudio.functionalstorage.common.inventory.adapter.DrawerItemInventory;
 import com.hfstudio.functionalstorage.common.inventory.base.AbstractStorageHandler;
+import com.hfstudio.functionalstorage.common.inventory.base.BigItemHandler;
 import com.hfstudio.functionalstorage.common.item.upgrade.AutomationUpgradeItem;
+import com.hfstudio.functionalstorage.common.item.upgrade.MaxStorageUpgradeItem;
+import com.hfstudio.functionalstorage.common.item.upgrade.StorageUpgradeItem;
 import com.hfstudio.functionalstorage.common.item.upgrade.UpgradeItem;
 import com.hfstudio.functionalstorage.common.options.DrawerOptions;
+import com.hfstudio.functionalstorage.common.storage.DrawerLayout;
 import com.hfstudio.functionalstorage.common.tile.controller.DrawerControllerTile;
 import com.hfstudio.functionalstorage.misc.GuiHandler;
 import com.hfstudio.functionalstorage.misc.RegistrationHandler;
@@ -73,7 +80,11 @@ public abstract class ControllableDrawerTile extends TileEntity {
     private StorageSubscription storageSubscription = StorageSubscription.CLOSED;
     private IStorageHandler<?, ?> subscribedStorage;
     private boolean pendingUpdatePacket;
+    private boolean layoutValidated;
     private IInventory inventoryView;
+    private UUID lastInteractionPlayer;
+    private long lastInteractionTick = Long.MIN_VALUE;
+    private int lastInteractionSlot = -1;
 
     /**
      * @return the item storage handler, or {@code null} when this drawer stores something else
@@ -366,7 +377,10 @@ public abstract class ControllableDrawerTile extends TileEntity {
         if (held == null) {
             // Sneaking with an empty hand opens the interface, which is the only
             // place upgrades can be rearranged without breaking the block.
-            return player.isSneaking() && hasUpgradeSlots() && openGui(player);
+            if (player.isSneaking() && hasUpgradeSlots()) {
+                return openGui(player);
+            }
+            return activateItemSlot(player, slot);
         }
         if (held.getItem() == RegistrationHandler.configurationTool) {
             return false;
@@ -374,13 +388,15 @@ public abstract class ControllableDrawerTile extends TileEntity {
         if (held.getItem() == RegistrationHandler.linkingTool) {
             return false;
         }
-        if (held.getItem() instanceof IStorageUpgrade && tryInstallStorageUpgrade(player, held)) {
+        if (held.getItem() instanceof StorageUpgradeItem || held.getItem() instanceof MaxStorageUpgradeItem) {
+            tryInstallStorageUpgrade(player, held);
             return true;
         }
-        if (held.getItem() instanceof UpgradeItem && tryInstallUtilityUpgrade(player, held)) {
+        if (held.getItem() instanceof IStorageUpgrade || held.getItem() instanceof UpgradeItem) {
+            tryInstallUtilityUpgrade(player, held);
             return true;
         }
-        return false;
+        return activateItemSlot(player, slot);
     }
 
     /**
@@ -418,7 +434,7 @@ public abstract class ControllableDrawerTile extends TileEntity {
             return;
         }
         int amount = player.isSneaking() ? Math.max(1, template.getMaxStackSize()) : 1;
-        ItemStack extracted = itemHandler.extractRouted(new BigItemStack(template, amount), StorageAction.EXECUTE)
+        ItemStack extracted = itemHandler.extract(slot, amount, StorageAction.EXECUTE)
             .getProcessed()
             .toItemStack();
         if (extracted == null || extracted.getItem() == null) {
@@ -540,6 +556,7 @@ public abstract class ControllableDrawerTile extends TileEntity {
         }
         readTileData(root.getCompoundTag(KEY_TILE_DATA));
         markDirty();
+        requestUpdatePacket();
     }
 
     /**
@@ -605,6 +622,10 @@ public abstract class ControllableDrawerTile extends TileEntity {
 
     @Override
     public void updateEntity() {
+        if (!layoutValidated && worldObj != null) {
+            layoutValidated = true;
+            reconcileBlockLayout();
+        }
         flushPendingUpdatePacket();
         if (worldObj == null || worldObj.isRemote) {
             return;
@@ -647,6 +668,7 @@ public abstract class ControllableDrawerTile extends TileEntity {
         }
         closeStorageSubscription();
         subscribedStorage = handler;
+        inventoryView = null;
         if (handler != null) {
             storageSubscription = handler.subscribe(change -> onStorageChanged());
         }
@@ -680,6 +702,14 @@ public abstract class ControllableDrawerTile extends TileEntity {
         requestUpdatePacket();
     }
 
+    @Override
+    public void markDirty() {
+        if (inventoryView instanceof DrawerItemInventory inventory) {
+            inventory.flushChanges();
+        }
+        super.markDirty();
+    }
+
     /**
      * Schedules at most one update packet for the next tick.
      */
@@ -694,6 +724,34 @@ public abstract class ControllableDrawerTile extends TileEntity {
         pendingUpdatePacket = false;
         if (worldObj != null && !worldObj.isRemote) {
             worldObj.markBlockForUpdate(xCoord, yCoord, zCoord);
+        }
+    }
+
+    @Override
+    public void validate() {
+        super.validate();
+        layoutValidated = false;
+        rebuildStorageSubscription();
+    }
+
+    private void reconcileBlockLayout() {
+        if (worldObj != null && getBlockType() instanceof DrawerBlock block) {
+            NBTTagCompound storage = new NBTTagCompound();
+            writeStorageData(storage);
+            int slots = block.getFaceLayout()
+                .getSlotCount();
+            if (storage.hasKey("DrawerLayout")) {
+                DrawerLayout expected = slots == 4 ? DrawerLayout.X_4
+                    : slots == 2 ? DrawerLayout.X_2 : DrawerLayout.X_1;
+                if (!expected.getId()
+                    .equals(storage.getString("DrawerLayout"))) {
+                    storage.setString("DrawerLayout", expected.getId());
+                    readStorageData(storage);
+                }
+            } else if (storage.hasKey("DrawerSlots") && storage.getInteger("DrawerSlots") != slots) {
+                storage.setInteger("DrawerSlots", slots);
+                readStorageData(storage);
+            }
         }
     }
 
@@ -719,6 +777,63 @@ public abstract class ControllableDrawerTile extends TileEntity {
     @Override
     public void onDataPacket(NetworkManager net, S35PacketUpdateTileEntity packet) {
         readTileData(packet.func_148857_g());
+        if (worldObj != null) {
+            worldObj.markBlockRangeForRenderUpdate(xCoord, yCoord, zCoord, xCoord, yCoord, zCoord);
+        }
+    }
+
+    @Override
+    public boolean shouldRefresh(Block oldBlock, Block newBlock, int oldMeta, int newMeta, World world, int x, int y,
+        int z) {
+        return oldBlock != newBlock;
+    }
+
+    protected boolean activateItemSlot(EntityPlayer player, int slot) {
+        IBigItemHandler handler = getItemHandler();
+        if (worldObj == null || worldObj.isRemote || handler == null || slot < 0 || slot >= handler.getStorageCount()) {
+            return false;
+        }
+        long tick = worldObj.getTotalWorldTime();
+        boolean repeated = player.getUniqueID()
+            .equals(lastInteractionPlayer) && slot == lastInteractionSlot
+            && tick >= lastInteractionTick
+            && tick - lastInteractionTick <= 6L;
+        lastInteractionPlayer = player.getUniqueID();
+        lastInteractionSlot = slot;
+        lastInteractionTick = tick;
+        ItemStack held = player.getHeldItem();
+        if (held != null && isLocked()
+            && !handler.getSnapshot(slot)
+                .hasTemplate()
+            && handler instanceof BigItemHandler items) {
+            items.setSlotFilter(slot, new BigItemStack(held, 0L));
+        }
+        if (held != null) {
+            insertFromInventory(player, handler, slot, player.inventory.currentItem);
+        }
+        if (repeated && handler.getSnapshot(slot)
+            .hasTemplate()) {
+            for (int inventorySlot = 0; inventorySlot < player.inventory.mainInventory.length; inventorySlot++) {
+                insertFromInventory(player, handler, slot, inventorySlot);
+            }
+        }
+        player.inventory.markDirty();
+        player.inventoryContainer.detectAndSendChanges();
+        return held == null || handler.getSnapshot(slot)
+            .hasTemplate();
+    }
+
+    private void insertFromInventory(EntityPlayer player, IBigItemHandler handler, int slot, int inventorySlot) {
+        ItemStack stack = player.inventory.getStackInSlot(inventorySlot);
+        if (stack == null || stack.stackSize <= 0) {
+            return;
+        }
+        long accepted = handler.insert(slot, new BigItemStack(stack, stack.stackSize), StorageAction.EXECUTE)
+            .getProcessedAmount();
+        if (accepted > 0) {
+            stack.stackSize -= (int) Math.min(stack.stackSize, accepted);
+            player.inventory.setInventorySlotContents(inventorySlot, stack.stackSize == 0 ? null : stack);
+        }
     }
 
     /**
