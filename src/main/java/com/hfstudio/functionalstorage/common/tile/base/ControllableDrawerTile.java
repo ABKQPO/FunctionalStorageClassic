@@ -1,5 +1,7 @@
 package com.hfstudio.functionalstorage.common.tile.base;
 
+import java.util.Arrays;
+
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -35,6 +37,8 @@ import com.hfstudio.functionalstorage.common.tile.controller.DrawerControllerTil
 import com.hfstudio.functionalstorage.misc.GuiHandler;
 import com.hfstudio.functionalstorage.misc.RegistrationHandler;
 
+import lombok.Getter;
+
 /**
  * Base tile entity for every drawer. Owns the upgrade slots, the rendering
  * options, the lock flag, and the single storage-event subscription so
@@ -57,6 +61,7 @@ public abstract class ControllableDrawerTile extends TileEntity {
     private final ItemStack[] utilityUpgrades = new ItemStack[UTILITY_UPGRADE_SLOTS];
     private final DrawerOptions drawerOptions = new DrawerOptions();
 
+    @Getter
     private boolean locked;
     private boolean upgradeCacheDirty = true;
     private UpgradeState cachedUpgradeState = UpgradeState.empty();
@@ -218,13 +223,6 @@ public abstract class ControllableDrawerTile extends TileEntity {
         reconcileStorageConfiguration();
         markDirty();
         requestUpdatePacket();
-    }
-
-    /**
-     * @return whether the drawer retains filters for empty slots
-     */
-    public boolean isLocked() {
-        return locked;
     }
 
     /**
@@ -548,12 +546,8 @@ public abstract class ControllableDrawerTile extends TileEntity {
      * Clears every upgrade slot when the block is broken.
      */
     public void onBlockBroken() {
-        for (int slot = 0; slot < storageUpgrades.length; slot++) {
-            storageUpgrades[slot] = null;
-        }
-        for (int slot = 0; slot < utilityUpgrades.length; slot++) {
-            utilityUpgrades[slot] = null;
-        }
+        Arrays.fill(storageUpgrades, null);
+        Arrays.fill(utilityUpgrades, null);
     }
 
     /**
@@ -775,10 +769,9 @@ public abstract class ControllableDrawerTile extends TileEntity {
     }
 
     private boolean hasConflictingUpgrade(@Nonnull ItemStack candidate, int ignoredStorageSlot) {
-        if (!(candidate.getItem() instanceof IStorageUpgrade)) {
+        if (!(candidate.getItem() instanceof IStorageUpgrade candidateUpgrade)) {
             return false;
         }
-        IStorageUpgrade candidateUpgrade = (IStorageUpgrade) candidate.getItem();
         for (int slot = 0; slot < storageUpgrades.length; slot++) {
             if (slot != ignoredStorageSlot && isConflict(candidate, candidateUpgrade, storageUpgrades[slot])) {
                 return true;
@@ -794,10 +787,9 @@ public abstract class ControllableDrawerTile extends TileEntity {
 
     private boolean isConflict(@Nonnull ItemStack candidate, @Nonnull IStorageUpgrade candidateUpgrade,
         @Nullable ItemStack existing) {
-        if (existing == null || !(existing.getItem() instanceof IStorageUpgrade)) {
+        if (existing == null || !(existing.getItem() instanceof IStorageUpgrade existingUpgrade)) {
             return false;
         }
-        IStorageUpgrade existingUpgrade = (IStorageUpgrade) existing.getItem();
         return candidateUpgrade.conflictsWith(candidate, existing)
             || existingUpgrade.conflictsWith(existing, candidate);
     }
@@ -852,9 +844,7 @@ public abstract class ControllableDrawerTile extends TileEntity {
     }
 
     private static void readStacks(@Nonnull NBTTagList list, @Nonnull ItemStack[] target) {
-        for (int index = 0; index < target.length; index++) {
-            target[index] = null;
-        }
+        Arrays.fill(target, null);
         for (int index = 0; index < list.tagCount(); index++) {
             NBTTagCompound entry = list.getCompoundTagAt(index);
             int slot = entry.getByte(KEY_SLOT) & 0xFF;

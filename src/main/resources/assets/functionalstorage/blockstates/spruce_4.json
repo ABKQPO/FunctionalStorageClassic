@@ -1,55 +1,55 @@
 {
   "variants": {
     "attachment=wall,horizontal_facing=north": {
-      "model": "functionalstorage:spruce_4"
+      "model": "functionalstorage:blocks/spruce_4"
     },
     "attachment=wall,horizontal_facing=south": {
-      "model": "functionalstorage:spruce_4",
+      "model": "functionalstorage:blocks/spruce_4",
       "y": 180
     },
     "attachment=wall,horizontal_facing=west": {
-      "model": "functionalstorage:spruce_4",
+      "model": "functionalstorage:blocks/spruce_4",
       "y": 270
     },
     "attachment=wall,horizontal_facing=east": {
-      "model": "functionalstorage:spruce_4",
+      "model": "functionalstorage:blocks/spruce_4",
       "y": 90
     },
     "attachment=floor,horizontal_facing=north": {
-      "model": "functionalstorage:spruce_4",
+      "model": "functionalstorage:blocks/spruce_4",
       "x": 270
     },
     "attachment=floor,horizontal_facing=east": {
-      "model": "functionalstorage:spruce_4",
+      "model": "functionalstorage:blocks/spruce_4",
       "x": 270,
       "y": 90
     },
     "attachment=floor,horizontal_facing=south": {
-      "model": "functionalstorage:spruce_4",
+      "model": "functionalstorage:blocks/spruce_4",
       "x": 270,
       "y": 180
     },
     "attachment=floor,horizontal_facing=west": {
-      "model": "functionalstorage:spruce_4",
+      "model": "functionalstorage:blocks/spruce_4",
       "x": 270,
       "y": 270
     },
     "attachment=ceiling,horizontal_facing=north": {
-      "model": "functionalstorage:spruce_4",
+      "model": "functionalstorage:blocks/spruce_4",
       "x": 90
     },
     "attachment=ceiling,horizontal_facing=east": {
-      "model": "functionalstorage:spruce_4",
+      "model": "functionalstorage:blocks/spruce_4",
       "x": 90,
       "y": 90
     },
     "attachment=ceiling,horizontal_facing=south": {
-      "model": "functionalstorage:spruce_4",
+      "model": "functionalstorage:blocks/spruce_4",
       "x": 90,
       "y": 180
     },
     "attachment=ceiling,horizontal_facing=west": {
-      "model": "functionalstorage:spruce_4",
+      "model": "functionalstorage:blocks/spruce_4",
       "x": 90,
       "y": 270
     }

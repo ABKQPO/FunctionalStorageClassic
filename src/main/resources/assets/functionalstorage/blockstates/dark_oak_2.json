@@ -1,55 +1,55 @@
 {
   "variants": {
     "attachment=wall,horizontal_facing=north": {
-      "model": "functionalstorage:dark_oak_2"
+      "model": "functionalstorage:blocks/dark_oak_2"
     },
     "attachment=wall,horizontal_facing=south": {
-      "model": "functionalstorage:dark_oak_2",
+      "model": "functionalstorage:blocks/dark_oak_2",
       "y": 180
     },
     "attachment=wall,horizontal_facing=west": {
-      "model": "functionalstorage:dark_oak_2",
+      "model": "functionalstorage:blocks/dark_oak_2",
       "y": 270
     },
     "attachment=wall,horizontal_facing=east": {
-      "model": "functionalstorage:dark_oak_2",
+      "model": "functionalstorage:blocks/dark_oak_2",
       "y": 90
     },
     "attachment=floor,horizontal_facing=north": {
-      "model": "functionalstorage:dark_oak_2",
+      "model": "functionalstorage:blocks/dark_oak_2",
       "x": 270
     },
     "attachment=floor,horizontal_facing=east": {
-      "model": "functionalstorage:dark_oak_2",
+      "model": "functionalstorage:blocks/dark_oak_2",
       "x": 270,
       "y": 90
     },
     "attachment=floor,horizontal_facing=south": {
-      "model": "functionalstorage:dark_oak_2",
+      "model": "functionalstorage:blocks/dark_oak_2",
       "x": 270,
       "y": 180
     },
     "attachment=floor,horizontal_facing=west": {
-      "model": "functionalstorage:dark_oak_2",
+      "model": "functionalstorage:blocks/dark_oak_2",
       "x": 270,
       "y": 270
     },
     "attachment=ceiling,horizontal_facing=north": {
-      "model": "functionalstorage:dark_oak_2",
+      "model": "functionalstorage:blocks/dark_oak_2",
       "x": 90
     },
     "attachment=ceiling,horizontal_facing=east": {
-      "model": "functionalstorage:dark_oak_2",
+      "model": "functionalstorage:blocks/dark_oak_2",
       "x": 90,
       "y": 90
     },
     "attachment=ceiling,horizontal_facing=south": {
-      "model": "functionalstorage:dark_oak_2",
+      "model": "functionalstorage:blocks/dark_oak_2",
       "x": 90,
       "y": 180
     },
     "attachment=ceiling,horizontal_facing=west": {
-      "model": "functionalstorage:dark_oak_2",
+      "model": "functionalstorage:blocks/dark_oak_2",
       "x": 90,
       "y": 270
     }

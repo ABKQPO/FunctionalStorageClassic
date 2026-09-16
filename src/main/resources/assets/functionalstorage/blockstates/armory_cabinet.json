@@ -1,18 +1,18 @@
 {
   "variants": {
     "facing=north": {
-      "model": "functionalstorage:armory_cabinet"
+      "model": "functionalstorage:blocks/armory_cabinet"
     },
     "facing=south": {
-      "model": "functionalstorage:armory_cabinet",
+      "model": "functionalstorage:blocks/armory_cabinet",
       "y": 180
     },
     "facing=west": {
-      "model": "functionalstorage:armory_cabinet",
+      "model": "functionalstorage:blocks/armory_cabinet",
       "y": 270
     },
     "facing=east": {
-      "model": "functionalstorage:armory_cabinet",
+      "model": "functionalstorage:blocks/armory_cabinet",
       "y": 90
     }
   }

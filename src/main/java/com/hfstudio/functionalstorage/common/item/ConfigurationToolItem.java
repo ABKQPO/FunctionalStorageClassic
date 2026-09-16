@@ -24,6 +24,7 @@ import com.hfstudio.functionalstorage.misc.RegistrationHandler;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
+import lombok.Getter;
 
 /**
  * Tool that configures a drawer in place. Right-clicking cycles the drawer's
@@ -35,6 +36,7 @@ public class ConfigurationToolItem extends Item {
     /**
      * Options the configuration tool can cycle.
      */
+    @Getter
     public enum ConfigurationAction {
 
         TOGGLE_NUMBERS("numbers", 1),
@@ -70,20 +72,6 @@ public class ConfigurationToolItem extends Item {
         }
 
         /**
-         * @return the translation key suffix of this action
-         */
-        public String getId() {
-            return id;
-        }
-
-        /**
-         * @return number of distinct values this action cycles through minus one
-         */
-        public int getMaxValue() {
-            return maxValue;
-        }
-
-        /**
          * @return the localized action name
          */
         public String getLocalizedName() {
@@ -109,10 +97,9 @@ public class ConfigurationToolItem extends Item {
             return false;
         }
         TileEntity tile = world.getTileEntity(x, y, z);
-        if (!(tile instanceof ControllableDrawerTile)) {
+        if (!(tile instanceof ControllableDrawerTile drawer)) {
             return false;
         }
-        ControllableDrawerTile drawer = (ControllableDrawerTile) tile;
         ItemStack held = player.getHeldItem();
 
         if (player.isSneaking()) {

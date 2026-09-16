@@ -1,55 +1,55 @@
 {
   "variants": {
     "attachment=wall,horizontal_facing=north": {
-      "model": "functionalstorage:fluid_1"
+      "model": "functionalstorage:blocks/fluid_1"
     },
     "attachment=wall,horizontal_facing=south": {
-      "model": "functionalstorage:fluid_1",
+      "model": "functionalstorage:blocks/fluid_1",
       "y": 180
     },
     "attachment=wall,horizontal_facing=west": {
-      "model": "functionalstorage:fluid_1",
+      "model": "functionalstorage:blocks/fluid_1",
       "y": 270
     },
     "attachment=wall,horizontal_facing=east": {
-      "model": "functionalstorage:fluid_1",
+      "model": "functionalstorage:blocks/fluid_1",
       "y": 90
     },
     "attachment=floor,horizontal_facing=north": {
-      "model": "functionalstorage:fluid_1",
+      "model": "functionalstorage:blocks/fluid_1",
       "x": 270
     },
     "attachment=floor,horizontal_facing=east": {
-      "model": "functionalstorage:fluid_1",
+      "model": "functionalstorage:blocks/fluid_1",
       "x": 270,
       "y": 90
     },
     "attachment=floor,horizontal_facing=south": {
-      "model": "functionalstorage:fluid_1",
+      "model": "functionalstorage:blocks/fluid_1",
       "x": 270,
       "y": 180
     },
     "attachment=floor,horizontal_facing=west": {
-      "model": "functionalstorage:fluid_1",
+      "model": "functionalstorage:blocks/fluid_1",
       "x": 270,
       "y": 270
     },
     "attachment=ceiling,horizontal_facing=north": {
-      "model": "functionalstorage:fluid_1",
+      "model": "functionalstorage:blocks/fluid_1",
       "x": 90
     },
     "attachment=ceiling,horizontal_facing=east": {
-      "model": "functionalstorage:fluid_1",
+      "model": "functionalstorage:blocks/fluid_1",
       "x": 90,
       "y": 90
     },
     "attachment=ceiling,horizontal_facing=south": {
-      "model": "functionalstorage:fluid_1",
+      "model": "functionalstorage:blocks/fluid_1",
       "x": 90,
       "y": 180
     },
     "attachment=ceiling,horizontal_facing=west": {
-      "model": "functionalstorage:fluid_1",
+      "model": "functionalstorage:blocks/fluid_1",
       "x": 90,
       "y": 270
     }

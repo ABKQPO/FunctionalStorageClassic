@@ -1,55 +1,55 @@
 {
   "variants": {
     "attachment=wall,horizontal_facing=north": {
-      "model": "functionalstorage:ender_drawer"
+      "model": "functionalstorage:blocks/ender_drawer"
     },
     "attachment=wall,horizontal_facing=south": {
-      "model": "functionalstorage:ender_drawer",
+      "model": "functionalstorage:blocks/ender_drawer",
       "y": 180
     },
     "attachment=wall,horizontal_facing=west": {
-      "model": "functionalstorage:ender_drawer",
+      "model": "functionalstorage:blocks/ender_drawer",
       "y": 270
     },
     "attachment=wall,horizontal_facing=east": {
-      "model": "functionalstorage:ender_drawer",
+      "model": "functionalstorage:blocks/ender_drawer",
       "y": 90
     },
     "attachment=floor,horizontal_facing=north": {
-      "model": "functionalstorage:ender_drawer",
+      "model": "functionalstorage:blocks/ender_drawer",
       "x": 270
     },
     "attachment=floor,horizontal_facing=east": {
-      "model": "functionalstorage:ender_drawer",
+      "model": "functionalstorage:blocks/ender_drawer",
       "x": 270,
       "y": 90
     },
     "attachment=floor,horizontal_facing=south": {
-      "model": "functionalstorage:ender_drawer",
+      "model": "functionalstorage:blocks/ender_drawer",
       "x": 270,
       "y": 180
     },
     "attachment=floor,horizontal_facing=west": {
-      "model": "functionalstorage:ender_drawer",
+      "model": "functionalstorage:blocks/ender_drawer",
       "x": 270,
       "y": 270
     },
     "attachment=ceiling,horizontal_facing=north": {
-      "model": "functionalstorage:ender_drawer",
+      "model": "functionalstorage:blocks/ender_drawer",
       "x": 90
     },
     "attachment=ceiling,horizontal_facing=east": {
-      "model": "functionalstorage:ender_drawer",
+      "model": "functionalstorage:blocks/ender_drawer",
       "x": 90,
       "y": 90
     },
     "attachment=ceiling,horizontal_facing=south": {
-      "model": "functionalstorage:ender_drawer",
+      "model": "functionalstorage:blocks/ender_drawer",
       "x": 90,
       "y": 180
     },
     "attachment=ceiling,horizontal_facing=west": {
-      "model": "functionalstorage:ender_drawer",
+      "model": "functionalstorage:blocks/ender_drawer",
       "x": 90,
       "y": 270
     }
