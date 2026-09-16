@@ -9,7 +9,6 @@ import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 
-import com.gtnewhorizon.gtnhlib.client.model.loading.ModelRegistry;
 import com.hfstudio.functionalstorage.FunctionalStorage;
 import com.hfstudio.functionalstorage.common.block.ArmoryCabinetBlock;
 import com.hfstudio.functionalstorage.common.block.DrawerBlockProperties;
@@ -267,7 +266,6 @@ public class RegistrationHandler {
      * Registers integration hooks that are safe on both client and server.
      */
     public static void registerCommonIntegrations() {
-        registerModelSource();
         AE2Integration.register();
     }
 
@@ -277,14 +275,6 @@ public class RegistrationHandler {
      */
     public static void registerBlockProperties() {
         DrawerBlockProperties.register();
-    }
-
-    /**
-     * Registers the mod id with GTNHLib so its resource pack is scanned for
-     * blockstate and model files.
-     */
-    public static void registerModelSource() {
-        ModelRegistry.registerModid(FunctionalStorage.MOD_ID);
     }
 
     /**

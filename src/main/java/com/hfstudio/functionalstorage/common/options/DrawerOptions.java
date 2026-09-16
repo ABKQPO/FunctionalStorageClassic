@@ -1,4 +1,4 @@
-package com.hfstudio.functionalstorage.client.render;
+package com.hfstudio.functionalstorage.common.options;
 
 import java.util.EnumMap;
 import java.util.Map;

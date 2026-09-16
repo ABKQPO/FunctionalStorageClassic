@@ -14,14 +14,16 @@ import net.minecraft.world.World;
 import com.gtnewhorizon.gtnhlib.api.IBlockModelProvider;
 import com.gtnewhorizon.gtnhlib.client.model.BakedModelQuadContext;
 import com.gtnewhorizon.gtnhlib.client.model.baked.BakedModel;
-import com.gtnewhorizon.gtnhlib.client.model.loading.ModelRegistry;
-import com.hfstudio.functionalstorage.client.model.FramedDrawerModelProvider;
+import com.hfstudio.functionalstorage.client.model.FramedModelHolder;
 import com.hfstudio.functionalstorage.common.block.base.DrawerBlock;
 import com.hfstudio.functionalstorage.common.storage.DrawerLayout;
 import com.hfstudio.functionalstorage.common.storage.FramedDrawerStyle;
 import com.hfstudio.functionalstorage.common.tile.FramedDrawerTile;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 import com.hfstudio.functionalstorage.util.ItemUtil;
+
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
 
 /**
  * Framed drawer block. An item drawer whose exterior, front, and divider take
@@ -40,8 +42,6 @@ public class FramedDrawerBlock extends DrawerBlock implements IBlockModelProvide
      */
     public static final int RECIPE_GRID_SIZE = 4;
 
-    private static final FramedDrawerModelProvider MODEL_PROVIDER = new FramedDrawerModelProvider();
-
     private final DrawerLayout layout;
 
     public FramedDrawerBlock(@Nonnull DrawerLayout layout) {
@@ -55,14 +55,6 @@ public class FramedDrawerBlock extends DrawerBlock implements IBlockModelProvide
             case X_4 -> DrawerFaceLayout.X_4;
             default -> DrawerFaceLayout.X_1;
         };
-    }
-
-    /**
-     * @return the shared material retexturing provider
-     */
-    @Nonnull
-    public static FramedDrawerModelProvider modelProvider() {
-        return MODEL_PROVIDER;
     }
 
     /**
@@ -99,9 +91,9 @@ public class FramedDrawerBlock extends DrawerBlock implements IBlockModelProvide
     }
 
     @Override
+    @SideOnly(Side.CLIENT)
     public BakedModel getModel(BakedModelQuadContext context) {
-        BakedModel base = ModelRegistry.getBakedModel(context.getBlockState());
-        return MODEL_PROVIDER.wrap(context, base);
+        return FramedModelHolder.model(context);
     }
 
     /**

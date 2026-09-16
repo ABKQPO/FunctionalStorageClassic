@@ -17,8 +17,8 @@ import net.minecraft.util.ChatComponentTranslation;
 import net.minecraft.util.StatCollector;
 import net.minecraft.world.World;
 
-import com.hfstudio.functionalstorage.client.render.DrawerOptions;
 import com.hfstudio.functionalstorage.common.block.FramedDrawerBlock;
+import com.hfstudio.functionalstorage.common.options.DrawerOptions;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 import com.hfstudio.functionalstorage.misc.RegistrationHandler;
 
