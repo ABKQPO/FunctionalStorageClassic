@@ -1,0 +1,218 @@
+# Creative tab
+itemGroup.functionalstorage=Functional Storage
+
+# Wood drawers
+tile.functionalstorage.oak_1.name=Oak Drawer (1 Slot)
+tile.functionalstorage.oak_2.name=Oak Drawer (2 Slots)
+tile.functionalstorage.oak_4.name=Oak Drawer (4 Slots)
+tile.functionalstorage.spruce_1.name=Spruce Drawer (1 Slot)
+tile.functionalstorage.spruce_2.name=Spruce Drawer (2 Slots)
+tile.functionalstorage.spruce_4.name=Spruce Drawer (4 Slots)
+tile.functionalstorage.birch_1.name=Birch Drawer (1 Slot)
+tile.functionalstorage.birch_2.name=Birch Drawer (2 Slots)
+tile.functionalstorage.birch_4.name=Birch Drawer (4 Slots)
+tile.functionalstorage.jungle_1.name=Jungle Drawer (1 Slot)
+tile.functionalstorage.jungle_2.name=Jungle Drawer (2 Slots)
+tile.functionalstorage.jungle_4.name=Jungle Drawer (4 Slots)
+tile.functionalstorage.acacia_1.name=Acacia Drawer (1 Slot)
+tile.functionalstorage.acacia_2.name=Acacia Drawer (2 Slots)
+tile.functionalstorage.acacia_4.name=Acacia Drawer (4 Slots)
+tile.functionalstorage.dark_oak_1.name=Dark Oak Drawer (1 Slot)
+tile.functionalstorage.dark_oak_2.name=Dark Oak Drawer (2 Slots)
+tile.functionalstorage.dark_oak_4.name=Dark Oak Drawer (4 Slots)
+
+# Special blocks
+tile.functionalstorage.fluid_1.name=Fluid Drawer (1 Tank)
+tile.functionalstorage.fluid_2.name=Fluid Drawer (2 Tanks)
+tile.functionalstorage.fluid_4.name=Fluid Drawer (4 Tanks)
+tile.functionalstorage.compacting_drawer.name=Compacting Drawer
+tile.functionalstorage.simple_compacting_drawer.name=Simple Compacting Drawer
+tile.functionalstorage.ender_drawer.name=Ender Drawer
+tile.functionalstorage.armory_cabinet.name=Armory Cabinet
+tile.functionalstorage.storage_controller.name=Storage Controller
+tile.functionalstorage.controller_extension.name=Controller Extension
+tile.functionalstorage.essentia_1.name=Essentia Drawer (1 Slot)
+tile.functionalstorage.essentia_2.name=Essentia Drawer (2 Slots)
+tile.functionalstorage.essentia_4.name=Essentia Drawer (4 Slots)
+
+# Storage upgrades
+item.functionalstorage.iron_downgrade.name=Iron Downgrade
+item.functionalstorage.copper_upgrade.name=Copper Upgrade
+item.functionalstorage.gold_upgrade.name=Gold Upgrade
+item.functionalstorage.diamond_upgrade.name=Diamond Upgrade
+item.functionalstorage.netherite_upgrade.name=Netherite Upgrade
+item.functionalstorage.max_storage_upgrade.name=Max Storage Upgrade
+
+item.functionalstorage.iron_downgrade.tooltip=Lowers the drawer back to its base capacity.
+item.functionalstorage.copper_upgrade.tooltip=Multiplies drawer capacity by 8.
+item.functionalstorage.gold_upgrade.tooltip=Multiplies drawer capacity by 16.
+item.functionalstorage.diamond_upgrade.tooltip=Multiplies drawer capacity by 24.
+item.functionalstorage.netherite_upgrade.tooltip=Multiplies drawer capacity by 32.
+item.functionalstorage.max_storage_upgrade.tooltip=Removes the drawer capacity limit entirely.
+
+# Functional upgrades
+item.functionalstorage.void_upgrade.name=Void Upgrade
+item.functionalstorage.redstone_upgrade.name=Redstone Upgrade
+item.functionalstorage.pulling_upgrade.name=Pulling Upgrade
+item.functionalstorage.pushing_upgrade.name=Pushing Upgrade
+item.functionalstorage.collector_upgrade.name=Collector Upgrade
+item.functionalstorage.ore_dictionary_upgrade.name=Ore Dictionary Upgrade
+item.functionalstorage.wireless_pulling_upgrade.name=Wireless Pulling Upgrade
+item.functionalstorage.wireless_pushing_upgrade.name=Wireless Pushing Upgrade
+item.functionalstorage.breaker_upgrade.name=Breaker Upgrade
+item.functionalstorage.placer_upgrade.name=Placer Upgrade
+item.functionalstorage.refill_upgrade.name=Refill Upgrade
+item.functionalstorage.dimensional_refill_upgrade.name=Dimensional Refill Upgrade
+item.functionalstorage.stonecutting_upgrade.name=Stonecutting Upgrade
+
+# Generation upgrades
+item.functionalstorage.water_generation_upgrade_t1.name=Water Generation Upgrade (T1)
+item.functionalstorage.water_generation_upgrade_t2.name=Water Generation Upgrade (T2)
+item.functionalstorage.water_generation_upgrade_t3.name=Water Generation Upgrade (T3)
+item.functionalstorage.water_generation_upgrade_t4.name=Water Generation Upgrade (T4)
+item.functionalstorage.stone_generation_upgrade_t1.name=Stone Generation Upgrade (T1)
+item.functionalstorage.stone_generation_upgrade_t2.name=Stone Generation Upgrade (T2)
+item.functionalstorage.stone_generation_upgrade_t3.name=Stone Generation Upgrade (T3)
+item.functionalstorage.stone_generation_upgrade_t4.name=Stone Generation Upgrade (T4)
+item.functionalstorage.universal_item_generation_t1.name=Universal Item Generation (T1)
+item.functionalstorage.universal_item_generation_t2.name=Universal Item Generation (T2)
+item.functionalstorage.universal_item_generation_t3.name=Universal Item Generation (T3)
+item.functionalstorage.universal_item_generation_t4.name=Universal Item Generation (T4)
+
+item.functionalstorage.water_generation_upgrade_t1.tooltip=Generates water into a fluid drawer.
+item.functionalstorage.water_generation_upgrade_t2.tooltip=Generates water into a fluid drawer, at a higher rate.
+item.functionalstorage.water_generation_upgrade_t3.tooltip=Generates water into a fluid drawer, at a high rate.
+item.functionalstorage.water_generation_upgrade_t4.tooltip=Generates water into a fluid drawer, at the highest rate.
+item.functionalstorage.stone_generation_upgrade_t1.tooltip=Generates cobblestone in a drawer.
+item.functionalstorage.stone_generation_upgrade_t2.tooltip=Generates cobblestone in a drawer, at a higher rate.
+item.functionalstorage.stone_generation_upgrade_t3.tooltip=Generates cobblestone in a drawer, at a high rate.
+item.functionalstorage.stone_generation_upgrade_t4.tooltip=Generates cobblestone in a drawer, at the highest rate.
+item.functionalstorage.universal_item_generation_t1.tooltip=Generates the configured item, or the upgrade's own filter.
+item.functionalstorage.universal_item_generation_t2.tooltip=Generates the configured item, or the upgrade's own filter, at a higher rate.
+item.functionalstorage.universal_item_generation_t3.tooltip=Generates the configured item, or the upgrade's own filter, at a high rate.
+item.functionalstorage.universal_item_generation_t4.tooltip=Generates the configured item, or the upgrade's own filter, at the highest rate.
+
+item.functionalstorage.void_upgrade.tooltip=Destroys excess items that no longer fit.
+item.functionalstorage.redstone_upgrade.tooltip=Emits a redstone signal based on how full the drawer is.
+item.functionalstorage.pulling_upgrade.tooltip=Pulls items and fluids from the block behind the drawer.
+item.functionalstorage.pushing_upgrade.tooltip=Pushes items and fluids into the block behind the drawer.
+item.functionalstorage.collector_upgrade.tooltip=Collects nearby dropped items and fluids.
+item.functionalstorage.ore_dictionary_upgrade.tooltip=Treats items sharing an ore dictionary entry as one type.
+item.functionalstorage.wireless_pulling_upgrade.tooltip=Pulls items remotely from linked inventories.
+item.functionalstorage.wireless_pushing_upgrade.tooltip=Pushes items remotely into linked inventories.
+item.functionalstorage.breaker_upgrade.tooltip=Breaks the block in front of the drawer and stores the drops.
+item.functionalstorage.placer_upgrade.tooltip=Places a stored block in front of the drawer.
+item.functionalstorage.refill_upgrade.tooltip=Keeps the owner's held stack topped up from the drawer.
+item.functionalstorage.dimensional_refill_upgrade.tooltip=Refills the owner's held stack even across dimensions.
+item.functionalstorage.stonecutting_upgrade.tooltip=Converts stored blocks into their lower tier items.
+
+# Automation upgrade details
+functionalstorage.upgrade.direction=Direction: %s
+functionalstorage.upgrade.filtered=Has item filter configured
+functionalstorage.upgrade.slot_selection=Has slot selection configured
+functionalstorage.direction.front=Front
+functionalstorage.direction.back=Back
+functionalstorage.direction.left=Left
+functionalstorage.direction.right=Right
+functionalstorage.direction.up=Up
+functionalstorage.direction.down=Down
+
+# Tools
+item.functionalstorage.configuration_tool.name=Configuration Tool
+item.functionalstorage.configuration_tool.tooltip=Cycles drawer display options. Sneak to apply to a whole controller.
+item.functionalstorage.linking_tool.name=Linking Tool
+item.functionalstorage.linking_tool.tooltip=Right-click a controller, then right-click drawers to link them.
+item.functionalstorage.linking_tool.tooltip.target=Linked to controller at %d, %d, %d
+functionalstorage.linking_tool.selected=Controller selected at %d, %d, %d
+functionalstorage.linking_tool.linked=Drawer linked to the controller.
+
+# Configuration tool actions
+functionalstorage.configuration.numbers=Show Amounts
+functionalstorage.configuration.render=Show Contents
+functionalstorage.configuration.upgrades=Show Upgrades
+functionalstorage.configuration.indicator=Fill Indicator
+
+# Drawer interaction
+functionalstorage.attachment.wall=Wall
+functionalstorage.attachment.floor=Floor
+functionalstorage.attachment.ceiling=Ceiling
+
+# Containers
+container.functionalstorage.upgrades=Upgrades
+container.functionalstorage.storage_upgrades=Storage Upgrades
+container.functionalstorage.utility_upgrades=Functional Upgrades
+container.functionalstorage.drawer=Drawer
+
+functionalstorage.drawer.locked=Locked
+functionalstorage.drawer.unlocked=Unlocked
+functionalstorage.drawer.empty=Empty
+functionalstorage.drawer.contents=%s of %s
+functionalstorage.drawer.upgrades=Upgrades: %s
+functionalstorage.drawer.controller=Linked to controller at %d, %d, %d
+
+# Waila
+functionalstorage.waila.contents=Contents
+functionalstorage.waila.capacity=Capacity
+functionalstorage.waila.upgrades=Upgrades
+functionalstorage.waila.locked=Locked
+
+# Config GUI
+functionalstorage.gui.config.general=General
+functionalstorage.gui.config.general.keepcontentsonbreak=Keep Contents On Break
+functionalstorage.gui.config.general.keepcontentsonbreak.tooltip=Keep stored contents, filters, lock state, and upgrades in the dropped block when broken.
+functionalstorage.gui.config.general.armorycabinetsize=Armory Cabinet Size
+functionalstorage.gui.config.general.armorycabinetsize.tooltip=Armory cabinet slot amount.
+functionalstorage.gui.config.general.drawercontrollerlinkingrange=Controller Linking Range
+functionalstorage.gui.config.general.drawercontrollerlinkingrange.tooltip=Linking range radius of the storage controller in blocks.
+functionalstorage.gui.config.general.controllerlinklimit=Controller Link Limit
+functionalstorage.gui.config.general.controllerlinklimit.tooltip=Maximum number of drawers a single storage controller will link.
+functionalstorage.gui.config.general.registerextracompactingrules=Register Extra Compacting Rules
+functionalstorage.gui.config.general.registerextracompactingrules.tooltip=Register the configured additional compacting rules.
+functionalstorage.gui.config.general.extracompactingrules=Extra Compacting Rules
+functionalstorage.gui.config.general.extracompactingrules.tooltip=Additional compacting rules in the form: higher item, lower item, ratio.
+functionalstorage.gui.config.general.oredictionaryblacklist=Ore Dictionary Blacklist
+functionalstorage.gui.config.general.oredictionaryblacklist.tooltip=Ore dictionary names the Ore Dictionary Upgrade must never match.
+functionalstorage.gui.config.general.oredictionarywhitelist=Ore Dictionary Whitelist
+functionalstorage.gui.config.general.oredictionarywhitelist.tooltip=Ore dictionary names the Ore Dictionary Upgrade may match. Empty allows every non-blacklisted name.
+
+functionalstorage.gui.config.storage=Storage
+functionalstorage.gui.config.storage.coppermultiplier=Copper Upgrade Multiplier
+functionalstorage.gui.config.storage.goldmultiplier=Gold Upgrade Multiplier
+functionalstorage.gui.config.storage.diamondmultiplier=Diamond Upgrade Multiplier
+functionalstorage.gui.config.storage.netheritemultiplier=Netherite Upgrade Multiplier
+functionalstorage.gui.config.storage.fluiddivisor=Fluid Capacity Divisor
+functionalstorage.gui.config.storage.aspectdivisor=Essentia Capacity Divisor
+functionalstorage.gui.config.storage.rangedivisor=Controller Range Divisor
+functionalstorage.gui.config.storage.baseitemcapacity=Base Item Capacity
+functionalstorage.gui.config.storage.baseitemcapacity.tooltip=Base capacity of a single drawer slot before upgrades.
+functionalstorage.gui.config.storage.basefluidcapacity=Base Fluid Capacity
+functionalstorage.gui.config.storage.basefluidcapacity.tooltip=Base capacity of a single fluid tank in millibuckets before upgrades.
+functionalstorage.gui.config.storage.baseaspectcapacity=Base Essentia Capacity
+functionalstorage.gui.config.storage.baseaspectcapacity.tooltip=Base capacity of a single essentia slot before upgrades.
+
+functionalstorage.gui.config.upgrades=Upgrades
+functionalstorage.gui.config.upgrades.upgradetick=Upgrade Tick Interval
+functionalstorage.gui.config.upgrades.upgradetick.tooltip=Every how many ticks drawer upgrades run.
+functionalstorage.gui.config.upgrades.upgradepullitems=Pull Item Amount
+functionalstorage.gui.config.upgrades.upgradepullfluid=Pull Fluid Amount
+functionalstorage.gui.config.upgrades.upgradepushitems=Push Item Amount
+functionalstorage.gui.config.upgrades.upgradepushfluid=Push Fluid Amount
+functionalstorage.gui.config.upgrades.upgradecollectoritems=Collector Item Amount
+functionalstorage.gui.config.upgrades.upgradecollectorfluid=Collector Fluid Amount
+functionalstorage.gui.config.upgrades.upgradepullaspect=Pull Essentia Amount
+functionalstorage.gui.config.upgrades.upgradepushaspect=Push Essentia Amount
+
+functionalstorage.gui.config.compatibility=Compatibility
+functionalstorage.gui.config.compatibility.enablewailacompatibility=Enable Waila
+functionalstorage.gui.config.compatibility.enablewailacompatibility.tooltip=Enable the Waila integration for drawers and controllers.
+functionalstorage.gui.config.compatibility.enableae2compatibility=Enable Applied Energistics 2
+functionalstorage.gui.config.compatibility.enableae2compatibility.tooltip=Enable the Applied Energistics 2 storage bridge for drawers and controllers.
+functionalstorage.gui.config.compatibility.enablethaumcraftcompatibility=Enable Thaumcraft
+functionalstorage.gui.config.compatibility.enablethaumcraftcompatibility.tooltip=Enable Thaumcraft essentia storage and the essentia drawer.
+
+functionalstorage.gui.config.client=Client
+functionalstorage.gui.config.client.drawerrenderrange=Drawer Render Range
+functionalstorage.gui.config.client.drawerrenderrange.tooltip=Distance in blocks at which drawer contents stop rendering.
+functionalstorage.gui.config.client.defaultshowitemcount=Show Amounts By Default
+functionalstorage.gui.config.client.defaultshowitemrender=Show Contents By Default
+functionalstorage.gui.config.client.defaultshowupgrades=Show Upgrades By Default

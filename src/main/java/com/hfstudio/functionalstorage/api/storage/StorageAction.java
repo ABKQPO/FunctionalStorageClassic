@@ -6,6 +6,7 @@ package com.hfstudio.functionalstorage.api.storage;
  * side-effect free, including filters, NBT, and change notifications.
  */
 public enum StorageAction {
+
     /**
      * Apply the operation to storage.
      */

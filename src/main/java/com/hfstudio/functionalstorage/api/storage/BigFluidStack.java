@@ -1,9 +1,9 @@
 package com.hfstudio.functionalstorage.api.storage;
 
-import net.minecraftforge.fluids.FluidStack;
-
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+
+import net.minecraftforge.fluids.FluidStack;
 
 /**
  * Immutable fluid snapshot composed of a defensively copied type template and

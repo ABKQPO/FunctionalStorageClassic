@@ -11,8 +11,7 @@ public interface StorageSubscription extends AutoCloseable {
     StorageSubscription CLOSED = new StorageSubscription() {
 
         @Override
-        public void close() {
-        }
+        public void close() {}
 
         @Override
         public boolean isClosed() {

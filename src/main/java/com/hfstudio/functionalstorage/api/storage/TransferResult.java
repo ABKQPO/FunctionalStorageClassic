@@ -1,7 +1,8 @@
 package com.hfstudio.functionalstorage.api.storage;
 
-import javax.annotation.Nonnull;
 import java.util.Objects;
+
+import javax.annotation.Nonnull;
 
 /**
  * Immutable outcome of a storage request. The processed snapshot describes

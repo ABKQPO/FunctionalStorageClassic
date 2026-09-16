@@ -6,19 +6,10 @@ minecraft {
     extraRunJvmArguments.addAll("-Xmx8G", "-Xms8G", "-Dgtnhlib.dumpkeys=true")
 }
 
-val functionalStorageVersion = "0.1.0"
-
-version = functionalStorageVersion
-
-tasks.withType<ProcessResources>().configureEach {
-    inputs.property("functionalStorageVersion", functionalStorageVersion)
-    filesMatching("mcmod.info") {
-        expand(
-            "modId" to project.property("modId"),
-            "modName" to project.property("modName"),
-            "modVersion" to functionalStorageVersion,
-            "minecraftVersion" to project.property("minecraftVersion")
-        )
+tasks.jar {
+    manifest {
+        // Waila calls this static method when it starts up.
+        attributes("WailaPlugin" to "com.hfstudio.functionalstorage.common.integration.waila.WailaIntegration")
     }
 }
 

@@ -1,12 +1,13 @@
 package com.hfstudio.functionalstorage.api.storage;
 
-import javax.annotation.Nonnull;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.function.Consumer;
+
+import javax.annotation.Nonnull;
 
 /**
  * Multi-listener storage event dispatcher. Events published from inside a

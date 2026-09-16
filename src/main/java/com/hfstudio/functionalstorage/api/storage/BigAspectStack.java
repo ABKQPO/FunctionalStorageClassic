@@ -1,8 +1,9 @@
 package com.hfstudio.functionalstorage.api.storage;
 
+import java.util.Objects;
+
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.Objects;
 
 import thaumcraft.api.aspects.Aspect;
 

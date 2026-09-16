@@ -1,0 +1,331 @@
+package com.hfstudio.functionalstorage.misc;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.annotation.Nonnull;
+
+import net.minecraft.creativetab.CreativeTabs;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+
+import com.gtnewhorizon.gtnhlib.client.model.loading.ModelRegistry;
+import com.hfstudio.functionalstorage.FunctionalStorage;
+import com.hfstudio.functionalstorage.common.block.ArmoryCabinetBlock;
+import com.hfstudio.functionalstorage.common.block.DrawerBlockProperties;
+import com.hfstudio.functionalstorage.common.block.EnderDrawerBlock;
+import com.hfstudio.functionalstorage.common.block.EssentiaDrawerBlock;
+import com.hfstudio.functionalstorage.common.block.FluidDrawerBlock;
+import com.hfstudio.functionalstorage.common.block.WoodDrawerBlock;
+import com.hfstudio.functionalstorage.common.block.base.DrawerBlock;
+import com.hfstudio.functionalstorage.common.block.compact.CompactingDrawerBlock;
+import com.hfstudio.functionalstorage.common.block.compact.SimpleCompactingDrawerBlock;
+import com.hfstudio.functionalstorage.common.block.controller.ControllerExtensionBlock;
+import com.hfstudio.functionalstorage.common.block.controller.DrawerControllerBlock;
+import com.hfstudio.functionalstorage.common.integration.ae2.AE2Integration;
+import com.hfstudio.functionalstorage.common.item.ConfigurationToolItem;
+import com.hfstudio.functionalstorage.common.item.LinkingToolItem;
+import com.hfstudio.functionalstorage.common.item.upgrade.BreakerUpgradeItem;
+import com.hfstudio.functionalstorage.common.item.upgrade.CollectorUpgradeItem;
+import com.hfstudio.functionalstorage.common.item.upgrade.GenerationUpgradeItem;
+import com.hfstudio.functionalstorage.common.item.upgrade.MaxStorageUpgradeItem;
+import com.hfstudio.functionalstorage.common.item.upgrade.OreDictionaryUpgradeItem;
+import com.hfstudio.functionalstorage.common.item.upgrade.PlacerUpgradeItem;
+import com.hfstudio.functionalstorage.common.item.upgrade.PullingUpgradeItem;
+import com.hfstudio.functionalstorage.common.item.upgrade.PushingUpgradeItem;
+import com.hfstudio.functionalstorage.common.item.upgrade.RedstoneUpgradeItem;
+import com.hfstudio.functionalstorage.common.item.upgrade.RefillUpgradeItem;
+import com.hfstudio.functionalstorage.common.item.upgrade.StonecuttingUpgradeItem;
+import com.hfstudio.functionalstorage.common.item.upgrade.StorageUpgradeItem;
+import com.hfstudio.functionalstorage.common.item.upgrade.UpgradeItem;
+import com.hfstudio.functionalstorage.common.item.upgrade.UtilityUpgradeItem;
+import com.hfstudio.functionalstorage.common.storage.DrawerLayout;
+import com.hfstudio.functionalstorage.common.storage.DrawerWoodType;
+import com.hfstudio.functionalstorage.config.FunctionalStorageConfig;
+
+import cpw.mods.fml.common.Loader;
+import cpw.mods.fml.common.registry.GameRegistry;
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
+
+/**
+ * Central content registry. Blocks and items are declared once here so the
+ * creative tab, recipes, and integrations all read the same instances.
+ */
+public class RegistrationHandler {
+
+    public static final CreativeTabs CREATIVE_TAB = new CreativeTabs(FunctionalStorage.MOD_ID) {
+
+        @Override
+        @SideOnly(Side.CLIENT)
+        public Item getTabIconItem() {
+            return Item.getItemFromBlock(storageController);
+        }
+
+        @Override
+        @SideOnly(Side.CLIENT)
+        public void displayAllReleventItems(List<ItemStack> items) {
+            for (WoodDrawerBlock block : woodDrawers) {
+                block.getSubBlocks(Item.getItemFromBlock(block), CREATIVE_TAB, items);
+            }
+            super.displayAllReleventItems(items);
+        }
+    };
+
+    public static final List<WoodDrawerBlock> woodDrawers = new ArrayList<>();
+    public static final List<FluidDrawerBlock> fluidDrawers = new ArrayList<>();
+    public static final List<EssentiaDrawerBlock> essentiaDrawers = new ArrayList<>();
+    public static final List<DrawerBlock> specialDrawers = new ArrayList<>();
+
+    public static DrawerBlock storageController;
+    public static DrawerBlock controllerExtension;
+    public static DrawerBlock compactingDrawer;
+    public static DrawerBlock simpleCompactingDrawer;
+    public static DrawerBlock enderDrawer;
+    public static DrawerBlock armoryCabinet;
+
+    public static StorageUpgradeItem ironDowngrade;
+    public static StorageUpgradeItem copperUpgrade;
+    public static StorageUpgradeItem goldUpgrade;
+    public static StorageUpgradeItem diamondUpgrade;
+    public static StorageUpgradeItem netheriteUpgrade;
+    public static MaxStorageUpgradeItem maxStorageUpgrade;
+    public static UtilityUpgradeItem voidUpgrade;
+    public static RedstoneUpgradeItem redstoneUpgrade;
+    public static PullingUpgradeItem pullingUpgrade;
+    public static PushingUpgradeItem pushingUpgrade;
+    public static CollectorUpgradeItem collectorUpgrade;
+    public static OreDictionaryUpgradeItem oreDictionaryUpgrade;
+    public static PullingUpgradeItem wirelessPullingUpgrade;
+    public static PushingUpgradeItem wirelessPushingUpgrade;
+
+    public static final List<GenerationUpgradeItem> waterGenerationUpgrades = new ArrayList<>();
+    public static final List<GenerationUpgradeItem> stoneGenerationUpgrades = new ArrayList<>();
+    public static final List<GenerationUpgradeItem> universalGenerationUpgrades = new ArrayList<>();
+
+    public static BreakerUpgradeItem breakerUpgrade;
+    public static PlacerUpgradeItem placerUpgrade;
+    public static RefillUpgradeItem refillUpgrade;
+    public static RefillUpgradeItem dimensionalRefillUpgrade;
+    public static StonecuttingUpgradeItem stonecuttingUpgrade;
+
+    public static ConfigurationToolItem configurationTool;
+    public static LinkingToolItem linkingTool;
+
+    /**
+     * Registers every block with the game registry. Registry names must match
+     * the blockstate and model file names exactly, because GTNHLib resolves a
+     * block's JSON model from its registry name.
+     */
+    public static void registerBlocks() {
+        for (WoodDrawerBlock block : woodDrawerBlocks()) {
+            woodDrawers.add(block);
+            GameRegistry.registerBlock(block, block.getDrawerId());
+        }
+        for (FluidDrawerBlock block : fluidDrawerBlocks()) {
+            fluidDrawers.add(block);
+            GameRegistry.registerBlock(
+                block,
+                "fluid_" + block.getDrawerLayout()
+                    .getSlotCount());
+        }
+
+        compactingDrawer = new CompactingDrawerBlock();
+        GameRegistry.registerBlock(compactingDrawer, "compacting_drawer");
+        specialDrawers.add(compactingDrawer);
+
+        simpleCompactingDrawer = new SimpleCompactingDrawerBlock();
+        GameRegistry.registerBlock(simpleCompactingDrawer, "simple_compacting_drawer");
+        specialDrawers.add(simpleCompactingDrawer);
+
+        enderDrawer = new EnderDrawerBlock();
+        GameRegistry.registerBlock(enderDrawer, "ender_drawer");
+        specialDrawers.add(enderDrawer);
+
+        armoryCabinet = new ArmoryCabinetBlock();
+        GameRegistry.registerBlock(armoryCabinet, "armory_cabinet");
+        specialDrawers.add(armoryCabinet);
+
+        storageController = new DrawerControllerBlock();
+        GameRegistry.registerBlock(storageController, "storage_controller");
+        specialDrawers.add(storageController);
+
+        controllerExtension = new ControllerExtensionBlock();
+        GameRegistry.registerBlock(controllerExtension, "controller_extension");
+        specialDrawers.add(controllerExtension);
+
+        if (FunctionalStorageConfig.COMPATIBILITY.enableThaumcraftCompatibility && Loader.isModLoaded("Thaumcraft")) {
+            for (DrawerLayout layout : DrawerLayout.values()) {
+                EssentiaDrawerBlock block = new EssentiaDrawerBlock(layout);
+                essentiaDrawers.add(block);
+                GameRegistry.registerBlock(block, "essentia_" + layout.getSlotCount());
+            }
+        }
+    }
+
+    private static List<WoodDrawerBlock> woodDrawerBlocks() {
+        List<WoodDrawerBlock> blocks = new ArrayList<>();
+        for (DrawerWoodType wood : DrawerWoodType.values()) {
+            for (DrawerLayout layout : DrawerLayout.values()) {
+                blocks.add(new WoodDrawerBlock(wood, layout));
+            }
+        }
+        return blocks;
+    }
+
+    private static List<FluidDrawerBlock> fluidDrawerBlocks() {
+        List<FluidDrawerBlock> blocks = new ArrayList<>();
+        for (DrawerLayout layout : DrawerLayout.values()) {
+            blocks.add(new FluidDrawerBlock(layout));
+        }
+        return blocks;
+    }
+
+    /**
+     * Registers every item and the item blocks of registered blocks.
+     */
+    public static void registerItems() {
+        ironDowngrade = registerUpgrade(new StorageUpgradeItem(StorageUpgradeItem.StorageTier.IRON), "iron_downgrade");
+        copperUpgrade = registerUpgrade(
+            new StorageUpgradeItem(StorageUpgradeItem.StorageTier.COPPER),
+            "copper_upgrade");
+        goldUpgrade = registerUpgrade(new StorageUpgradeItem(StorageUpgradeItem.StorageTier.GOLD), "gold_upgrade");
+        diamondUpgrade = registerUpgrade(
+            new StorageUpgradeItem(StorageUpgradeItem.StorageTier.DIAMOND),
+            "diamond_upgrade");
+        netheriteUpgrade = registerUpgrade(
+            new StorageUpgradeItem(StorageUpgradeItem.StorageTier.NETHERITE),
+            "netherite_upgrade");
+        maxStorageUpgrade = registerUpgrade(new MaxStorageUpgradeItem(), "max_storage_upgrade");
+
+        voidUpgrade = registerUpgrade(
+            new UtilityUpgradeItem(UtilityUpgradeItem.UtilityKind.VOID_OVERFLOW),
+            "void_upgrade");
+        redstoneUpgrade = registerUpgrade(new RedstoneUpgradeItem(), "redstone_upgrade");
+        pullingUpgrade = registerUpgrade(new PullingUpgradeItem(false), "pulling_upgrade");
+        pushingUpgrade = registerUpgrade(new PushingUpgradeItem(false), "pushing_upgrade");
+        collectorUpgrade = registerUpgrade(new CollectorUpgradeItem(), "collector_upgrade");
+        oreDictionaryUpgrade = registerUpgrade(new OreDictionaryUpgradeItem(), "ore_dictionary_upgrade");
+        wirelessPullingUpgrade = registerUpgrade(new PullingUpgradeItem(true), "wireless_pulling_upgrade");
+        wirelessPushingUpgrade = registerUpgrade(new PushingUpgradeItem(true), "wireless_pushing_upgrade");
+
+        registerGenerationUpgrades();
+
+        breakerUpgrade = registerUpgrade(new BreakerUpgradeItem(), "breaker_upgrade");
+        placerUpgrade = registerUpgrade(new PlacerUpgradeItem(), "placer_upgrade");
+        refillUpgrade = registerUpgrade(new RefillUpgradeItem(false), "refill_upgrade");
+        dimensionalRefillUpgrade = registerUpgrade(new RefillUpgradeItem(true), "dimensional_refill_upgrade");
+        stonecuttingUpgrade = registerUpgrade(new StonecuttingUpgradeItem(), "stonecutting_upgrade");
+
+        configurationTool = new ConfigurationToolItem();
+        GameRegistry.registerItem(configurationTool, "configuration_tool");
+
+        linkingTool = new LinkingToolItem();
+        GameRegistry.registerItem(linkingTool, "linking_tool");
+    }
+
+    /**
+     * Registers the tile entities backing every drawer block.
+     */
+    public static void registerTileEntities() {
+        for (WoodDrawerBlock block : woodDrawers) {
+            GameRegistry
+                .registerTileEntity(block.getTileEntityClass(), FunctionalStorage.MOD_ID + "." + block.getDrawerId());
+        }
+        for (FluidDrawerBlock block : fluidDrawers) {
+            GameRegistry.registerTileEntity(
+                block.getTileEntityClass(),
+                FunctionalStorage.MOD_ID + ".fluid_"
+                    + block.getDrawerLayout()
+                        .getSlotCount());
+        }
+        for (DrawerBlock block : specialDrawers) {
+            String name = block.getVariantNames()
+                .get(0);
+            GameRegistry.registerTileEntity(block.getTileEntityClass(), FunctionalStorage.MOD_ID + "." + name);
+        }
+        for (EssentiaDrawerBlock block : essentiaDrawers) {
+            GameRegistry.registerTileEntity(
+                block.getTileEntityClass(),
+                FunctionalStorage.MOD_ID + ".essentia_"
+                    + block.getDrawerLayout()
+                        .getSlotCount());
+        }
+    }
+
+    /**
+     * Registers integration hooks that are safe on both client and server.
+     */
+    public static void registerCommonIntegrations() {
+        registerModelSource();
+        AE2Integration.register();
+    }
+
+    /**
+     * Registers the GTNHLib block state properties used by the JSON model
+     * pipeline, so blockstate variants can select and rotate drawer models.
+     */
+    public static void registerBlockProperties() {
+        DrawerBlockProperties.register();
+    }
+
+    /**
+     * Registers the mod id with GTNHLib so its resource pack is scanned for
+     * blockstate and model files.
+     */
+    public static void registerModelSource() {
+        ModelRegistry.registerModid(FunctionalStorage.MOD_ID);
+    }
+
+    /**
+     * Registers the four tiers of each generation upgrade.
+     */
+    private static void registerGenerationUpgrades() {
+        for (int tier = 1; tier <= 4; tier++) {
+            waterGenerationUpgrades.add(
+                registerUpgrade(
+                    new GenerationUpgradeItem(GenerationUpgradeItem.GenerationKind.WATER, tier),
+                    GenerationUpgradeItem.registryName(GenerationUpgradeItem.GenerationKind.WATER, tier)));
+            stoneGenerationUpgrades.add(
+                registerUpgrade(
+                    new GenerationUpgradeItem(GenerationUpgradeItem.GenerationKind.STONE, tier),
+                    GenerationUpgradeItem.registryName(GenerationUpgradeItem.GenerationKind.STONE, tier)));
+            universalGenerationUpgrades.add(
+                registerUpgrade(
+                    new GenerationUpgradeItem(GenerationUpgradeItem.GenerationKind.UNIVERSAL, tier),
+                    GenerationUpgradeItem.registryName(GenerationUpgradeItem.GenerationKind.UNIVERSAL, tier)));
+        }
+    }
+
+    /**
+     * @return every registered drawer block, in registration order
+     */
+    @Nonnull
+    public static List<DrawerBlock> allDrawerBlocks() {
+        List<DrawerBlock> blocks = new ArrayList<>();
+        for (WoodDrawerBlock block : woodDrawers) {
+            blocks.add(block);
+        }
+        for (FluidDrawerBlock block : fluidDrawers) {
+            blocks.add(block);
+        }
+        if (storageController != null) {
+            blocks.add(storageController);
+        }
+        return blocks;
+    }
+
+    /**
+     * Registers an upgrade item under its stable name.
+     *
+     * @param item upgrade item
+     * @param name registry name
+     * @param <T>  upgrade type
+     * @return the registered item
+     */
+    public static <T extends UpgradeItem> T registerUpgrade(T item, String name) {
+        item.setUpgradeName(name);
+        GameRegistry.registerItem(item, name);
+        return item;
+    }
+}

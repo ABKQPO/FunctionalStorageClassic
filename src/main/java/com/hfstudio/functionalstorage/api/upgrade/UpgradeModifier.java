@@ -7,14 +7,18 @@ import java.util.Objects;
 /**
  * An immutable numeric contribution made by a storage upgrade.
  *
- * <p>Evaluation is independent of the order in which operation kinds were added. All
+ * <p>
+ * Evaluation is independent of the order in which operation kinds were added. All
  * {@link Operation#SET_BASE} operations are applied first, followed by
  * {@link Operation#ADD_BASE}, then {@link Operation#MULTIPLY}. Contributions of the same kind
  * retain their iteration order. Calculations use {@code double}; a negative, NaN, or negatively
- * infinite result is normalized to zero.</p>
+ * infinite result is normalized to zero.
+ * </p>
  *
- * <p>Instances are thread-safe. Collections supplied to {@link #calculate(Iterable, double)}
- * are only read and must not be mutated concurrently.</p>
+ * <p>
+ * Instances are thread-safe. Collections supplied to {@link #calculate(Iterable, double)}
+ * are only read and must not be mutated concurrently.
+ * </p>
  */
 public class UpgradeModifier {
 

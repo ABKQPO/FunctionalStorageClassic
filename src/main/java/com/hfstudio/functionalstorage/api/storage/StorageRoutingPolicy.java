@@ -1,9 +1,10 @@
 package com.hfstudio.functionalstorage.api.storage;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Collections;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 /**
  * Resource-specific routing contract used by generic indexed handlers.

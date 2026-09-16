@@ -1,0 +1,8 @@
+{
+  "parent": "functionalstorage:blocks/base_x_1",
+  "textures": {
+    "front": "functionalstorage:blocks/oak_front_1",
+    "side": "functionalstorage:blocks/oak_side",
+    "top": "blocks/planks_oak"
+  }
+}

@@ -1,10 +1,11 @@
 package com.hfstudio.functionalstorage.api.storage;
 
-import net.minecraft.item.ItemStack;
-
-import javax.annotation.Nonnull;
 import java.util.List;
 import java.util.Objects;
+
+import javax.annotation.Nonnull;
+
+import net.minecraft.item.ItemStack;
 
 /**
  * Forge item capability bridge for a generic long-capacity storage handler.
@@ -21,7 +22,8 @@ public interface IBigItemHandler extends IStorageHandler<BigItemStack, ItemStora
      * @return the number of virtual slots
      */
     default int getSlots() {
-        return ItemStorageView.storages(this).size() + (ItemStorageView.hasEmptyStorage(this) ? 1 : 0);
+        return ItemStorageView.storages(this)
+            .size() + (ItemStorageView.hasEmptyStorage(this) ? 1 : 0);
     }
 
     /**
@@ -87,7 +89,9 @@ public interface IBigItemHandler extends IStorageHandler<BigItemStack, ItemStora
             return stack.getItem() == null ? null : stack.copy();
         }
         BigItemStack request = new BigItemStack(stack, stack.stackSize);
-        TransferResult<BigItemStack, ItemStorageKey> result = insertRouted(request, StorageAction.fromSimulation(simulate));
+        TransferResult<BigItemStack, ItemStorageKey> result = insertRouted(
+            request,
+            StorageAction.fromSimulation(simulate));
         long remaining = result.getRemainingAmount();
         if (remaining == 0L) {
             return null;
@@ -115,7 +119,8 @@ public interface IBigItemHandler extends IStorageHandler<BigItemStack, ItemStora
         if (storage == null) {
             return null;
         }
-        ItemStack template = storage.getSnapshot().getTemplate();
+        ItemStack template = storage.getSnapshot()
+            .getTemplate();
         if (template == null) {
             return null;
         }
@@ -123,9 +128,14 @@ public interface IBigItemHandler extends IStorageHandler<BigItemStack, ItemStora
         if (requested <= 0L) {
             return null;
         }
-        TransferResult<BigItemStack, ItemStorageKey> result = extractRouted(new BigItemStack(template, requested), StorageAction.fromSimulation(simulate));
+        TransferResult<BigItemStack, ItemStorageKey> result = extractRouted(
+            new BigItemStack(template, requested),
+            StorageAction.fromSimulation(simulate));
         long processed = Math.min(requested, Math.max(0L, result.getProcessedAmount()));
-        return processed == 0L ? null : result.getProcessed().withAmount(processed).toItemStack();
+        return processed == 0L ? null
+            : result.getProcessed()
+                .withAmount(processed)
+                .toItemStack();
     }
 
     /**
@@ -139,7 +149,9 @@ public interface IBigItemHandler extends IStorageHandler<BigItemStack, ItemStora
         if (stack.getItem() == null || !isValidSlot(slot)) {
             return false;
         }
-        TransferResult<BigItemStack, ItemStorageKey> result = insertRouted(new BigItemStack(stack, 1L), StorageAction.SIMULATE);
+        TransferResult<BigItemStack, ItemStorageKey> result = insertRouted(
+            new BigItemStack(stack, 1L),
+            StorageAction.SIMULATE);
         return result.getProcessedAmount() > 0L;
     }
 
@@ -168,7 +180,8 @@ public interface IBigItemHandler extends IStorageHandler<BigItemStack, ItemStora
      * @return the routed result
      */
     @Nonnull
-    default TransferResult<BigItemStack, ItemStorageKey> insertRouted(@Nonnull BigItemStack request, @Nonnull StorageAction action) {
+    default TransferResult<BigItemStack, ItemStorageKey> insertRouted(@Nonnull BigItemStack request,
+        @Nonnull StorageAction action) {
         Objects.requireNonNull(action, "action");
         long requested = request.isEmpty() ? 0L : request.getAmount();
         if (requested == 0L) {
@@ -189,7 +202,10 @@ public interface IBigItemHandler extends IStorageHandler<BigItemStack, ItemStora
                     if (!hasTemplate || exact) {
                         continue;
                     }
-                    TransferResult<BigItemStack, ItemStorageKey> probe = insert(index, compatibilityProbe, StorageAction.SIMULATE);
+                    TransferResult<BigItemStack, ItemStorageKey> probe = insert(
+                        index,
+                        compatibilityProbe,
+                        StorageAction.SIMULATE);
                     if (probe.getProcessedAmount() <= 0L) {
                         continue;
                     }
@@ -198,7 +214,10 @@ public interface IBigItemHandler extends IStorageHandler<BigItemStack, ItemStora
                     continue;
                 }
                 long remaining = requested - processedTotal;
-                TransferResult<BigItemStack, ItemStorageKey> result = insert(index, request.withAmount(remaining), action);
+                TransferResult<BigItemStack, ItemStorageKey> result = insert(
+                    index,
+                    request.withAmount(remaining),
+                    action);
                 long processed = Math.min(remaining, Math.max(0L, result.getProcessedAmount()));
                 processedTotal = saturatedAdd(processedTotal, processed);
             }
@@ -214,7 +233,8 @@ public interface IBigItemHandler extends IStorageHandler<BigItemStack, ItemStora
      * @return the routed result
      */
     @Nonnull
-    default TransferResult<BigItemStack, ItemStorageKey> extractRouted(@Nonnull BigItemStack request, @Nonnull StorageAction action) {
+    default TransferResult<BigItemStack, ItemStorageKey> extractRouted(@Nonnull BigItemStack request,
+        @Nonnull StorageAction action) {
         Objects.requireNonNull(action, "action");
         long requested = request.isEmpty() ? 0L : request.getAmount();
         if (requested == 0L) {

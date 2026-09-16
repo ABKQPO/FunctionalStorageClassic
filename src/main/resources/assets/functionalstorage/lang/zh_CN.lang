@@ -1,0 +1,218 @@
+# 创造模式标签
+itemGroup.functionalstorage=功能性存储
+
+# 木质抽屉
+tile.functionalstorage.oak_1.name=橡木抽屉（1 格）
+tile.functionalstorage.oak_2.name=橡木抽屉（2 格）
+tile.functionalstorage.oak_4.name=橡木抽屉（4 格）
+tile.functionalstorage.spruce_1.name=云杉抽屉（1 格）
+tile.functionalstorage.spruce_2.name=云杉抽屉（2 格）
+tile.functionalstorage.spruce_4.name=云杉抽屉（4 格）
+tile.functionalstorage.birch_1.name=桦木抽屉（1 格）
+tile.functionalstorage.birch_2.name=桦木抽屉（2 格）
+tile.functionalstorage.birch_4.name=桦木抽屉（4 格）
+tile.functionalstorage.jungle_1.name=丛林木抽屉（1 格）
+tile.functionalstorage.jungle_2.name=丛林木抽屉（2 格）
+tile.functionalstorage.jungle_4.name=丛林木抽屉（4 格）
+tile.functionalstorage.acacia_1.name=金合欢抽屉（1 格）
+tile.functionalstorage.acacia_2.name=金合欢抽屉（2 格）
+tile.functionalstorage.acacia_4.name=金合欢抽屉（4 格）
+tile.functionalstorage.dark_oak_1.name=深色橡木抽屉（1 格）
+tile.functionalstorage.dark_oak_2.name=深色橡木抽屉（2 格）
+tile.functionalstorage.dark_oak_4.name=深色橡木抽屉（4 格）
+
+# 特殊方块
+tile.functionalstorage.fluid_1.name=流体抽屉（1 罐）
+tile.functionalstorage.fluid_2.name=流体抽屉（2 罐）
+tile.functionalstorage.fluid_4.name=流体抽屉（4 罐）
+tile.functionalstorage.compacting_drawer.name=压缩抽屉
+tile.functionalstorage.simple_compacting_drawer.name=简易压缩抽屉
+tile.functionalstorage.ender_drawer.name=末影抽屉
+tile.functionalstorage.armory_cabinet.name=军械柜
+tile.functionalstorage.storage_controller.name=存储控制器
+tile.functionalstorage.controller_extension.name=控制器扩展
+tile.functionalstorage.essentia_1.name=要素抽屉（1 格）
+tile.functionalstorage.essentia_2.name=要素抽屉（2 格）
+tile.functionalstorage.essentia_4.name=要素抽屉（4 格）
+
+# 存储升级
+item.functionalstorage.iron_downgrade.name=铁制降级
+item.functionalstorage.copper_upgrade.name=铜制升级
+item.functionalstorage.gold_upgrade.name=金制升级
+item.functionalstorage.diamond_upgrade.name=钻石升级
+item.functionalstorage.netherite_upgrade.name=下界合金升级
+item.functionalstorage.max_storage_upgrade.name=最大存储升级
+
+item.functionalstorage.iron_downgrade.tooltip=将抽屉容量降回基础值。
+item.functionalstorage.copper_upgrade.tooltip=将抽屉容量乘以 8。
+item.functionalstorage.gold_upgrade.tooltip=将抽屉容量乘以 16。
+item.functionalstorage.diamond_upgrade.tooltip=将抽屉容量乘以 24。
+item.functionalstorage.netherite_upgrade.tooltip=将抽屉容量乘以 32。
+item.functionalstorage.max_storage_upgrade.tooltip=彻底移除抽屉的容量上限。
+
+# 功能升级
+item.functionalstorage.void_upgrade.name=销毁升级
+item.functionalstorage.redstone_upgrade.name=红石升级
+item.functionalstorage.pulling_upgrade.name=抽取升级
+item.functionalstorage.pushing_upgrade.name=输出升级
+item.functionalstorage.collector_upgrade.name=收集升级
+item.functionalstorage.ore_dictionary_upgrade.name=矿辞升级
+item.functionalstorage.wireless_pulling_upgrade.name=无线抽取升级
+item.functionalstorage.wireless_pushing_upgrade.name=无线输出升级
+item.functionalstorage.breaker_upgrade.name=破坏升级
+item.functionalstorage.placer_upgrade.name=放置升级
+item.functionalstorage.refill_upgrade.name=补充升级
+item.functionalstorage.dimensional_refill_upgrade.name=跨维度补充升级
+item.functionalstorage.stonecutting_upgrade.name=切石升级
+
+# 产生升级
+item.functionalstorage.water_generation_upgrade_t1.name=产水升级（T1）
+item.functionalstorage.water_generation_upgrade_t2.name=产水升级（T2）
+item.functionalstorage.water_generation_upgrade_t3.name=产水升级（T3）
+item.functionalstorage.water_generation_upgrade_t4.name=产水升级（T4）
+item.functionalstorage.stone_generation_upgrade_t1.name=产石升级（T1）
+item.functionalstorage.stone_generation_upgrade_t2.name=产石升级（T2）
+item.functionalstorage.stone_generation_upgrade_t3.name=产石升级（T3）
+item.functionalstorage.stone_generation_upgrade_t4.name=产石升级（T4）
+item.functionalstorage.universal_item_generation_t1.name=通用物品产生（T1）
+item.functionalstorage.universal_item_generation_t2.name=通用物品产生（T2）
+item.functionalstorage.universal_item_generation_t3.name=通用物品产生（T3）
+item.functionalstorage.universal_item_generation_t4.name=通用物品产生（T4）
+
+item.functionalstorage.water_generation_upgrade_t1.tooltip=向流体抽屉中产生水。
+item.functionalstorage.water_generation_upgrade_t2.tooltip=以更高速度向流体抽屉中产生水。
+item.functionalstorage.water_generation_upgrade_t3.tooltip=以高速向流体抽屉中产生水。
+item.functionalstorage.water_generation_upgrade_t4.tooltip=以最高速度向流体抽屉中产生水。
+item.functionalstorage.stone_generation_upgrade_t1.tooltip=在抽屉中产生圆石。
+item.functionalstorage.stone_generation_upgrade_t2.tooltip=以更高速度在抽屉中产生圆石。
+item.functionalstorage.stone_generation_upgrade_t3.tooltip=以高速在抽屉中产生圆石。
+item.functionalstorage.stone_generation_upgrade_t4.tooltip=以最高速度在抽屉中产生圆石。
+item.functionalstorage.universal_item_generation_t1.tooltip=产生配置的物品，或该升级自身的过滤物品。
+item.functionalstorage.universal_item_generation_t2.tooltip=以更高速度产生配置的物品，或该升级自身的过滤物品。
+item.functionalstorage.universal_item_generation_t3.tooltip=以高速产生配置的物品，或该升级自身的过滤物品。
+item.functionalstorage.universal_item_generation_t4.tooltip=以最高速度产生配置的物品，或该升级自身的过滤物品。
+
+item.functionalstorage.void_upgrade.tooltip=销毁无法容纳的多余物品。
+item.functionalstorage.redstone_upgrade.tooltip=根据抽屉的填充程度输出红石信号。
+item.functionalstorage.pulling_upgrade.tooltip=从抽屉后方的方块抽取物品与流体。
+item.functionalstorage.pushing_upgrade.tooltip=向抽屉后方的方块输出物品与流体。
+item.functionalstorage.collector_upgrade.tooltip=收集附近掉落的物品与流体。
+item.functionalstorage.ore_dictionary_upgrade.tooltip=将共享同一矿辞条目的物品视为同一种。
+item.functionalstorage.wireless_pulling_upgrade.tooltip=从已链接的容器远程抽取物品。
+item.functionalstorage.wireless_pushing_upgrade.tooltip=向已链接的容器远程输出物品。
+item.functionalstorage.breaker_upgrade.tooltip=破坏抽屉前方的方块并存储掉落物。
+item.functionalstorage.placer_upgrade.tooltip=将存储的方块放置在抽屉前方。
+item.functionalstorage.refill_upgrade.tooltip=用抽屉中的物品补充持有者手上的物品堆。
+item.functionalstorage.dimensional_refill_upgrade.tooltip=即使跨维度也能补充持有者的物品堆。
+item.functionalstorage.stonecutting_upgrade.tooltip=将存储的方块转换为其下一级物品。
+
+# 自动化升级详情
+functionalstorage.upgrade.direction=方向：%s
+functionalstorage.upgrade.filtered=已配置物品过滤
+functionalstorage.upgrade.slot_selection=已配置槽位选择
+functionalstorage.direction.front=前方
+functionalstorage.direction.back=后方
+functionalstorage.direction.left=左方
+functionalstorage.direction.right=右方
+functionalstorage.direction.up=上方
+functionalstorage.direction.down=下方
+
+# 工具
+item.functionalstorage.configuration_tool.name=配置工具
+item.functionalstorage.configuration_tool.tooltip=循环切换抽屉显示选项。潜行时对整个控制器生效。
+item.functionalstorage.linking_tool.name=链接工具
+item.functionalstorage.linking_tool.tooltip=右击控制器，再右击抽屉即可建立链接。
+item.functionalstorage.linking_tool.tooltip.target=已链接到位于 %d, %d, %d 的控制器
+functionalstorage.linking_tool.selected=已选择位于 %d, %d, %d 的控制器
+functionalstorage.linking_tool.linked=抽屉已链接到控制器。
+
+# 配置工具操作
+functionalstorage.configuration.numbers=显示数量
+functionalstorage.configuration.render=显示内容
+functionalstorage.configuration.upgrades=显示升级
+functionalstorage.configuration.indicator=填充指示条
+
+# 抽屉交互
+functionalstorage.attachment.wall=墙面
+functionalstorage.attachment.floor=地面
+functionalstorage.attachment.ceiling=天花板
+
+# 容器界面
+container.functionalstorage.upgrades=升级
+container.functionalstorage.storage_upgrades=存储升级
+container.functionalstorage.utility_upgrades=功能升级
+container.functionalstorage.drawer=抽屉
+
+functionalstorage.drawer.locked=已锁定
+functionalstorage.drawer.unlocked=未锁定
+functionalstorage.drawer.empty=空
+functionalstorage.drawer.contents=%s / %s
+functionalstorage.drawer.upgrades=升级：%s
+functionalstorage.drawer.controller=已链接到位于 %d, %d, %d 的控制器
+
+# Waila
+functionalstorage.waila.contents=内容
+functionalstorage.waila.capacity=容量
+functionalstorage.waila.upgrades=升级
+functionalstorage.waila.locked=已锁定
+
+# 配置界面
+functionalstorage.gui.config.general=通用
+functionalstorage.gui.config.general.keepcontentsonbreak=破坏时保留内容
+functionalstorage.gui.config.general.keepcontentsonbreak.tooltip=破坏方块时在掉落物中保留存储内容、过滤、锁定状态与升级。
+functionalstorage.gui.config.general.armorycabinetsize=军械柜槽位数量
+functionalstorage.gui.config.general.armorycabinetsize.tooltip=军械柜的槽位数量。
+functionalstorage.gui.config.general.drawercontrollerlinkingrange=控制器链接范围
+functionalstorage.gui.config.general.drawercontrollerlinkingrange.tooltip=存储控制器的链接半径（以方块计）。
+functionalstorage.gui.config.general.controllerlinklimit=控制器链接上限
+functionalstorage.gui.config.general.controllerlinklimit.tooltip=单个存储控制器可链接的抽屉数量上限。
+functionalstorage.gui.config.general.registerextracompactingrules=注册额外压缩规则
+functionalstorage.gui.config.general.registerextracompactingrules.tooltip=注册配置中附加的压缩规则。
+functionalstorage.gui.config.general.extracompactingrules=额外压缩规则
+functionalstorage.gui.config.general.extracompactingrules.tooltip=附加压缩规则，格式：上一级物品, 下一级物品, 比例。
+functionalstorage.gui.config.general.oredictionaryblacklist=矿辞黑名单
+functionalstorage.gui.config.general.oredictionaryblacklist.tooltip=矿辞升级永远不匹配的矿辞名称。
+functionalstorage.gui.config.general.oredictionarywhitelist=矿辞白名单
+functionalstorage.gui.config.general.oredictionarywhitelist.tooltip=矿辞升级允许匹配的矿辞名称。留空则允许所有未列入黑名单的名称。
+
+functionalstorage.gui.config.storage=存储
+functionalstorage.gui.config.storage.coppermultiplier=铜制升级倍率
+functionalstorage.gui.config.storage.goldmultiplier=金制升级倍率
+functionalstorage.gui.config.storage.diamondmultiplier=钻石升级倍率
+functionalstorage.gui.config.storage.netheritemultiplier=下界合金升级倍率
+functionalstorage.gui.config.storage.fluiddivisor=流体容量除数
+functionalstorage.gui.config.storage.aspectdivisor=要素容量除数
+functionalstorage.gui.config.storage.rangedivisor=控制器范围除数
+functionalstorage.gui.config.storage.baseitemcapacity=基础物品容量
+functionalstorage.gui.config.storage.baseitemcapacity.tooltip=升级前单个抽屉槽位的基础容量。
+functionalstorage.gui.config.storage.basefluidcapacity=基础流体容量
+functionalstorage.gui.config.storage.basefluidcapacity.tooltip=升级前单个流体罐的基础容量（毫桶）。
+functionalstorage.gui.config.storage.baseaspectcapacity=基础要素容量
+functionalstorage.gui.config.storage.baseaspectcapacity.tooltip=升级前单个要素槽位的基础容量。
+
+functionalstorage.gui.config.upgrades=升级
+functionalstorage.gui.config.upgrades.upgradetick=升级运行间隔
+functionalstorage.gui.config.upgrades.upgradetick.tooltip=抽屉升级每隔多少刻运行一次。
+functionalstorage.gui.config.upgrades.upgradepullitems=抽取物品数量
+functionalstorage.gui.config.upgrades.upgradepullfluid=抽取流体数量
+functionalstorage.gui.config.upgrades.upgradepushitems=输出物品数量
+functionalstorage.gui.config.upgrades.upgradepushfluid=输出流体数量
+functionalstorage.gui.config.upgrades.upgradecollectoritems=收集物品数量
+functionalstorage.gui.config.upgrades.upgradecollectorfluid=收集流体数量
+functionalstorage.gui.config.upgrades.upgradepullaspect=抽取要素数量
+functionalstorage.gui.config.upgrades.upgradepushaspect=输出要素数量
+
+functionalstorage.gui.config.compatibility=兼容
+functionalstorage.gui.config.compatibility.enablewailacompatibility=启用 Waila
+functionalstorage.gui.config.compatibility.enablewailacompatibility.tooltip=启用抽屉与控制器的 Waila 集成。
+functionalstorage.gui.config.compatibility.enableae2compatibility=启用应用能源 2
+functionalstorage.gui.config.compatibility.enableae2compatibility.tooltip=启用抽屉与控制器的应用能源 2 存储桥接。
+functionalstorage.gui.config.compatibility.enablethaumcraftcompatibility=启用神秘时代
+functionalstorage.gui.config.compatibility.enablethaumcraftcompatibility.tooltip=启用神秘时代要素存储与要素抽屉。
+
+functionalstorage.gui.config.client=客户端
+functionalstorage.gui.config.client.drawerrenderrange=抽屉渲染距离
+functionalstorage.gui.config.client.drawerrenderrange.tooltip=超过该方块距离后不再渲染抽屉内容。
+functionalstorage.gui.config.client.defaultshowitemcount=默认显示数量
+functionalstorage.gui.config.client.defaultshowitemrender=默认显示内容
+functionalstorage.gui.config.client.defaultshowupgrades=默认显示升级

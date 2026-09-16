@@ -19,5 +19,9 @@ public enum StorageFeature {
     /**
      * Allows item templates considered equivalent by the implementation.
      */
-    EQUIVALENT_ITEMS
+    EQUIVALENT_ITEMS,
+    /**
+     * Emits a comparator-style redstone signal derived from the fill ratio.
+     */
+    REDSTONE_OUTPUT
 }

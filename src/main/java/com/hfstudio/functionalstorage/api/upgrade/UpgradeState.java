@@ -12,9 +12,11 @@ import java.util.Set;
 /**
  * Immutable snapshot of all contributions made by installed storage upgrades.
  *
- * <p>The snapshot owns copies of all builder collections. Returned maps, lists, and sets are
+ * <p>
+ * The snapshot owns copies of all builder collections. Returned maps, lists, and sets are
  * unmodifiable and remain stable if the originating builder is reused. Instances are therefore
- * thread-safe after construction; {@link Builder} itself is mutable and not thread-safe.</p>
+ * thread-safe after construction; {@link Builder} itself is mutable and not thread-safe.
+ * </p>
  */
 public class UpgradeState {
 
@@ -29,7 +31,8 @@ public class UpgradeState {
             modifierCopies.put(entry.getKey(), Collections.unmodifiableList(new ArrayList<>(entry.getValue())));
         }
         modifiers = Collections.unmodifiableMap(modifierCopies);
-        features = builder.features.isEmpty() ? Collections.emptySet() : Collections.unmodifiableSet(EnumSet.copyOf(builder.features));
+        features = builder.features.isEmpty() ? Collections.emptySet()
+            : Collections.unmodifiableSet(EnumSet.copyOf(builder.features));
     }
 
     /**
@@ -93,7 +96,8 @@ public class UpgradeState {
      */
     public static class Builder {
 
-        private final EnumMap<UpgradeAttribute, List<UpgradeModifier>> modifiers = new EnumMap<>(UpgradeAttribute.class);
+        private final EnumMap<UpgradeAttribute, List<UpgradeModifier>> modifiers = new EnumMap<>(
+            UpgradeAttribute.class);
         private final EnumSet<StorageFeature> features = EnumSet.noneOf(StorageFeature.class);
 
         /**
@@ -104,7 +108,8 @@ public class UpgradeState {
          * @return this builder
          */
         public Builder addModifier(UpgradeAttribute attribute, UpgradeModifier modifier) {
-            modifiers.computeIfAbsent(Objects.requireNonNull(attribute, "attribute"), key -> new ArrayList<>()).add(Objects.requireNonNull(modifier, "modifier"));
+            modifiers.computeIfAbsent(Objects.requireNonNull(attribute, "attribute"), key -> new ArrayList<>())
+                .add(Objects.requireNonNull(modifier, "modifier"));
             return this;
         }
 

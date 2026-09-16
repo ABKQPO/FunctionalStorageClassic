@@ -1,7 +1,8 @@
 package com.hfstudio.functionalstorage.api.storage;
 
-import javax.annotation.Nonnull;
 import java.util.function.Consumer;
+
+import javax.annotation.Nonnull;
 
 /**
  * Generic indexed long-capacity storage. Implementations follow the threading
@@ -104,8 +105,7 @@ public interface IStorageHandler<S extends StorageSnapshot<S, K>, K extends Stor
      *
      * @param change completed change
      */
-    default void onChange(@Nonnull StorageChange<S, K> change) {
-    }
+    default void onChange(@Nonnull StorageChange<S, K> change) {}
 
     /**
      * Subscribes to observable storage changes. Handlers without an event

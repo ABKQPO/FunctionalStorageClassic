@@ -1,12 +1,13 @@
 package com.hfstudio.functionalstorage.api.storage;
 
-import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+
+import javax.annotation.Nonnull;
 
 /**
  * Immutable batch describing either indexed before/after deltas or an explicit
@@ -32,7 +33,8 @@ public class StorageChange<S extends StorageSnapshot<S, K>, K extends StorageKey
      * @return an immutable delta
      */
     @Nonnull
-    public static <S extends StorageSnapshot<S, K>, K extends StorageKey> StorageChange<S, K> delta(int index, @Nonnull S before, @Nonnull S after) {
+    public static <S extends StorageSnapshot<S, K>, K extends StorageKey> StorageChange<S, K> delta(int index,
+        @Nonnull S before, @Nonnull S after) {
         return delta(Collections.singletonList(new Entry<>(index, before, after)));
     }
 
@@ -43,7 +45,8 @@ public class StorageChange<S extends StorageSnapshot<S, K>, K extends StorageKey
      * @return an immutable delta
      */
     @Nonnull
-    public static <S extends StorageSnapshot<S, K>, K extends StorageKey> StorageChange<S, K> delta(@Nonnull List<? extends Entry<S, K>> entries) {
+    public static <S extends StorageSnapshot<S, K>, K extends StorageKey> StorageChange<S, K> delta(
+        @Nonnull List<? extends Entry<S, K>> entries) {
         Objects.requireNonNull(entries, "entries");
         if (entries.isEmpty()) {
             throw new IllegalArgumentException("DELTA requires at least one entry");
