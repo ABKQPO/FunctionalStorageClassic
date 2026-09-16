@@ -43,9 +43,6 @@ public class ItemStorageKey implements StorageKey {
         this.hashCode = computeHashCode();
     }
 
-    /**
-     * @return the represented item
-     */
     @Nonnull
     public Item getItem() {
         return item;

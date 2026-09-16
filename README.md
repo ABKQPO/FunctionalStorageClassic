@@ -1,6 +1,4 @@
 <div align="center">
-  <img src="./src/main/resources/assets/functionalstorage/textures/logo.png" width="180" height="180" alt="Functional Storage Classic Logo">
-
   <h1>Functional Storage Classic</h1>
   <h2><em>Drawers, done properly, on 1.7.10</em></h2>
 
@@ -102,7 +100,7 @@ Each drawer has four **storage upgrade** slots and three **utility upgrade** slo
 
 ### Storage Upgrades
 
-| Upgrade | Capacity Multiplier |
+| Upgrade | Default Capacity Multiplier |
 |:--------|:--------------------|
 | Iron Downgrade | resets to base capacity |
 | Copper Upgrade | ×8 |
@@ -110,6 +108,10 @@ Each drawer has four **storage upgrade** slots and three **utility upgrade** slo
 | Diamond Upgrade | ×24 |
 | Netherite Upgrade | ×32 |
 | Max Storage Upgrade | removes the capacity ceiling |
+
+Copper, gold, diamond, and netherite multipliers come from the `storage` configuration.
+Fluid and essentia capacity modifiers apply their configured divisors. Reopen the world
+after changing storage settings.
 
 Right-clicking installs an upgrade into an available slot. Use the drawer interface to
 remove an installed upgrade or exchange tiers.
@@ -120,8 +122,8 @@ remove an installed upgrade or exchange tiers.
 |:--------|:-------|
 | Void Upgrade | destroys overflow that no longer fits |
 | Redstone Upgrade | comparator-style redstone output based on fill level |
-| Pulling Upgrade | pulls items and fluids from the chosen side |
-| Pushing Upgrade | pushes items and fluids to the chosen side |
+| Pulling Upgrade | pulls items, fluids, or essentia from the chosen side |
+| Pushing Upgrade | pushes items, fluids, or essentia to the chosen side |
 | Collector Upgrade | collects nearby dropped items and fluid sources |
 | Ore Dictionary Upgrade | treats ore dictionary equivalents as one stored type |
 | Wireless Pulling / Pushing | transfer to and from a recorded coordinate |
@@ -173,7 +175,9 @@ shipping any Thaumcraft assets.
 * **Waila** — hover any drawer to see its contents, capacity, and installed upgrades.
 * **Thaumcraft** — essentia phials exchange eight units with the clicked slot; tubes use
   `IEssentiaTransport` suction and transfer, alongside `IAspectContainer`. Addons can register
-  explicit container capacities through `EssentiaContainerRegistry`.
+  explicit container capacities through `EssentiaContainerRegistry`. Wired and wireless pulling
+  and pushing upgrades use `upgradePullAspect` and `upgradePushAspect` as their per-operation
+  limits and respect native essentia input/output ports.
 * **Hoppers and pipes** — drawers implement vanilla `IInventory` and Forge `IFluidHandler`
   directly, which is how 1.7.10 automation discovers inventories.
 * **Comparators** — a drawer emits a comparator signal based on how full it is.
@@ -210,7 +214,8 @@ Categories:
 * `general` — content retention, controller range and link limit, armory size, compacting rules,
   ore dictionary filters
 * `storage` — upgrade multipliers, per-kind capacity divisors, base slot capacities
-* `upgrades` — transfer amounts and tick intervals for every automation upgrade
+* `upgrades` — transfer amounts and tick intervals for every automation upgrade; `universalGenerationTick`
+  controls the interval for Universal Item Generation upgrades
 * `compatibility` — Waila, Applied Energistics 2, and Thaumcraft toggles
 * `client` — drawer render distance and default display options
 

@@ -32,13 +32,6 @@ public class EnderSavedData extends WorldSavedData {
         super(name);
     }
 
-    /**
-     * Returns the shared handler for a frequency, creating it on first use.
-     *
-     * @param frequency drawer frequency
-     * @param slots     slot count used when the handler is created
-     * @return the shared handler
-     */
     @Nonnull
     public BigItemHandler handlerFor(@Nonnull UUID frequency, int slots) {
         BigItemHandler handler = frequencies.get(frequency);
@@ -51,21 +44,11 @@ public class EnderSavedData extends WorldSavedData {
         return handler;
     }
 
-    /**
-     * @param frequency drawer frequency
-     * @return the shared handler, or {@code null} when the frequency is unused
-     */
     @Nullable
     public BigItemHandler peek(@Nonnull UUID frequency) {
         return frequencies.get(frequency);
     }
 
-    /**
-     * Loads or creates the ender storage data for a world.
-     *
-     * @param world world to load data for
-     * @return the shared save data
-     */
     @Nonnull
     public static EnderSavedData dataFor(@Nonnull World world) {
         EnderSavedData data = (EnderSavedData) world.mapStorage.loadData(EnderSavedData.class, DATA_NAME);

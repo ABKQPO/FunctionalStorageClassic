@@ -13,11 +13,7 @@ import org.lwjgl.opengl.GL11;
 import com.hfstudio.functionalstorage.common.container.ContainerDrawer;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 
-/**
- * Drawer screen. Shows the drawer's storage slots, its upgrade slots, and the
- * player inventory. The background is generated at runtime so the layout always
- * matches the container regardless of how many slots a drawer exposes.
- */
+/** Drawer screen with a generated background matching its storage and upgrade slots. */
 public class GuiDrawer extends GuiContainer {
 
     private static final int WINDOW_WIDTH = 176;
@@ -81,11 +77,6 @@ public class GuiDrawer extends GuiContainer {
         super.drawScreen(mouseX, mouseY, partialTicks);
     }
 
-    /**
-     * Region used if a texture replaces the generated background later.
-     *
-     * @return the drawer GUI texture location
-     */
     @Nonnull
     public static ResourceLocation backgroundTexture() {
         return new ResourceLocation("functionalstorage", "textures/gui/background.png");

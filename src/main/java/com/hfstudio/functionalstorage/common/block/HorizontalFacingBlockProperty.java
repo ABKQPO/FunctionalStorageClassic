@@ -19,11 +19,7 @@ import com.gtnewhorizon.gtnhlib.blockstate.core.TransformableProperty;
 import com.gtnewhorizon.gtnhlib.geometry.DirectionTransform;
 import com.hfstudio.functionalstorage.common.block.base.DrawerBlock;
 
-/**
- * GTNHLib block property exposing a drawer's horizontal rotation. The two low
- * metadata bits hold the rotation so {@code horizontal_facing} variants in the
- * blockstate JSON rotate the model exactly like a vanilla furnace.
- */
+/** The low two metadata bits select the horizontal model rotation. */
 public class HorizontalFacingBlockProperty
     implements BlockProperty<ForgeDirection>, MetaBlockProperty<ForgeDirection>, TransformableProperty<ForgeDirection> {
 
@@ -53,10 +49,6 @@ public class HorizontalFacingBlockProperty
         return true;
     }
 
-    /**
-     * @param value candidate direction
-     * @return whether the direction is horizontal
-     */
     public boolean isHorizontal(@Nonnull ForgeDirection value) {
         return value != ForgeDirection.UNKNOWN && value.offsetY == 0;
     }

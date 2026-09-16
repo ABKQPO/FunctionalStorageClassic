@@ -24,15 +24,9 @@ import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import lombok.Getter;
 
-/**
- * Tool that configures a drawer in place. Right-clicking cycles the drawer's
- * display options, and sneaking toggles its lock.
- */
+/** Cycles display options and toggles locks through the held configuration tool. */
 public class ConfigurationToolItem extends Item {
 
-    /**
-     * Options the configuration tool can cycle.
-     */
     @Getter
     public enum ConfigurationAction {
 
@@ -68,9 +62,6 @@ public class ConfigurationToolItem extends Item {
             return name == null ? null : BY_NAME.get(name);
         }
 
-        /**
-         * @return the localized action name
-         */
         public String getLocalizedName() {
             return StatCollector.translateToLocal("functionalstorage.configuration." + id);
         }
@@ -118,13 +109,6 @@ public class ConfigurationToolItem extends Item {
         return true;
     }
 
-    /**
-     * Picks the next option to cycle, recording the position on the tool so a
-     * held tool walks through every option in turn.
-     *
-     * @param stack tool stack carrying the rotation position
-     * @return the action to cycle
-     */
     @Nonnull
     private ConfigurationAction nextAction(@Nonnull ItemStack stack) {
         int index = getCycleIndex(stack) % CYCLE_ORDER.length;

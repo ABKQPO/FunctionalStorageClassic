@@ -12,10 +12,6 @@ import com.hfstudio.functionalstorage.common.block.base.DrawerBlock;
 import com.hfstudio.functionalstorage.common.tile.ArmoryCabinetTile;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 
-/**
- * Armory cabinet block. Bulk storage for gear and tools with one slot per
- * stored stack and no upgrade slots.
- */
 public class ArmoryCabinetBlock extends DrawerBlock {
 
     public ArmoryCabinetBlock() {

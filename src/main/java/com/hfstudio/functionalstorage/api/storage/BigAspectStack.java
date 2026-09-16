@@ -46,45 +46,27 @@ public class BigAspectStack implements StorageSnapshot<BigAspectStack, AspectSto
         this.amount = Math.max(0L, amount);
     }
 
-    /**
-     * @return the shared immutable empty snapshot
-     */
     @Nonnull
     public static BigAspectStack empty() {
         return EMPTY;
     }
 
-    /**
-     * @return the represented aspect, or {@code null} when unconfigured
-     */
     @Nullable
     public Aspect getAspect() {
         return aspect;
     }
 
-    /**
-     * @return immutable exact aspect key, or {@code null} when unconfigured
-     */
     @Nullable
     @Override
     public AspectStorageKey getKey() {
         return key;
     }
 
-    /**
-     * @return the represented amount
-     */
     @Override
     public long getAmount() {
         return amount;
     }
 
-    /**
-     * Creates the same essentia snapshot with a different amount.
-     *
-     * @param newAmount new represented amount
-     * @return an immutable snapshot with the requested amount
-     */
     @Nonnull
     @Override
     public BigAspectStack withAmount(long newAmount) {
@@ -102,10 +84,6 @@ public class BigAspectStack implements StorageSnapshot<BigAspectStack, AspectSto
         return key != null;
     }
 
-    /**
-     * @param other other aspect
-     * @return {@code true} when this snapshot represents the given aspect
-     */
     public boolean isSameType(@Nullable Aspect other) {
         return aspect != null && aspect == other;
     }

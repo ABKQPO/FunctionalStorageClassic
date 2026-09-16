@@ -99,12 +99,12 @@ item.functionalstorage.universal_item_generation_t4.tooltip=Generates the config
 
 item.functionalstorage.void_upgrade.tooltip=Destroys excess items that no longer fit.
 item.functionalstorage.redstone_upgrade.tooltip=Emits a redstone signal based on how full the drawer is.
-item.functionalstorage.pulling_upgrade.tooltip=Pulls items and fluids from the block behind the drawer.
-item.functionalstorage.pushing_upgrade.tooltip=Pushes items and fluids into the block behind the drawer.
+item.functionalstorage.pulling_upgrade.tooltip=Pulls items, fluids, or essentia from the selected side.
+item.functionalstorage.pushing_upgrade.tooltip=Pushes items, fluids, or essentia into the selected side.
 item.functionalstorage.collector_upgrade.tooltip=Collects nearby dropped items and fluids.
 item.functionalstorage.ore_dictionary_upgrade.tooltip=Treats items sharing an ore dictionary entry as one type.
-item.functionalstorage.wireless_pulling_upgrade.tooltip=Pulls items remotely from linked inventories.
-item.functionalstorage.wireless_pushing_upgrade.tooltip=Pushes items remotely into linked inventories.
+item.functionalstorage.wireless_pulling_upgrade.tooltip=Pulls items, fluids, or essentia from the linked location.
+item.functionalstorage.wireless_pushing_upgrade.tooltip=Pushes items, fluids, or essentia into the linked location.
 item.functionalstorage.breaker_upgrade.tooltip=Breaks the block in front of the drawer and stores the drops.
 item.functionalstorage.placer_upgrade.tooltip=Places a stored block in front of the drawer.
 item.functionalstorage.refill_upgrade.tooltip=Keeps the owner's held stack topped up from the drawer.

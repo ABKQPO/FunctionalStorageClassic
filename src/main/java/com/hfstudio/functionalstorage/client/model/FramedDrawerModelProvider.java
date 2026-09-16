@@ -35,12 +35,7 @@ import com.hfstudio.functionalstorage.common.tile.FramedDrawerTile;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
-/**
- * Model provider for framed drawers. The framed model marks its exterior and
- * front quads with dedicated marker textures; this provider replaces those
- * quads with the material the player applied, rescaling their UVs so the new
- * sprite is sampled across the full face instead of a corner of it.
- */
+/** Replaces framed marker textures with selected materials and remaps sprite-local UVs. */
 @SideOnly(Side.CLIENT)
 public class FramedDrawerModelProvider implements IBlockModelProvider {
 
@@ -90,10 +85,6 @@ public class FramedDrawerModelProvider implements IBlockModelProvider {
         return cached;
     }
 
-    /**
-     * @param stack framed drawer item stack
-     * @return the material sprites that item should render with, or {@code null}
-     */
     @Nullable
     public PartSprites spritesFor(@Nonnull ItemStack stack) {
         FramedDrawerStyle style = FramedDrawerStyle.fromDrawerStack(stack);
@@ -220,12 +211,6 @@ public class FramedDrawerModelProvider implements IBlockModelProvider {
             Arrays.fill(dividerFaces, divider);
         }
 
-        /**
-         * Resolves the sprites for a material selection.
-         *
-         * @param style material selection
-         * @return the resolved sprites
-         */
         @Nonnull
         public static PartSprites from(@Nonnull FramedDrawerStyle style) {
             return from(style, 0);
@@ -272,12 +257,6 @@ public class FramedDrawerModelProvider implements IBlockModelProvider {
             return side.ordinal();
         }
 
-        /**
-         * Resolves the atlas sprite of a block item.
-         *
-         * @param material block item stack
-         * @return the sprite, or {@code null}
-         */
         @Nullable
         public static TextureAtlasSprite spriteFor(@Nullable ItemStack material) {
             return spriteFor(material, ForgeDirection.NORTH.ordinal());
@@ -299,18 +278,11 @@ public class FramedDrawerModelProvider implements IBlockModelProvider {
             return icon instanceof TextureAtlasSprite ? (TextureAtlasSprite) icon : null;
         }
 
-        /**
-         * @return whether at least the exterior and front are available
-         */
         public boolean isUsable() {
             return exterior != null && front != null;
         }
     }
 
-    /**
-     * Wraps a baked model and substitutes the framed drawer's marker quads with
-     * the applied materials.
-     */
     public static class FramedBakedModel implements BakedModel {
 
         private final BakedModel parent;
@@ -392,9 +364,6 @@ public class FramedDrawerModelProvider implements IBlockModelProvider {
         }
     }
 
-    /**
-     * @return whether a block is a framed drawer
-     */
     public static boolean isFramedDrawer(@Nullable Block block) {
         return block instanceof FramedDrawerBlock;
     }

@@ -13,9 +13,6 @@ import javax.annotation.Nonnull;
  */
 public interface IStorageHandler<S extends StorageSnapshot<S, K>, K extends StorageKey> {
 
-    /**
-     * @return number of real indexed storage positions
-     */
     int getStorageCount();
 
     /**
@@ -82,9 +79,6 @@ public interface IStorageHandler<S extends StorageSnapshot<S, K>, K extends Stor
         return false;
     }
 
-    /**
-     * @return current storage capacity multiplier
-     */
     default double getMultiplier() {
         return 1.0D;
     }

@@ -11,10 +11,7 @@ import cpw.mods.fml.common.event.FMLPostInitializationEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.common.event.FMLServerStartingEvent;
 
-/**
- * Server side proxy. Content registration happens here and on the client
- * subclass so a dedicated server never touches client-only classes.
- */
+/** Common registration lifecycle for both physical sides. */
 public class CommonProxy {
 
     public void preInit(FMLPreInitializationEvent event) {
@@ -39,9 +36,6 @@ public class CommonProxy {
 
     public void onMissingMappings(FMLMissingMappingsEvent event) {}
 
-    /**
-     * Registers blocks, items, and tile entities.
-     */
     protected void registerContent() {
         RegistrationHandler.registerBlocks();
         RegistrationHandler.registerItems();
@@ -49,16 +43,10 @@ public class CommonProxy {
         RegistrationHandler.registerBlockProperties();
     }
 
-    /**
-     * Registers crafting and compacting recipes.
-     */
     protected void registerRecipes() {
         FunctionalStorageRecipes.registerEarlyRecipes();
     }
 
-    /**
-     * Registers optional cross-mod hooks that are safe on both sides.
-     */
     protected void registerIntegrations() {
         RegistrationHandler.registerCommonIntegrations();
     }

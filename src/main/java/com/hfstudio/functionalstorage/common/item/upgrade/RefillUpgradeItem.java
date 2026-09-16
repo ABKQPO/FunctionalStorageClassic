@@ -20,18 +20,7 @@ import com.hfstudio.functionalstorage.util.UpgradeTargeting;
 
 import lombok.Getter;
 
-/**
- * Refill upgrade, merged in from More Functional Storage. Tops up the owning
- * player's held stack from the drawer whenever it runs low.
- *
- * <p>
- * The dimensional variant uses the same logic but resolves the owner through
- * the server player list, so it also works when the player is in another
- * dimension. Whether that succeeds is decided by
- * {@link #isDimensional()} rather than by which lookup succeeds, keeping the
- * intent explicit.
- * </p>
- */
+/** Refills the owner's held stack; the dimensional variant uses the server player list. */
 @Getter
 public class RefillUpgradeItem extends AutomationUpgradeItem {
 

@@ -12,10 +12,6 @@ import com.hfstudio.functionalstorage.common.block.DrawerFaceLayout;
 import com.hfstudio.functionalstorage.common.block.base.DrawerBlock;
 import com.hfstudio.functionalstorage.common.tile.controller.DrawerControllerTile;
 
-/**
- * Storage controller block. Linked drawers are aggregated into one logical
- * inventory so automation can address the whole network.
- */
 public class DrawerControllerBlock extends DrawerBlock {
 
     public DrawerControllerBlock() {

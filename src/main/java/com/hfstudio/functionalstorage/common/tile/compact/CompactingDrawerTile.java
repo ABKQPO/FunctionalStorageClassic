@@ -128,14 +128,6 @@ public class CompactingDrawerTile extends ControllableDrawerTile {
         }
     }
 
-    /**
-     * Inserts a stack into the shared amount through one visible tier.
-     *
-     * @param slot     visible tier index
-     * @param stack    stack to insert
-     * @param simulate whether to only report the outcome
-     * @return the leftover stack, or {@code null} when everything fit
-     */
     @Nullable
     public ItemStack insertStack(int slot, @Nonnull ItemStack stack, boolean simulate) {
         if (stack.getItem() == null || stack.stackSize <= 0) {
@@ -151,14 +143,6 @@ public class CompactingDrawerTile extends ControllableDrawerTile {
         return remainder;
     }
 
-    /**
-     * Extracts from the shared amount through one visible tier.
-     *
-     * @param slot     visible tier index
-     * @param amount   requested item count
-     * @param simulate whether to only report the outcome
-     * @return the extracted stack, or {@code null}
-     */
     @Nullable
     public ItemStack extractStack(int slot, int amount, boolean simulate) {
         if (amount <= 0) {

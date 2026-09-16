@@ -13,17 +13,7 @@ import com.hfstudio.functionalstorage.common.inventory.base.BigItemHandler;
 import com.hfstudio.functionalstorage.common.storage.DrawerLayout;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 
-/**
- * Wooden item drawer tile. Holds one long-capacity item slot per layout slot
- * and inherits ore-dictionary matching from the item handler when the
- * corresponding upgrade is installed.
- *
- * <p>
- * The tile implements vanilla's {@link IInventory} contract directly so
- * hoppers and other 1.7.10 automation can address it without a capability
- * lookup, which that version has no general mechanism for.
- * </p>
- */
+/** Exposes physical item slots directly through vanilla IInventory for hopper compatibility. */
 public class WoodDrawerTile extends ControllableDrawerTile implements IInventory {
 
     private static final String KEY_ITEMS = "Items";
@@ -76,9 +66,6 @@ public class WoodDrawerTile extends ControllableDrawerTile implements IInventory
         };
     }
 
-    /**
-     * @return the slot layout of this drawer
-     */
     @Nonnull
     public DrawerLayout getDrawerLayout() {
         return layout;

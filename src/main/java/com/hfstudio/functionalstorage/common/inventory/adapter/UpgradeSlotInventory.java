@@ -24,13 +24,6 @@ public class UpgradeSlotInventory implements IInventory {
         this.storage = storage;
     }
 
-    /**
-     * Creates the view for a drawer's storage or utility upgrade slots.
-     *
-     * @param tile    owning drawer
-     * @param storage {@code true} for storage upgrade slots
-     * @return the inventory view
-     */
     @Nonnull
     public static UpgradeSlotInventory of(@Nonnull ControllableDrawerTile tile, boolean storage) {
         return new UpgradeSlotInventory(tile, storage);

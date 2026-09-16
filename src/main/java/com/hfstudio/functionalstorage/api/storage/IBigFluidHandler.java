@@ -14,44 +14,18 @@ import net.minecraftforge.fluids.FluidStack;
  */
 public interface IBigFluidHandler extends IStorageHandler<BigFluidStack, FluidStorageKey> {
 
-    /**
-     * Reports whether a generic index currently supports filling.
-     *
-     * @param index internal storage index
-     * @return whether filling is allowed
-     */
     default boolean supportsFill(int index) {
         return index >= 0 && index < Math.max(0, getStorageCount());
     }
 
-    /**
-     * Reports whether a generic index currently supports draining.
-     *
-     * @param index internal storage index
-     * @return whether draining is allowed
-     */
     default boolean supportsDrain(int index) {
         return index >= 0 && index < Math.max(0, getStorageCount());
     }
 
-    /**
-     * Reports whether a generic index supports a fluid type.
-     *
-     * @param index internal storage index
-     * @param fluid requested fluid
-     * @return whether the fluid may be handled at the index
-     */
     default boolean supportsFluid(int index, @Nonnull BigFluidStack fluid) {
         return index >= 0 && index < Math.max(0, getStorageCount()) && fluid.hasTemplate();
     }
 
-    /**
-     * Bridges Forge fill to routed generic insertion.
-     *
-     * @param resource fluid to insert
-     * @param doFill   whether to execute or simulate
-     * @return the accepted amount
-     */
     default int fill(@Nullable FluidStack resource, boolean doFill) {
         if (resource == null || resource.getFluid() == null || resource.amount <= 0) {
             return 0;
@@ -64,13 +38,6 @@ public interface IBigFluidHandler extends IStorageHandler<BigFluidStack, FluidSt
         return processed >= Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) processed;
     }
 
-    /**
-     * Bridges Forge typed drain to routed generic extraction.
-     *
-     * @param resource fluid to drain
-     * @param doDrain  whether to execute or simulate
-     * @return the drained stack, or {@code null}
-     */
     @Nullable
     default FluidStack drain(@Nullable FluidStack resource, boolean doDrain) {
         if (resource == null || resource.getFluid() == null || resource.amount <= 0) {

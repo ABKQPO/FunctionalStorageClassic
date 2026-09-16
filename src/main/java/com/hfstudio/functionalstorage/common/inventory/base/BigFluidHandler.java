@@ -48,13 +48,6 @@ public class BigFluidHandler extends AbstractStorageHandler<BigFluidStack, Fluid
         return template.isSameType(candidate);
     }
 
-    /**
-     * Marks one tank as read-only so automation cannot push fluid into it.
-     *
-     * @param index     tank index
-     * @param fillable  whether the tank accepts fluid
-     * @param drainable whether the tank releases fluid
-     */
     public void setAccess(int index, boolean fillable, boolean drainable) {
         if (index < 0 || index >= this.fillable.length) {
             return;

@@ -43,10 +43,6 @@ public class DrawerMEInventoryHandler implements IMEInventoryHandler<IAEItemStac
         this.priority = priority;
     }
 
-    /**
-     * @param type AE2 actionable mode
-     * @return the matching storage action
-     */
     public static StorageAction actionOf(Actionable type) {
         return type == Actionable.SIMULATE ? StorageAction.SIMULATE : StorageAction.EXECUTE;
     }
@@ -144,16 +140,10 @@ public class DrawerMEInventoryHandler implements IMEInventoryHandler<IAEItemStac
         return true;
     }
 
-    /**
-     * @return an inventory view of this handler, used by the AE2 storage bus
-     */
     public IMEInventory<IAEItemStack> asInventory() {
         return this;
     }
 
-    /**
-     * @return the aggregated views this handler currently reports to AE2
-     */
     public List<ItemStorageView> getViews() {
         return ItemStorageView.storages(handler);
     }

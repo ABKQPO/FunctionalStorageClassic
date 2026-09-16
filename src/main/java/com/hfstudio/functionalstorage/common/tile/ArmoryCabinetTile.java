@@ -9,10 +9,6 @@ import com.hfstudio.functionalstorage.common.inventory.base.BigItemHandler;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 import com.hfstudio.functionalstorage.config.FunctionalStorageConfig;
 
-/**
- * Armory cabinet tile. A bulk item store with one slot per stored stack and a
- * fixed capacity of one stack per slot, intended for gear and tools.
- */
 public class ArmoryCabinetTile extends ControllableDrawerTile {
 
     private static final String KEY_ITEMS = "Items";

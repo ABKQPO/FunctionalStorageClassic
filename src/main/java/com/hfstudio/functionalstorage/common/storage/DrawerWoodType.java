@@ -70,40 +70,25 @@ public enum DrawerWoodType {
         return metadata < 0 || metadata >= values.length ? OAK : values[metadata];
     }
 
-    /**
-     * @return the stable low-case identifier used by assets and lang keys
-     */
     @Nonnull
     public String getId() {
         return id;
     }
 
-    /**
-     * @return the log block this wood is derived from
-     */
     @Nonnull
     public Block getLog() {
         return log;
     }
 
-    /**
-     * @return the plank metadata for this wood
-     */
     public int getMetadata() {
         return plankMetadata;
     }
 
-    /**
-     * @return a plank stack of this wood
-     */
     @Nonnull
     public ItemStack getPlankStack() {
         return new ItemStack(Blocks.planks, 1, plankMetadata);
     }
 
-    /**
-     * @return a log stack of this wood
-     */
     @Nonnull
     public ItemStack getLogStack() {
         return new ItemStack(log, 1, logMetadata);

@@ -13,9 +13,6 @@ import com.hfstudio.functionalstorage.common.item.upgrade.AutomationUpgradeItem;
 import com.hfstudio.functionalstorage.common.item.upgrade.AutomationUpgradeItem.RelativeDirection;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 
-/**
- * Shared geometry and slot selection helpers for the automation upgrades.
- */
 public class UpgradeTargeting {
 
     private UpgradeTargeting() {}
@@ -38,13 +35,6 @@ public class UpgradeTargeting {
         return resolve(front, relative);
     }
 
-    /**
-     * Maps a relative direction onto a world direction.
-     *
-     * @param front    the drawer's front face
-     * @param relative relative offset
-     * @return the resulting world direction
-     */
     @Nonnull
     public static ForgeDirection resolve(@Nonnull ForgeDirection front, @Nonnull RelativeDirection relative) {
         return switch (relative) {
@@ -57,10 +47,6 @@ public class UpgradeTargeting {
         };
     }
 
-    /**
-     * @param front horizontal facing
-     * @return the facing ninety degrees to the left
-     */
     @Nonnull
     public static ForgeDirection horizontalLeft(@Nonnull ForgeDirection front) {
         return switch (front) {
@@ -72,11 +58,6 @@ public class UpgradeTargeting {
         };
     }
 
-    /**
-     * @param stack upgrade stack
-     * @param count available drawer slots
-     * @return the drawer slots this upgrade may use, never empty when count is positive
-     */
     @Nonnull
     public static List<Integer> selectedSlots(@Nonnull ItemStack stack, int count) {
         List<Integer> slots = new ArrayList<>();

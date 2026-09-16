@@ -9,10 +9,6 @@ import net.minecraft.nbt.NBTTagCompound;
 import com.hfstudio.functionalstorage.common.storage.DrawerLayout;
 import com.hfstudio.functionalstorage.common.storage.FramedDrawerStyle;
 
-/**
- * Framed drawer tile. Behaves exactly like a wooden drawer but carries a
- * material selection used to retexture its exterior, fronts, and divider.
- */
 public class FramedDrawerTile extends WoodDrawerTile {
 
     private FramedDrawerStyle style = FramedDrawerStyle.EMPTY;
@@ -25,19 +21,11 @@ public class FramedDrawerTile extends WoodDrawerTile {
         super(layout);
     }
 
-    /**
-     * @return the current material selection
-     */
     @Nonnull
     public FramedDrawerStyle getStyle() {
         return style;
     }
 
-    /**
-     * Applies a new material selection, for example from the configuration tool.
-     *
-     * @param style new selection
-     */
     public void setStyle(@Nonnull FramedDrawerStyle style) {
         if (this.style.equals(style)) {
             return;
@@ -49,14 +37,7 @@ public class FramedDrawerTile extends WoodDrawerTile {
         }
     }
 
-    /**
-     * Replaces this drawer's material selection from a material stack.
-     * Sneaking sets the front and divider, otherwise the exterior is set.
-     *
-     * @param material block item to take the texture from
-     * @param front    whether the front and divider are being set
-     * @return whether the style changed
-     */
+    /** Sneaking selects front and divider materials; otherwise selects the exterior. */
     public boolean applyMaterial(@Nullable ItemStack material, boolean front) {
         if (material == null || material.getItem() == null) {
             return false;

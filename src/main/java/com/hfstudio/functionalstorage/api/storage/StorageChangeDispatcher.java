@@ -27,11 +27,11 @@ public class StorageChangeDispatcher<S extends StorageSnapshot<S, K>, K extends 
         if (failure == null) {
             return;
         }
-        if (failure instanceof RuntimeException) {
-            throw (RuntimeException) failure;
+        if (failure instanceof RuntimeException exception) {
+            throw exception;
         }
-        if (failure instanceof Error) {
-            throw (Error) failure;
+        if (failure instanceof Error error) {
+            throw error;
         }
         throw new IllegalStateException("storage change listener failed", failure);
     }
@@ -49,9 +49,6 @@ public class StorageChangeDispatcher<S extends StorageSnapshot<S, K>, K extends 
         return registration;
     }
 
-    /**
-     * @return whether at least one active listener is registered
-     */
     public synchronized boolean hasSubscribers() {
         return !registrations.isEmpty();
     }

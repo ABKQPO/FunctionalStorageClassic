@@ -21,7 +21,8 @@ public class FunctionalStorageConfig {
     @Config.Comment("General behaviour")
     public static final General GENERAL = new General();
 
-    @Config.Comment("Storage capacity tuning")
+    @Config.Comment("Storage capacity tuning; reopen the world after changing these values")
+    @Config.RequiresWorldRestart
     public static final Storage STORAGE = new Storage();
 
     @Config.Comment("Upgrade automation tuning")
@@ -160,7 +161,7 @@ public class FunctionalStorageConfig {
         @Config.DefaultInt(500)
         public int upgradeCollectorFluid = 500;
 
-        @Config.Comment("How many esssentia units the pulling upgrade will try to pull")
+        @Config.Comment("How many essentia units the pulling upgrade will try to pull")
         @Config.RangeInt(min = 1, max = 1000)
         @Config.DefaultInt(8)
         public int upgradePullAspect = 8;

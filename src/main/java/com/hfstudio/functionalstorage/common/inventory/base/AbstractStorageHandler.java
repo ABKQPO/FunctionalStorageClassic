@@ -53,9 +53,6 @@ public abstract class AbstractStorageHandler<S extends StorageSnapshot<S, K>, K 
         Arrays.fill(this.templates, resource.empty());
     }
 
-    /**
-     * @return the resource kind served by this handler
-     */
     @Nonnull
     protected final StorageResource<S, K> getResource() {
         return resource;
@@ -200,11 +197,6 @@ public abstract class AbstractStorageHandler<S extends StorageSnapshot<S, K>, K 
         changeDispatcher.dispatch(StorageChange.reset());
     }
 
-    /**
-     * Serializes every configured or populated slot.
-     *
-     * @return a fresh tag holding the full storage state
-     */
     @Nonnull
     public final NBTTagCompound serializeNBT() {
         NBTTagCompound root = new NBTTagCompound();
@@ -227,11 +219,6 @@ public abstract class AbstractStorageHandler<S extends StorageSnapshot<S, K>, K 
         return root;
     }
 
-    /**
-     * Replaces all contents from persisted data.
-     *
-     * @param tag previously produced by {@link #serializeNBT()}
-     */
     public final void deserializeNBT(@Nullable NBTTagCompound tag) {
         S[] previousTemplates = copyTemplates();
         long[] previousAmounts = amounts.clone();
@@ -285,16 +272,10 @@ public abstract class AbstractStorageHandler<S extends StorageSnapshot<S, K>, K 
         return changeDispatcher.subscribe(listener);
     }
 
-    /**
-     * @return whether this handler's owning container currently allows transactions
-     */
     protected boolean isOperationEnabled() {
         return true;
     }
 
-    /**
-     * @return whether finite capacity is replaced with {@link Long#MAX_VALUE}
-     */
     protected boolean hasMaxStorage() {
         return false;
     }

@@ -19,10 +19,7 @@ import cpw.mods.fml.common.event.FMLServerStartingEvent;
 import cpw.mods.fml.common.network.NetworkRegistry;
 import cpw.mods.fml.common.network.simpleimpl.SimpleNetworkWrapper;
 
-/**
- * Mod entry point. Blocks, items, and integration hooks are delegated to the
- * proxy so the common and client sides stay separate.
- */
+/** Delegates lifecycle registration through sided proxies. */
 @Mod(
     modid = Tags.MODID,
     version = Tags.VERSION,

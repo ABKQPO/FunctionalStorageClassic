@@ -18,11 +18,7 @@ import com.gtnewhorizon.gtnhlib.blockstate.core.TransformableProperty;
 import com.gtnewhorizon.gtnhlib.geometry.DirectionTransform;
 import com.hfstudio.functionalstorage.common.block.base.DrawerBlock;
 
-/**
- * GTNHLib block property exposing the surface a drawer is attached to. Values
- * are stored in the high half of the block metadata so the low half remains
- * available for the horizontal rotation.
- */
+/** Attachment occupies the metadata bits above the two horizontal rotation bits. */
 public class AttachmentBlockProperty implements BlockProperty<DrawerAttachment>, MetaBlockProperty<DrawerAttachment>,
     TransformableProperty<DrawerAttachment> {
 

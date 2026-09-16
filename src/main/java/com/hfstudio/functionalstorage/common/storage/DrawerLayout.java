@@ -10,14 +10,7 @@ import com.hfstudio.functionalstorage.config.FunctionalStorageConfig;
 
 import lombok.Getter;
 
-/**
- * Server-side drawer layout data with stable serialized identifiers.
- *
- * <p>
- * This type deliberately contains no rendering or GUI coordinates. The base
- * capacity is the capacity multiplier for each slot before upgrades apply.
- * </p>
- */
+/** Stable serialized layout identifiers and per-slot base capacities. */
 public enum DrawerLayout {
 
     X_1("1x1", 1, 1.0D),
@@ -82,30 +75,18 @@ public enum DrawerLayout {
         return index < 0 || index >= values.length ? X_1 : values[index];
     }
 
-    /**
-     * @return the metadata index of this layout
-     */
     public int getIndex() {
         return ordinal();
     }
 
-    /**
-     * @return the unmodified item capacity of each slot
-     */
     public long getItemCapacity() {
         return Math.max(0L, (long) Math.floor(FunctionalStorageConfig.STORAGE.baseItemCapacity * capacityScale));
     }
 
-    /**
-     * @return the unmodified fluid capacity of each tank in millibuckets
-     */
     public long getFluidCapacity() {
         return Math.max(0L, (long) Math.floor(FunctionalStorageConfig.STORAGE.baseFluidCapacity * capacityScale));
     }
 
-    /**
-     * @return the unmodified essentia capacity of each slot
-     */
     public long getAspectCapacity() {
         return Math.max(0L, (long) Math.floor(FunctionalStorageConfig.STORAGE.baseAspectCapacity * capacityScale));
     }

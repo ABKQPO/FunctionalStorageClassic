@@ -14,9 +14,6 @@ import net.minecraftforge.oredict.OreDictionary;
 
 import com.hfstudio.functionalstorage.config.FunctionalStorageConfig;
 
-/**
- * Item identity helpers shared by the storage layer and the upgrade routing.
- */
 public class ItemUtil {
 
     private ItemUtil() {}
@@ -81,10 +78,6 @@ public class ItemUtil {
         return false;
     }
 
-    /**
-     * @param oreName ore dictionary entry name
-     * @return whether the configured filters allow this entry to match
-     */
     public static boolean isOreNameAllowed(@Nullable String oreName) {
         if (oreName == null || "Unknown".equals(oreName)) {
             return false;
@@ -96,12 +89,6 @@ public class ItemUtil {
         return !hasConfiguredName(whitelist) || containsConfiguredName(whitelist, oreName);
     }
 
-    /**
-     * Reads a stack from persisted data, normalizing an empty result to null.
-     *
-     * @param tag stack tag
-     * @return the restored stack, or {@code null}
-     */
     @Nullable
     public static ItemStack readStack(@Nullable NBTTagCompound tag) {
         if (tag == null || tag.hasNoTags()) {
@@ -111,12 +98,6 @@ public class ItemUtil {
         return stack == null || stack.getItem() == null ? null : stack;
     }
 
-    /**
-     * Creates a count-one copy of a stack.
-     *
-     * @param stack source stack
-     * @return a normalized copy, or {@code null}
-     */
     @Nullable
     public static ItemStack copyWithSizeOne(@Nullable ItemStack stack) {
         if (stack == null || stack.getItem() == null) {
@@ -127,12 +108,6 @@ public class ItemUtil {
         return copy;
     }
 
-    /**
-     * Collects every item registered under an ore dictionary name.
-     *
-     * @param oreName ore dictionary entry name
-     * @return the matching stacks, never null
-     */
     @Nonnull
     public static List<ItemStack> oreEntries(String oreName) {
         List<ItemStack> entries = OreDictionary.getOres(oreName);

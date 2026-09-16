@@ -8,10 +8,7 @@ import com.hfstudio.functionalstorage.api.upgrade.IStorageUpgrade;
 import com.hfstudio.functionalstorage.api.upgrade.StorageFeature;
 import com.hfstudio.functionalstorage.api.upgrade.UpgradeState;
 
-/**
- * Upgrade that removes the capacity ceiling of a drawer. The drawer still
- * reports stored amounts, but accepts an unbounded number of compatible items.
- */
+/** Removes the ordinary capacity ceiling while retaining finite stored amounts. */
 public class MaxStorageUpgradeItem extends UpgradeItem implements IStorageUpgrade {
 
     public MaxStorageUpgradeItem() {

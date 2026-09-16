@@ -39,16 +39,7 @@ import com.hfstudio.functionalstorage.util.NumberUtils;
 
 import thaumcraft.api.aspects.Aspect;
 
-/**
- * Draws the stored icon, amount, and fill indicator onto a drawer's front face.
- * The face transform is derived from the block metadata, so wall, floor, and
- * ceiling placements all render upright and correctly mirrored.
- *
- * <p>
- * All three storage kinds render through one path: the drawer supplies its
- * handler, and this renderer only decides how to draw the snapshot.
- * </p>
- */
+/** Renders contents in the same face coordinates used by placement and interaction. */
 public class DrawerRenderer extends TileEntitySpecialRenderer {
 
     private static final float Z_ICON = 0.002F;
@@ -70,6 +61,11 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
             return;
         }
 
+        DrawerOptions options = drawer.getDrawerOptions();
+        if (!options.isShowItemRender() && !options.isShowItemCount()
+            && options.getAdvancedValue(ConfigurationToolItem.ConfigurationAction.INDICATOR) == 0) {
+            return;
+        }
         int metadata = tile.getBlockMetadata();
         float previousLightX = OpenGlHelper.lastBrightnessX;
         float previousLightY = OpenGlHelper.lastBrightnessY;
@@ -87,7 +83,6 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
             GL11.glTranslated(x, y, z);
             applyFaceTransform(DrawerBlock.getAttachment(metadata), DrawerBlock.getHorizontalFacing(metadata));
 
-            DrawerOptions options = drawer.getDrawerOptions();
             DrawerFaceLayout layout = block.getFaceLayout();
             IBigItemHandler itemHandler = drawer.getItemHandler();
             IBigFluidHandler fluidHandler = drawer.getFluidHandler();
@@ -114,16 +109,17 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
             if (!snapshot.hasTemplate()) {
                 continue;
             }
-            ItemStack stack = snapshot.getTemplate();
             float centerX = layout.getSlotX(slot);
             float centerY = layout.getSlotY(slot);
             if (options.isShowItemRender()) {
-                renderStack(stack, centerX, centerY, iconScale(layout));
+                renderStack(snapshot.getTemplate(), centerX, centerY, iconScale(layout));
             }
             if (options.isShowItemCount()) {
                 renderText(NumberUtils.formatCompact(snapshot.getAmount()), centerX, centerY);
             }
-            renderIndicator(centerX, centerY, ratio(snapshot.getAmount(), handler.getCapacity(slot)), options);
+            if (options.getAdvancedValue(ConfigurationToolItem.ConfigurationAction.INDICATOR) != 0) {
+                renderIndicator(centerX, centerY, ratio(snapshot.getAmount(), handler.getCapacity(slot)), options);
+            }
         }
     }
 
@@ -134,16 +130,17 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
             if (!snapshot.hasTemplate()) {
                 continue;
             }
-            FluidStack fluid = snapshot.getTemplate();
             float centerX = layout.getSlotX(slot);
             float centerY = layout.getSlotY(slot);
             if (options.isShowItemRender()) {
-                renderFluid(fluid, centerX, centerY, iconScale(layout));
+                renderFluid(snapshot.getTemplate(), centerX, centerY, iconScale(layout));
             }
             if (options.isShowItemCount()) {
                 renderText(NumberUtils.formatFluid(snapshot.getAmount()), centerX, centerY);
             }
-            renderIndicator(centerX, centerY, ratio(snapshot.getAmount(), handler.getCapacity(slot)), options);
+            if (options.getAdvancedValue(ConfigurationToolItem.ConfigurationAction.INDICATOR) != 0) {
+                renderIndicator(centerX, centerY, ratio(snapshot.getAmount(), handler.getCapacity(slot)), options);
+            }
         }
     }
 
@@ -163,7 +160,9 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
             if (options.isShowItemCount()) {
                 renderText(NumberUtils.formatAspect(snapshot.getAmount()), centerX, centerY);
             }
-            renderIndicator(centerX, centerY, ratio(snapshot.getAmount(), handler.getCapacity(slot)), options);
+            if (options.getAdvancedValue(ConfigurationToolItem.ConfigurationAction.INDICATOR) != 0) {
+                renderIndicator(centerX, centerY, ratio(snapshot.getAmount(), handler.getCapacity(slot)), options);
+            }
         }
     }
 
@@ -339,10 +338,6 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
         tessellator.addVertex(-halfWidth, -INDICATOR_HALF_HEIGHT, 0D);
     }
 
-    /**
-     * @param tile candidate tile
-     * @return the drawer's item handler, or {@code null}
-     */
     @Nullable
     public static IBigItemHandler itemHandlerOf(@Nullable TileEntity tile) {
         return tile instanceof ControllableDrawerTile ? ((ControllableDrawerTile) tile).getItemHandler() : null;

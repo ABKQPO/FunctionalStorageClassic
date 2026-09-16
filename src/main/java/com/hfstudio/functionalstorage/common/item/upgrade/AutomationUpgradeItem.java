@@ -52,17 +52,10 @@ public class AutomationUpgradeItem extends UpgradeItem implements IStorageUpgrad
             this.id = id;
         }
 
-        /**
-         * @return the localized display name
-         */
         public String getDisplayName() {
             return StatCollector.translateToLocal("functionalstorage.direction." + id);
         }
 
-        /**
-         * @param index stored ordinal
-         * @return the matching direction, or {@link #FRONT}
-         */
         @Nonnull
         public static RelativeDirection byIndex(int index) {
             RelativeDirection[] values = values();
@@ -77,23 +70,14 @@ public class AutomationUpgradeItem extends UpgradeItem implements IStorageUpgrad
         this.baseTickInterval = Math.max(1, baseTickInterval);
     }
 
-    /**
-     * @return whether this upgrade works on a side of the drawer
-     */
     public boolean hasDirection() {
         return true;
     }
 
-    /**
-     * @return whether this upgrade remembers the player that installed it
-     */
     public boolean hasOwner() {
         return true;
     }
 
-    /**
-     * @return the configured operation interval in ticks
-     */
     public int getTickInterval() {
         return baseTickInterval;
     }
@@ -122,39 +106,20 @@ public class AutomationUpgradeItem extends UpgradeItem implements IStorageUpgrad
         }
     }
 
-    /**
-     * Runs one automation step.
-     *
-     * @param tile  owning drawer
-     * @param stack installed upgrade stack
-     * @param slot  utility slot index
-     */
     public void work(@Nonnull ControllableDrawerTile tile, @Nonnull ItemStack stack, int slot) {}
 
     @Override
     public void applyUpgrade(@Nonnull ItemStack stack, @Nonnull UpgradeState.Builder builder) {}
 
-    /**
-     * @param stack upgrade stack
-     * @return the configured working direction
-     */
     @Nonnull
     public RelativeDirection getDirection(@Nonnull ItemStack stack) {
         return RelativeDirection.byIndex(tagOf(stack).getInteger(KEY_DIRECTION));
     }
 
-    /**
-     * @param stack     upgrade stack
-     * @param direction new working direction
-     */
     public void setDirection(@Nonnull ItemStack stack, @Nonnull RelativeDirection direction) {
         tagOf(stack).setInteger(KEY_DIRECTION, direction.ordinal());
     }
 
-    /**
-     * @param stack upgrade stack
-     * @return the owner identifier, or {@code null} when unset
-     */
     @Nullable
     public UUID getOwner(@Nonnull ItemStack stack) {
         String value = tagOf(stack).getString(KEY_OWNER);
@@ -168,18 +133,10 @@ public class AutomationUpgradeItem extends UpgradeItem implements IStorageUpgrad
         }
     }
 
-    /**
-     * @param stack upgrade stack
-     * @return whether a per-upgrade filter has been configured
-     */
     public boolean hasFilter(@Nonnull ItemStack stack) {
         return tagOf(stack).hasKey(KEY_FILTER);
     }
 
-    /**
-     * @param stack upgrade stack
-     * @return the configured item filter, or {@code null}
-     */
     @Nullable
     public ItemStack getFilter(@Nonnull ItemStack stack) {
         NBTTagCompound tag = tagOf(stack);
@@ -189,10 +146,6 @@ public class AutomationUpgradeItem extends UpgradeItem implements IStorageUpgrad
         return ItemStack.loadItemStackFromNBT(tag.getCompoundTag(KEY_FILTER));
     }
 
-    /**
-     * @param stack  upgrade stack
-     * @param filter new filter, or {@code null} to clear
-     */
     public void setFilter(@Nonnull ItemStack stack, @Nullable ItemStack filter) {
         NBTTagCompound tag = tagOf(stack);
         if (filter == null || filter.getItem() == null) {
@@ -202,20 +155,12 @@ public class AutomationUpgradeItem extends UpgradeItem implements IStorageUpgrad
         tag.setTag(KEY_FILTER, filter.writeToNBT(new NBTTagCompound()));
     }
 
-    /**
-     * @param stack upgrade stack
-     * @return the configured slot selection, or {@code null} when all slots are used
-     */
     @Nullable
     public int[] getSelectedSlots(@Nonnull ItemStack stack) {
         NBTTagCompound tag = tagOf(stack);
         return tag.hasKey(KEY_SLOTS) ? tag.getIntArray(KEY_SLOTS) : null;
     }
 
-    /**
-     * @param stack upgrade stack
-     * @param slots selected drawer slots, or {@code null} for all slots
-     */
     public void setSelectedSlots(@Nonnull ItemStack stack, @Nullable int[] slots) {
         NBTTagCompound tag = tagOf(stack);
         if (slots == null || slots.length == 0) {
@@ -225,20 +170,10 @@ public class AutomationUpgradeItem extends UpgradeItem implements IStorageUpgrad
         tag.setIntArray(KEY_SLOTS, slots);
     }
 
-    /**
-     * @param stack upgrade stack
-     * @return the ticks remaining until the next run
-     */
     public int getRemainingTicks(@Nonnull ItemStack stack) {
         return Math.max(0, tagOf(stack).getInteger(KEY_TIMER));
     }
 
-    /**
-     * Stores the remaining ticks until the next run.
-     *
-     * @param stack upgrade stack
-     * @param ticks remaining ticks
-     */
     public void setRemainingTicks(@Nonnull ItemStack stack, int ticks) {
         tagOf(stack).setInteger(KEY_TIMER, Math.max(0, ticks));
     }
@@ -262,10 +197,6 @@ public class AutomationUpgradeItem extends UpgradeItem implements IStorageUpgrad
         }
     }
 
-    /**
-     * @param stack upgrade stack
-     * @return the mutable upgrade tag, created on demand
-     */
     @Nonnull
     protected static NBTTagCompound tagOf(@Nonnull ItemStack stack) {
         if (!stack.hasTagCompound()) {

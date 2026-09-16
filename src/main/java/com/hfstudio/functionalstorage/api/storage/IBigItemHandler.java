@@ -44,22 +44,10 @@ public interface IBigItemHandler extends IStorageHandler<BigItemStack, ItemStora
         return storage == null ? null : storage.toItemStack();
     }
 
-    /**
-     * Checks Forge's slot validity for a virtual slot.
-     *
-     * @param slot virtual slot index
-     * @return whether the slot exists
-     */
     default boolean isValidSlot(int slot) {
         return slot >= 0 && slot < getSlots();
     }
 
-    /**
-     * Computes the Forge slot limit for a virtual slot.
-     *
-     * @param slot virtual slot index
-     * @return the saturated capacity
-     */
     default int getSlotLimit(int slot) {
         boolean hasEmpty = ItemStorageView.hasEmptyStorage(this);
         List<ItemStorageView> storages = ItemStorageView.storages(this);

@@ -99,12 +99,12 @@ item.functionalstorage.universal_item_generation_t4.tooltip=以最高速度产�
 
 item.functionalstorage.void_upgrade.tooltip=销毁无法容纳的多余物品。
 item.functionalstorage.redstone_upgrade.tooltip=根据抽屉的填充程度输出红石信号。
-item.functionalstorage.pulling_upgrade.tooltip=从抽屉后方的方块抽取物品与流体。
-item.functionalstorage.pushing_upgrade.tooltip=向抽屉后方的方块输出物品与流体。
+item.functionalstorage.pulling_upgrade.tooltip=从所选方向抽取物品、流体或要素。
+item.functionalstorage.pushing_upgrade.tooltip=向所选方向输出物品、流体或要素。
 item.functionalstorage.collector_upgrade.tooltip=收集附近掉落的物品与流体。
 item.functionalstorage.ore_dictionary_upgrade.tooltip=将共享同一矿辞条目的物品视为同一种。
-item.functionalstorage.wireless_pulling_upgrade.tooltip=从已链接的容器远程抽取物品。
-item.functionalstorage.wireless_pushing_upgrade.tooltip=向已链接的容器远程输出物品。
+item.functionalstorage.wireless_pulling_upgrade.tooltip=从已链接的位置远程抽取物品、流体或要素。
+item.functionalstorage.wireless_pushing_upgrade.tooltip=向已链接的位置远程输出物品、流体或要素。
 item.functionalstorage.breaker_upgrade.tooltip=破坏抽屉前方的方块并存储掉落物。
 item.functionalstorage.placer_upgrade.tooltip=将存储的方块放置在抽屉前方。
 item.functionalstorage.refill_upgrade.tooltip=用抽屉中的物品补充持有者手上的物品堆。

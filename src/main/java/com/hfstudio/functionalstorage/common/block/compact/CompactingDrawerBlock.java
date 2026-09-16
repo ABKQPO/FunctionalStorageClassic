@@ -13,9 +13,6 @@ import com.hfstudio.functionalstorage.common.block.base.DrawerBlock;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 import com.hfstudio.functionalstorage.common.tile.compact.CompactingDrawerTile;
 
-/**
- * Compacting drawer block with three visible compression tiers.
- */
 public class CompactingDrawerBlock extends DrawerBlock {
 
     public CompactingDrawerBlock() {

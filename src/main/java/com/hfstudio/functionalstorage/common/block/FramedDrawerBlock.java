@@ -25,21 +25,9 @@ import com.hfstudio.functionalstorage.util.ItemUtil;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
-/**
- * Framed drawer block. An item drawer whose exterior, front, and divider take
- * their texture from any block the player applies, either by crafting in a 2x2
- * grid or by applying the material in the world.
- *
- * <p>
- * The block supplies its own baked model so the marker quads of the framed
- * model can be replaced with the applied material at render time.
- * </p>
- */
+/** Retextures exterior, front, and divider marker quads with the selected materials. */
 public class FramedDrawerBlock extends DrawerBlock implements IBlockModelProvider {
 
-    /**
-     * Number of cells in the framed drawer crafting grid.
-     */
     public static final int RECIPE_GRID_SIZE = 4;
 
     private final DrawerLayout layout;
@@ -58,17 +46,11 @@ public class FramedDrawerBlock extends DrawerBlock implements IBlockModelProvide
         };
     }
 
-    /**
-     * @return the slot layout of this framed drawer
-     */
     @Nonnull
     public DrawerLayout getDrawerLayout() {
         return layout;
     }
 
-    /**
-     * @return the stable identifier used for registration and lang keys
-     */
     @Nonnull
     public String getDrawerId() {
         return "framed_" + layout.getSlotCount();

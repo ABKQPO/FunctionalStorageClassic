@@ -19,22 +19,12 @@ import net.minecraft.nbt.NBTTagCompound;
  */
 public interface StorageResource<S extends StorageSnapshot<S, K>, K extends StorageKey> {
 
-    /**
-     * @return stable resource identifier used in NBT and diagnostics
-     */
     @Nonnull
     String getId();
 
-    /**
-     * @return a snapshot representing an empty slot
-     */
     @Nonnull
     S empty();
 
-    /**
-     * @param snapshot any snapshot of this kind
-     * @return whether the snapshot carries a usable template
-     */
     boolean hasTemplate(@Nonnull S snapshot);
 
     /**
@@ -68,20 +58,10 @@ public interface StorageResource<S extends StorageSnapshot<S, K>, K extends Stor
      */
     long capacityFor(@Nonnull S template);
 
-    /**
-     * @return capacity of an unconfigured slot
-     */
     long defaultCapacity();
 
-    /**
-     * @return capacity divisor applied to storage upgrades
-     */
     int upgradeDivisor();
 
-    /**
-     * @param snapshot snapshot to persist
-     * @return a fresh tag holding the template, or {@code null} when empty
-     */
     @Nullable
     NBTTagCompound writeTemplate(@Nonnull S snapshot);
 

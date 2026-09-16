@@ -14,18 +14,10 @@ import mcp.mobius.waila.api.IWailaRegistrar;
  */
 public class WailaIntegration {
 
-    /**
-     * Name of the static callback Waila looks for in the manifest.
-     */
     public static final String CALLBACK = "wailaCallback";
 
     private WailaIntegration() {}
 
-    /**
-     * Registers the drawer tooltip provider with Waila.
-     *
-     * @param registrar Waila registrar
-     */
     public static void wailaCallback(IWailaRegistrar registrar) {
         if (!FunctionalStorageConfig.COMPATIBILITY.enableWailaCompatibility) {
             FunctionalStorage.LOG.info("Waila integration disabled by configuration");

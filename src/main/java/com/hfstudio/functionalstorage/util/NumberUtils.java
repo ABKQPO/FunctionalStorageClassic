@@ -2,9 +2,7 @@ package com.hfstudio.functionalstorage.util;
 
 import java.util.Locale;
 
-/**
- * Compact numeric formatting used by drawer face labels.
- */
+/** Compact numeric formatting used by drawer face labels. */
 public class NumberUtils {
 
     private static final String[] UNITS = { "", "K", "M", "G", "T", "P", "E", "Z", "Y", "R", "Q" };
@@ -33,32 +31,14 @@ public class NumberUtils {
         return negative ? "-" + text : text;
     }
 
-    /**
-     * Formats a fluid amount in millibuckets.
-     *
-     * @param amount amount in millibuckets
-     * @return the formatted text
-     */
     public static String formatFluid(long amount) {
         return formatCompact(amount) + "B";
     }
 
-    /**
-     * Formats an essentia amount.
-     *
-     * @param amount essentia units
-     * @return the formatted text
-     */
     public static String formatAspect(long amount) {
         return formatCompact(amount) + " essentia";
     }
 
-    /**
-     * Formats a fill ratio as a whole percentage.
-     *
-     * @param ratio ratio in the range zero to one
-     * @return the formatted percentage
-     */
     public static String formatPercent(double ratio) {
         double clamped = Math.max(0D, Math.min(1D, ratio));
         return String.format(Locale.ROOT, "%.0f%%", clamped * 100D);

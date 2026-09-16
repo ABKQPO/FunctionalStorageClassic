@@ -14,10 +14,7 @@ import com.hfstudio.functionalstorage.common.inventory.base.BigItemHandler;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 import com.hfstudio.functionalstorage.common.world.EnderSavedData;
 
-/**
- * Ender drawer tile. All drawers sharing a frequency read and write the same
- * handler stored once per save, so contents are shared rather than duplicated.
- */
+/** Bound frequencies use per-save shared storage; unbound drawers retain local contents. */
 public class EnderDrawerTile extends ControllableDrawerTile {
 
     private static final String KEY_FREQUENCY = "Frequency";
@@ -30,9 +27,6 @@ public class EnderDrawerTile extends ControllableDrawerTile {
         bindStorageHandler(handler);
     }
 
-    /**
-     * @return the frequency this drawer is bound to, or {@code null} when unset
-     */
     @Nullable
     public UUID getFrequency() {
         return frequency;

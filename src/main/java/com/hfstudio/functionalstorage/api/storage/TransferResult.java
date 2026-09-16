@@ -47,39 +47,24 @@ public class TransferResult<S extends StorageSnapshot<S, K>, K extends StorageKe
         this.requestedAmount = requestedAmount;
     }
 
-    /**
-     * @return the processed snapshot
-     */
     @Nonnull
     public S getProcessed() {
         return processed;
     }
 
-    /**
-     * @return the processed amount
-     */
     public long getProcessedAmount() {
         return processed.getAmount();
     }
 
-    /**
-     * @return the action that produced this result
-     */
     @Nonnull
     public StorageAction getAction() {
         return action;
     }
 
-    /**
-     * @return the amount the storage could not process
-     */
     public long getRemainingAmount() {
         return requestedAmount - processed.getAmount();
     }
 
-    /**
-     * @return whether the whole request was processed
-     */
     public boolean isComplete() {
         return getRemainingAmount() == 0L;
     }

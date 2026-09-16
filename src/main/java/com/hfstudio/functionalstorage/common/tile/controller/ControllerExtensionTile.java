@@ -9,11 +9,6 @@ import javax.annotation.Nonnull;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
 
-/**
- * Controller extension tile. Holds the same drawer index as a controller but
- * forwards automation to the controller it is attached to, so a network can
- * cover more space without a second controller.
- */
 public class ControllerExtensionTile extends TileEntity {
 
     private static final String KEY_CONTROLLER = "ControllerPos";
@@ -23,43 +18,23 @@ public class ControllerExtensionTile extends TileEntity {
     private int controllerY = Integer.MIN_VALUE;
     private int controllerZ = Integer.MIN_VALUE;
 
-    /**
-     * Links a drawer to this extension.
-     *
-     * @param x drawer x
-     * @param y drawer y
-     * @param z drawer z
-     */
     public void addDrawer(int x, int y, int z) {
         if (drawers.add(pack(x, y, z))) {
             markDirty();
         }
     }
 
-    /**
-     * Unlinks a drawer from this extension.
-     *
-     * @param x drawer x
-     * @param y drawer y
-     * @param z drawer z
-     */
     public void removeDrawer(int x, int y, int z) {
         if (drawers.remove(pack(x, y, z))) {
             markDirty();
         }
     }
 
-    /**
-     * @return an unmodifiable view of the packed drawer coordinates
-     */
     @Nonnull
     public Set<Long> getDrawers() {
         return Collections.unmodifiableSet(drawers);
     }
 
-    /**
-     * @return the controller coordinates as a three element array, or {@code null}
-     */
     public int[] getControllerPosition() {
         return controllerX == Integer.MIN_VALUE ? null : new int[] { controllerX, controllerY, controllerZ };
     }

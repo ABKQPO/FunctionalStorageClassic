@@ -20,26 +20,31 @@ import lombok.Getter;
  */
 public class StorageUpgradeItem extends UpgradeItem implements IStorageUpgrade {
 
-    /**
-     * Available storage upgrade tiers.
-     */
     @Getter
     public enum StorageTier {
 
-        IRON("iron_downgrade", 1, Integer.MIN_VALUE),
-        COPPER("copper_upgrade", 8, 0),
-        GOLD("gold_upgrade", 16, 1),
-        DIAMOND("diamond_upgrade", 24, 2),
-        NETHERITE("netherite_upgrade", 32, 3);
+        IRON("iron_downgrade", Integer.MIN_VALUE),
+        COPPER("copper_upgrade", 0),
+        GOLD("gold_upgrade", 1),
+        DIAMOND("diamond_upgrade", 2),
+        NETHERITE("netherite_upgrade", 3);
 
         private final String id;
-        private final int multiplier;
         private final int priority;
 
-        StorageTier(String id, int multiplier, int priority) {
+        StorageTier(String id, int priority) {
             this.id = id;
-            this.multiplier = multiplier;
             this.priority = priority;
+        }
+
+        public int getMultiplier() {
+            return Math.max(1, switch (this) {
+                case COPPER -> FunctionalStorageConfig.STORAGE.copperMultiplier;
+                case GOLD -> FunctionalStorageConfig.STORAGE.goldMultiplier;
+                case DIAMOND -> FunctionalStorageConfig.STORAGE.diamondMultiplier;
+                case NETHERITE -> FunctionalStorageConfig.STORAGE.netheriteMultiplier;
+                case IRON -> 1;
+            });
         }
 
     }
@@ -51,9 +56,6 @@ public class StorageUpgradeItem extends UpgradeItem implements IStorageUpgrade {
         this.tier = tier;
     }
 
-    /**
-     * @return the tier of this upgrade
-     */
     @Nonnull
     public StorageTier getTier() {
         return tier;
@@ -75,9 +77,6 @@ public class StorageUpgradeItem extends UpgradeItem implements IStorageUpgrade {
         builder.addModifier(UpgradeAttribute.CONTROLLER_RANGE, UpgradeModifier.addBase(rangeBonus()));
     }
 
-    /**
-     * @return the item capacity multiplier contributed by this tier
-     */
     public double getMultiplier() {
         return Math.max(1, tier.getMultiplier());
     }
@@ -87,17 +86,13 @@ public class StorageUpgradeItem extends UpgradeItem implements IStorageUpgrade {
     }
 
     private double aspectMultiplier() {
-        return Math.max(1D, getMultiplier() / FunctionalStorageConfig.STORAGE.aspectDivisor);
+        return Math.max(1D, getMultiplier() / Math.max(1, FunctionalStorageConfig.STORAGE.aspectDivisor));
     }
 
     private double rangeBonus() {
         return Math.max(0D, getMultiplier() / (double) Math.max(1, FunctionalStorageConfig.STORAGE.rangeDivisor));
     }
 
-    /**
-     * @param stack candidate upgrade stack
-     * @return whether the stack carries a max capacity feature
-     */
     public static boolean grantsMaxCapacity(@Nonnull ItemStack stack) {
         if (!(stack.getItem() instanceof IStorageUpgrade)) {
             return false;

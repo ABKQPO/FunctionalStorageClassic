@@ -25,8 +25,5 @@ public interface StorageSubscription extends AutoCloseable {
     @Override
     void close();
 
-    /**
-     * @return whether this subscription has been closed
-     */
     boolean isClosed();
 }

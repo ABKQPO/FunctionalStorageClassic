@@ -50,12 +50,7 @@ public class ItemStorageResource implements StorageResource<BigItemStack, ItemSt
 
     @Override
     public boolean accepts(@Nonnull BigItemStack template, @Nonnull BigItemStack candidate) {
-        ItemStack templateStack = template.getTemplate();
-        ItemStack candidateStack = candidate.getTemplate();
-        if (templateStack == null || candidateStack == null) {
-            return false;
-        }
-        return ItemUtil.areItemStacksEqual(templateStack, candidateStack);
+        return matches(template, candidate);
     }
 
     @Override
@@ -74,12 +69,6 @@ public class ItemStorageResource implements StorageResource<BigItemStack, ItemSt
         return 1;
     }
 
-    /**
-     * Computes the capacity available to one item type.
-     *
-     * @param template item template
-     * @return capacity in items
-     */
     public long capacityForStack(@Nonnull ItemStack template) {
         int maxStackSize = Math.max(0, template.getMaxStackSize());
         double capacity = (double) defaultCapacity() * maxStackSize;

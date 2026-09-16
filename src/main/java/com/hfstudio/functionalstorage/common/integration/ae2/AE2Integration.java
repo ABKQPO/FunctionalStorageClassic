@@ -7,17 +7,11 @@ import appeng.api.AEApi;
 import appeng.api.storage.IExternalStorageRegistry;
 import cpw.mods.fml.common.Loader;
 
-/**
- * Registers the drawer external storage handler with AE2 so storage buses can
- * address drawers and controllers. Only loaded when AE2 is present.
- */
+/** Optional AE2 external storage registration. */
 public class AE2Integration {
 
     private AE2Integration() {}
 
-    /**
-     * Registers the AE2 storage bridge when AE2 is present and enabled.
-     */
     public static void register() {
         if (!FunctionalStorageConfig.COMPATIBILITY.enableAE2Compatibility) {
             FunctionalStorage.LOG.info("Applied Energistics 2 integration disabled by configuration");

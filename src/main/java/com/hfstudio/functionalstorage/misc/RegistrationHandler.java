@@ -48,10 +48,7 @@ import cpw.mods.fml.common.registry.GameRegistry;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
-/**
- * Central content registry. Blocks and items are declared once here so the
- * creative tab, recipes, and integrations all read the same instances.
- */
+/** Shared registered instances used by recipes, integrations, and the creative tab. */
 public class RegistrationHandler {
 
     public static final CreativeTabs CREATIVE_TAB = new CreativeTabs(FunctionalStorage.MOD_ID) {
@@ -113,11 +110,7 @@ public class RegistrationHandler {
     public static ConfigurationToolItem configurationTool;
     public static LinkingToolItem linkingTool;
 
-    /**
-     * Registers every block with the game registry. Registry names must match
-     * the blockstate and model file names exactly, because GTNHLib resolves a
-     * block's JSON model from its registry name.
-     */
+    /** Registry names must match the blockstate and model resource paths. */
     public static void registerBlocks() {
         for (WoodDrawerBlock block : woodDrawerBlocks()) {
             woodDrawers.add(block);
@@ -188,9 +181,6 @@ public class RegistrationHandler {
         return blocks;
     }
 
-    /**
-     * Registers every item and the item blocks of registered blocks.
-     */
     public static void registerItems() {
         ironDowngrade = registerUpgrade(new StorageUpgradeItem(StorageUpgradeItem.StorageTier.IRON), "iron_downgrade");
         copperUpgrade = registerUpgrade(
@@ -229,9 +219,6 @@ public class RegistrationHandler {
         GameRegistry.registerItem(linkingTool, "linking_tool");
     }
 
-    /**
-     * Registers the tile entities backing every drawer block.
-     */
     public static void registerTileEntities() {
         for (WoodDrawerBlock block : woodDrawers) {
             GameRegistry
@@ -262,24 +249,14 @@ public class RegistrationHandler {
         }
     }
 
-    /**
-     * Registers integration hooks that are safe on both client and server.
-     */
     public static void registerCommonIntegrations() {
         AE2Integration.register();
     }
 
-    /**
-     * Registers the GTNHLib block state properties used by the JSON model
-     * pipeline, so blockstate variants can select and rotate drawer models.
-     */
     public static void registerBlockProperties() {
         DrawerBlockProperties.register();
     }
 
-    /**
-     * Registers the four tiers of each generation upgrade.
-     */
     private static void registerGenerationUpgrades() {
         for (int tier = 1; tier <= 4; tier++) {
             waterGenerationUpgrades.add(
@@ -297,9 +274,6 @@ public class RegistrationHandler {
         }
     }
 
-    /**
-     * @return every registered drawer block, in registration order
-     */
     @Nonnull
     public static List<DrawerBlock> allDrawerBlocks() {
         List<DrawerBlock> blocks = new ArrayList<>();
@@ -311,14 +285,6 @@ public class RegistrationHandler {
         return blocks;
     }
 
-    /**
-     * Registers an upgrade item under its stable name.
-     *
-     * @param item upgrade item
-     * @param name registry name
-     * @param <T>  upgrade type
-     * @return the registered item
-     */
     public static <T extends UpgradeItem> T registerUpgrade(T item, String name) {
         item.setUpgradeName(name);
         GameRegistry.registerItem(item, name);

@@ -16,21 +16,9 @@ import com.hfstudio.functionalstorage.util.ItemUtil;
 
 import lombok.Getter;
 
-/**
- * Generation upgrades. Water generation fills a fluid drawer, stone generation
- * produces cobblestone, and universal generation produces a configured item.
- * Each tier changes only the amount produced per run.
- *
- * <p>
- * Generation is limited to safe, always-available resources so an unconfigured
- * pack cannot be turned into an infinite source of arbitrary items.
- * </p>
- */
+/** Produces water, cobblestone, or the configured generator item at the selected tier rate. */
 public class GenerationUpgradeItem extends AutomationUpgradeItem {
 
-    /**
-     * Resource a generation upgrade produces.
-     */
     @Getter
     public enum GenerationKind {
 
@@ -58,9 +46,6 @@ public class GenerationUpgradeItem extends AutomationUpgradeItem {
         this.tier = Math.max(1, tier);
     }
 
-    /**
-     * @return the resource this upgrade produces
-     */
     @Nonnull
     public GenerationKind getKind() {
         return kind;
@@ -69,6 +54,12 @@ public class GenerationUpgradeItem extends AutomationUpgradeItem {
     @Override
     public boolean hasDirection() {
         return false;
+    }
+
+    @Override
+    public int getTickInterval() {
+        return kind == GenerationKind.UNIVERSAL ? Math.max(1, FunctionalStorageConfig.UPGRADES.universalGenerationTick)
+            : super.getTickInterval();
     }
 
     @Override
@@ -161,11 +152,6 @@ public class GenerationUpgradeItem extends AutomationUpgradeItem {
         };
     }
 
-    /**
-     * @param kind generation kind
-     * @param tier tier index
-     * @return the registry name of a generation upgrade
-     */
     @Nonnull
     public static String registryName(@Nonnull GenerationKind kind, int tier) {
         return (kind.getIdPrefix() + "_t" + tier).toLowerCase(Locale.ROOT);

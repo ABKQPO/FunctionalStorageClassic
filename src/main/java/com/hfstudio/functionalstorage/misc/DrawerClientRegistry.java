@@ -19,10 +19,7 @@ import cpw.mods.fml.client.registry.ClientRegistry;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
-/**
- * Client-only registration. Kept separate from the proxy so a dedicated server
- * never loads renderer or model loader classes.
- */
+/** Contains client registration to keep renderer classes off the dedicated server. */
 @SideOnly(Side.CLIENT)
 public class DrawerClientRegistry {
 
@@ -35,9 +32,6 @@ public class DrawerClientRegistry {
         }
     }
 
-    /**
-     * Registers tile entity special renderers for every drawer kind.
-     */
     public static void registerRenderers() {
         DrawerRenderer renderer = new DrawerRenderer();
         ClientRegistry.bindTileEntitySpecialRenderer(WoodDrawerTile.class, renderer);
@@ -48,11 +42,7 @@ public class DrawerClientRegistry {
         ClientRegistry.bindTileEntitySpecialRenderer(EnderDrawerTile.class, renderer);
     }
 
-    /**
-     * Registers this mod id with GTNHLib so its resource pack is scanned for
-     * blockstate and model files. This is client-only, because the model loader
-     * touches client resource classes that a dedicated server does not have.
-     */
+    /** Registers blockstate and model resources with the GTNHLib client pipeline. */
     public static void registerModelSource() {
         ModelRegistry.registerModid(FunctionalStorage.MOD_ID);
         if (Minecraft.getMinecraft()
@@ -61,9 +51,6 @@ public class DrawerClientRegistry {
         }
     }
 
-    /**
-     * Registers block colour handlers. Currently a no-op placeholder kept so
-     * the proxy contract stays stable when tinting is added.
-     */
+    /** Reserved for block tint registration. */
     public static void registerBlockColors() {}
 }

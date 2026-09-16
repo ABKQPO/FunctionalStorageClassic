@@ -32,12 +32,7 @@ public class UpgradeItem extends Item {
         setUnlocalizedName("functionalstorage." + id);
     }
 
-    /**
-     * Assigns the registry name. Called by the registration handler so the
-     * constructor stays free of registration side effects.
-     *
-     * @param name registry name
-     */
+    /** Assigns the registry name without registering items during construction. */
     public void setUpgradeName(String name) {
         setUnlocalizedName("functionalstorage." + name);
         setTextureName("functionalstorage:" + name);

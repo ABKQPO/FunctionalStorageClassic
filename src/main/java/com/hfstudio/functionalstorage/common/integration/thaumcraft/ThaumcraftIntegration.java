@@ -6,7 +6,6 @@ import com.hfstudio.functionalstorage.common.integration.thaumcraft.EssentiaCont
 
 import cpw.mods.fml.common.registry.GameRegistry;
 
-/** Connects registered Thaumcraft content through its public API and registry names. */
 public class ThaumcraftIntegration {
 
     private ThaumcraftIntegration() {}

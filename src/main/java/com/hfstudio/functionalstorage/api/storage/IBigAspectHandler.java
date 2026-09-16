@@ -15,13 +15,6 @@ import thaumcraft.api.aspects.Aspect;
  */
 public interface IBigAspectHandler extends IStorageHandler<BigAspectStack, AspectStorageKey> {
 
-    /**
-     * Reports whether an index accepts the given aspect.
-     *
-     * @param index  internal storage index
-     * @param aspect candidate aspect
-     * @return whether the aspect may be inserted
-     */
     default boolean supportsAspect(int index, @Nullable Aspect aspect) {
         if (aspect == null || index < 0 || index >= Math.max(0, getStorageCount())) {
             return false;

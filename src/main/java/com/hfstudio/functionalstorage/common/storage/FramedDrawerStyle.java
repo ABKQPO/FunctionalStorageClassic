@@ -35,12 +35,6 @@ public class FramedDrawerStyle {
         this.cacheKey = buildCacheKey();
     }
 
-    /**
-     * Reads a style from persisted data.
-     *
-     * @param tag style tag, or {@code null}
-     * @return the parsed style, or {@link #EMPTY} when unusable
-     */
     @Nonnull
     public static FramedDrawerStyle fromNBT(@Nullable NBTTagCompound tag) {
         if (tag == null || tag.hasNoTags()) {
@@ -53,12 +47,6 @@ public class FramedDrawerStyle {
         return style.isConfigured() ? style : EMPTY;
     }
 
-    /**
-     * Reads a style out of a framed drawer's dropped item.
-     *
-     * @param drawer drawer item stack
-     * @return the parsed style, or {@link #EMPTY}
-     */
     @Nonnull
     public static FramedDrawerStyle fromDrawerStack(@Nullable ItemStack drawer) {
         if (drawer == null || drawer.getItem() == null || !drawer.hasTagCompound()) {
@@ -72,24 +60,15 @@ public class FramedDrawerStyle {
         return tileData.hasKey(NBT_KEY, 10) ? fromNBT(tileData.getCompoundTag(NBT_KEY)) : EMPTY;
     }
 
-    /**
-     * @return whether both required parts are configured
-     */
     public boolean isConfigured() {
         return exterior != null && front != null;
     }
 
-    /**
-     * @return the exterior casing material, or {@code null}
-     */
     @Nullable
     public ItemStack getExterior() {
         return exterior == null ? null : exterior.copy();
     }
 
-    /**
-     * @return the drawer front material, or {@code null}
-     */
     @Nullable
     public ItemStack getFront() {
         return front == null ? null : front.copy();
@@ -106,17 +85,11 @@ public class FramedDrawerStyle {
         return source == null ? null : source.copy();
     }
 
-    /**
-     * @return a stable key identifying this material combination
-     */
     @Nonnull
     public String getCacheKey() {
         return cacheKey;
     }
 
-    /**
-     * @return a fresh tag holding this style
-     */
     @Nonnull
     public NBTTagCompound writeToNBT() {
         NBTTagCompound tag = new NBTTagCompound();
@@ -126,11 +99,6 @@ public class FramedDrawerStyle {
         return tag;
     }
 
-    /**
-     * Writes this style into a framed drawer's dropped item.
-     *
-     * @param drawer drawer item stack
-     */
     public void applyDrawerStyle(@Nonnull ItemStack drawer) {
         if (drawer.getItem() == null || !isConfigured()) {
             return;

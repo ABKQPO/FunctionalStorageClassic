@@ -13,15 +13,9 @@ import javax.annotation.Nullable;
  */
 public interface StorageSnapshot<S extends StorageSnapshot<S, K>, K extends StorageKey> {
 
-    /**
-     * @return the exact resource key, or {@code null} for an unconfigured slot
-     */
     @Nullable
     K getKey();
 
-    /**
-     * @return the represented amount, always zero or greater
-     */
     long getAmount();
 
     /**
@@ -34,23 +28,14 @@ public interface StorageSnapshot<S extends StorageSnapshot<S, K>, K extends Stor
     @Nonnull
     S withAmount(long amount);
 
-    /**
-     * @return whether this snapshot retains a resource template or filter
-     */
     default boolean hasTemplate() {
         return getKey() != null;
     }
 
-    /**
-     * @return whether the represented physical amount is zero
-     */
     default boolean isEmpty() {
         return getAmount() == 0L;
     }
 
-    /**
-     * @return whether both snapshots have equal non-null exact keys
-     */
     default boolean isSameType(@Nullable S other) {
         K key = getKey();
         return key != null && other != null && Objects.equals(key, other.getKey());

@@ -24,39 +24,28 @@ public class BigItemHandler extends AbstractStorageHandler<BigItemStack, ItemSto
 
     @Override
     protected boolean isCompatible(@Nonnull BigItemStack template, @Nonnull BigItemStack candidate) {
+        if (template.isSameType(candidate)) {
+            return true;
+        }
+        if (!allowsEquivalentItems()) {
+            return false;
+        }
         ItemStack templateStack = template.getTemplate();
         ItemStack candidateStack = candidate.getTemplate();
         if (templateStack == null || candidateStack == null) {
             return false;
         }
-        return ItemUtil.areItemStacksCompatible(templateStack, candidateStack, allowsEquivalentItems());
+        return ItemUtil.sharesOreDictionary(templateStack, candidateStack);
     }
 
-    /**
-     * @return whether the ore dictionary upgrade is installed
-     */
     protected boolean allowsEquivalentItems() {
         return false;
     }
 
-    /**
-     * Convenience overload for handlers that operate on stacks.
-     *
-     * @param index index to fill
-     * @param stack stack to insert
-     * @return the accepted amount
-     */
     public long insertStack(int index, @Nonnull ItemStack stack) {
         return insert(index, new BigItemStack(stack, stack.stackSize), StorageAction.EXECUTE).getProcessedAmount();
     }
 
-    /**
-     * Reports whether a stack would be accepted by one index.
-     *
-     * @param index candidate index
-     * @param stack candidate stack, may be null
-     * @return whether the stack fits
-     */
     public boolean acceptsStack(int index, @Nullable ItemStack stack) {
         return stack != null
             && insert(index, new BigItemStack(stack, 1L), StorageAction.SIMULATE).getProcessedAmount() > 0L;

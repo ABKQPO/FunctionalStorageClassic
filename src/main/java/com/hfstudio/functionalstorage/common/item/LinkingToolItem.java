@@ -87,10 +87,6 @@ public class LinkingToolItem extends Item {
         tooltip.add(StatCollector.translateToLocal("functionalstorage.linking_tool.tooltip"));
     }
 
-    /**
-     * @param stack linking tool stack
-     * @return whether a controller has been selected
-     */
     public static boolean hasTarget(@Nonnull ItemStack stack) {
         return stack.hasTagCompound() && stack.getTagCompound()
             .hasKey(KEY_TARGET);

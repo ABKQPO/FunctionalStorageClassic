@@ -46,11 +46,7 @@ import com.hfstudio.functionalstorage.misc.RegistrationHandler;
 
 import lombok.Getter;
 
-/**
- * Base tile entity for every drawer. Owns the upgrade slots, the rendering
- * options, the lock flag, and the single storage-event subscription so
- * subclasses only have to provide their storage handler.
- */
+/** Owns upgrades, display options, locking, and the active storage subscription. */
 public abstract class ControllableDrawerTile extends TileEntity {
 
     private static final String KEY_STORAGE_UPGRADES = "StorageUpgrades";
@@ -86,33 +82,21 @@ public abstract class ControllableDrawerTile extends TileEntity {
     private long lastInteractionTick = Long.MIN_VALUE;
     private int lastInteractionSlot = -1;
 
-    /**
-     * @return the item storage handler, or {@code null} when this drawer stores something else
-     */
     @Nullable
     public IBigItemHandler getItemHandler() {
         return null;
     }
 
-    /**
-     * @return the fluid storage handler, or {@code null} when this drawer stores something else
-     */
     @Nullable
     public IBigFluidHandler getFluidHandler() {
         return null;
     }
 
-    /**
-     * @return the essentia storage handler, or {@code null} when this drawer stores something else
-     */
     @Nullable
     public IBigAspectHandler getAspectHandler() {
         return null;
     }
 
-    /**
-     * @return the active storage handler regardless of resource kind
-     */
     @Nullable
     public IStorageHandler<?, ?> getActiveStorage() {
         IBigItemHandler itemHandler = getItemHandler();
@@ -126,34 +110,19 @@ public abstract class ControllableDrawerTile extends TileEntity {
         return getAspectHandler();
     }
 
-    /**
-     * @return the number of storage upgrade slots
-     */
     public int getStorageUpgradeSlots() {
         return STORAGE_UPGRADE_SLOTS;
     }
 
-    /**
-     * @return the number of utility upgrade slots
-     */
     public int getUtilityUpgradeSlots() {
         return UTILITY_UPGRADE_SLOTS;
     }
 
-    /**
-     * @return whether this drawer has a GUI with upgrade slots
-     */
     public boolean hasUpgradeSlots() {
         return getStorageUpgradeSlots() > 0 || getUtilityUpgradeSlots() > 0;
     }
 
-    /**
-     * Returns the vanilla inventory view of this drawer's item storage, created
-     * on first use. Drawers that do not store items return {@code null}, which
-     * is how the GUI decides whether to show storage slots.
-     *
-     * @return the inventory view, or {@code null}
-     */
+    /** Lazily creates the physical inventory view; non-item drawers return null. */
     @Nullable
     public IInventory getInventoryView() {
         IBigItemHandler itemHandler = getItemHandler();
@@ -170,9 +139,6 @@ public abstract class ControllableDrawerTile extends TileEntity {
         return inventoryView;
     }
 
-    /**
-     * @return the rendering options of this drawer
-     */
     @Nonnull
     public DrawerOptions getDrawerOptions() {
         return drawerOptions;
@@ -186,31 +152,16 @@ public abstract class ControllableDrawerTile extends TileEntity {
         requestUpdatePacket();
     }
 
-    /**
-     * @param slot upgrade slot index
-     * @return the storage upgrade stack, or {@code null} when the slot is empty
-     */
     @Nullable
     public ItemStack getStorageUpgrade(int slot) {
         return stackAt(storageUpgrades, slot);
     }
 
-    /**
-     * @param slot upgrade slot index
-     * @return the utility upgrade stack, or {@code null} when the slot is empty
-     */
     @Nullable
     public ItemStack getUtilityUpgrade(int slot) {
         return stackAt(utilityUpgrades, slot);
     }
 
-    /**
-     * Installs or clears an upgrade slot from a GUI interaction.
-     *
-     * @param storage whether the slot is a storage upgrade slot
-     * @param slot    upgrade slot index
-     * @param stack   new stack, or {@code null} to clear
-     */
     public void setUpgradeSlot(boolean storage, int slot, @Nullable ItemStack stack) {
         ItemStack[] target = storage ? storageUpgrades : utilityUpgrades;
         if (slot < 0 || slot >= target.length) {
@@ -223,12 +174,6 @@ public abstract class ControllableDrawerTile extends TileEntity {
         requestUpdatePacket();
     }
 
-    /**
-     * Applies a change made through the GUI directly to the tile.
-     *
-     * @param storage whether the slot is a storage upgrade slot
-     * @param slot    upgrade slot index
-     */
     public void onUpgradeSlotChanged(boolean storage, int slot) {
         upgradeCacheDirty = true;
         reconcileStorageConfiguration();
@@ -256,28 +201,15 @@ public abstract class ControllableDrawerTile extends TileEntity {
         requestUpdatePacket();
     }
 
-    /**
-     * Flips the lock state.
-     */
     public void toggleLocking() {
         setLocked(!locked);
     }
 
-    /**
-     * @return the controller coordinates as a three element array, or {@code null} when unlinked
-     */
     @Nullable
     public int[] getControllerPosition() {
         return controllerX == Integer.MIN_VALUE ? null : new int[] { controllerX, controllerY, controllerZ };
     }
 
-    /**
-     * Binds this drawer to a controller.
-     *
-     * @param x controller x
-     * @param y controller y
-     * @param z controller z
-     */
     public void setControllerPosition(int x, int y, int z) {
         this.controllerX = x;
         this.controllerY = y;
@@ -285,9 +217,6 @@ public abstract class ControllableDrawerTile extends TileEntity {
         markDirty();
     }
 
-    /**
-     * Removes the controller link.
-     */
     public void clearControllerPosition() {
         this.controllerX = Integer.MIN_VALUE;
         this.controllerY = Integer.MIN_VALUE;
@@ -295,11 +224,6 @@ public abstract class ControllableDrawerTile extends TileEntity {
         markDirty();
     }
 
-    /**
-     * Releases the controller link and asks the controller to forget this drawer.
-     *
-     * @param world world containing this drawer
-     */
     public void detachFromController(@Nonnull World world) {
         if (controllerX == Integer.MIN_VALUE) {
             return;
@@ -311,45 +235,23 @@ public abstract class ControllableDrawerTile extends TileEntity {
         clearControllerPosition();
     }
 
-    /**
-     * @param side side the signal is queried from
-     * @return the current redstone output
-     */
     public int getRedstoneSignal(int side) {
         return hasRedstoneUpgrade() ? calculateRedstoneSignal() : 0;
     }
 
-    /**
-     * @return whether a redstone upgrade is installed
-     */
     public boolean hasRedstoneUpgrade() {
         return getUpgradeState().hasFeature(StorageFeature.REDSTONE_OUTPUT);
     }
 
-    /**
-     * @return the comparator-style signal derived from the fill ratio
-     */
     protected int calculateRedstoneSignal() {
         return 0;
     }
 
-    /**
-     * Comparator output based on how full the drawer is. This always reports the
-     * fill level, unlike {@link #getRedstoneSignal(int)} which depends on an
-     * installed redstone upgrade.
-     *
-     * @return a signal strength between zero and fifteen
-     */
+    /** Reports fill level even without a redstone upgrade. */
     public int getComparatorOutput() {
         return calculateRedstoneSignal();
     }
 
-    /**
-     * Converts a fill ratio into a redstone signal strength.
-     *
-     * @param ratio fill ratio in the range zero to one
-     * @return the signal strength
-     */
     protected static int redstoneForRatio(double ratio) {
         if (ratio <= 0D) {
             return 0;
@@ -360,17 +262,6 @@ public abstract class ControllableDrawerTile extends TileEntity {
         return (int) Math.ceil(ratio * 14D);
     }
 
-    /**
-     * Handles a right-click on one drawer slot.
-     *
-     * @param player interacting player
-     * @param side   clicked face ordinal
-     * @param hitX   local hit x
-     * @param hitY   local hit y
-     * @param hitZ   local hit z
-     * @param slot   resolved slot index, or {@code -1}
-     * @return whether the interaction was consumed
-     */
     public boolean onSlotActivated(@Nonnull EntityPlayer player, int side, float hitX, float hitY, float hitZ,
         int slot) {
         ItemStack held = player.getHeldItem();
@@ -399,12 +290,6 @@ public abstract class ControllableDrawerTile extends TileEntity {
         return activateItemSlot(player, slot);
     }
 
-    /**
-     * Opens this drawer's configuration screen for a player.
-     *
-     * @param player player to open the screen for
-     * @return whether the screen was opened
-     */
     public boolean openGui(@Nonnull EntityPlayer player) {
         if (worldObj == null || worldObj.isRemote) {
             return false;
@@ -413,13 +298,7 @@ public abstract class ControllableDrawerTile extends TileEntity {
         return true;
     }
 
-    /**
-     * Handles a left-click on one drawer slot. Extracts a single item from that
-     * slot, or a full stack while the player is sneaking.
-     *
-     * @param player interacting player
-     * @param slot   resolved slot index, or {@code -1}
-     */
+    /** Extracts one item from the selected physical slot, or a stack while sneaking. */
     public void onSlotClicked(@Nonnull EntityPlayer player, int slot) {
         if (worldObj == null || worldObj.isRemote || slot < 0) {
             return;
@@ -448,9 +327,6 @@ public abstract class ControllableDrawerTile extends TileEntity {
         requestUpdatePacket();
     }
 
-    /**
-     * @return the current upgrade contributions, recomputed when stale
-     */
     @Nonnull
     public UpgradeState getUpgradeState() {
         if (upgradeCacheDirty) {
@@ -460,39 +336,22 @@ public abstract class ControllableDrawerTile extends TileEntity {
         return cachedUpgradeState;
     }
 
-    /**
-     * @param attribute   attribute to evaluate
-     * @param defaultBase base value supplied by the storage implementation
-     * @return the evaluated value
-     */
     public double calculateModifier(@Nonnull UpgradeAttribute attribute, double defaultBase) {
         return getUpgradeState().calculate(attribute, defaultBase);
     }
 
-    /**
-     * @return whether the installed upgrades remove the capacity ceiling
-     */
     public boolean hasMaxStorage() {
         return getUpgradeState().hasFeature(StorageFeature.MAX_CAPACITY);
     }
 
-    /**
-     * @return whether the ore dictionary upgrade is installed
-     */
     public boolean hasEquivalentItems() {
         return getUpgradeState().hasFeature(StorageFeature.EQUIVALENT_ITEMS);
     }
 
-    /**
-     * @return whether the creative vending upgrade is installed
-     */
     public boolean isCreative() {
         return getUpgradeState().hasFeature(StorageFeature.CREATIVE);
     }
 
-    /**
-     * @return whether compatible overflow is voided
-     */
     public boolean voidsOverflow() {
         return getUpgradeState().hasFeature(StorageFeature.VOID_OVERFLOW);
     }
@@ -523,12 +382,6 @@ public abstract class ControllableDrawerTile extends TileEntity {
         return true;
     }
 
-    /**
-     * Writes this drawer's persistent state onto a drop stack.
-     *
-     * @param base base drop stack
-     * @return the drop stack carrying contents, upgrades, and options
-     */
     @Nonnull
     public ItemStack createDropStack(@Nonnull ItemStack base) {
         NBTTagCompound tileData = writeTileData(new NBTTagCompound());
@@ -541,11 +394,6 @@ public abstract class ControllableDrawerTile extends TileEntity {
         return base;
     }
 
-    /**
-     * Restores this drawer from a drop stack.
-     *
-     * @param stack drop stack
-     */
     public void loadFromItemStack(@Nonnull ItemStack stack) {
         if (!stack.hasTagCompound()) {
             return;
@@ -559,18 +407,11 @@ public abstract class ControllableDrawerTile extends TileEntity {
         requestUpdatePacket();
     }
 
-    /**
-     * Clears every upgrade slot when the block is broken.
-     */
     public void onBlockBroken() {
         Arrays.fill(storageUpgrades, null);
         Arrays.fill(utilityUpgrades, null);
     }
 
-    /**
-     * @param tag destination tag
-     * @return the supplied tag with the full persistent state of this drawer
-     */
     @Nonnull
     public NBTTagCompound writeTileData(@Nonnull NBTTagCompound tag) {
         tag.setTag(KEY_STORAGE_UPGRADES, writeStacks(storageUpgrades));
@@ -584,11 +425,6 @@ public abstract class ControllableDrawerTile extends TileEntity {
         return tag;
     }
 
-    /**
-     * Restores persistent state.
-     *
-     * @param tag previously produced by {@link #writeTileData}
-     */
     public void readTileData(@Nonnull NBTTagCompound tag) {
         readStacks(tag.getTagList(KEY_STORAGE_UPGRADES, 10), storageUpgrades);
         readStacks(tag.getTagList(KEY_UTILITY_UPGRADES, 10), utilityUpgrades);
@@ -638,15 +474,7 @@ public abstract class ControllableDrawerTile extends TileEntity {
         }
     }
 
-    /**
-     * Runs one automation upgrade on its own interval. Keeping the countdown in
-     * the upgrade's NBT means the interval survives reloads and stays per
-     * upgrade rather than per drawer.
-     *
-     * @param upgrade installed automation upgrade
-     * @param stack   installed upgrade stack
-     * @param slot    utility slot index
-     */
+    /** Keeps each automation countdown in the upgrade NBT so its interval survives reloads. */
     private void tickAutomation(@Nonnull AutomationUpgradeItem upgrade, @Nonnull ItemStack stack, int slot) {
         int remaining = upgrade.getRemainingTicks(stack) - 1;
         if (remaining > 0) {
@@ -657,11 +485,6 @@ public abstract class ControllableDrawerTile extends TileEntity {
         upgrade.work(this, stack, slot);
     }
 
-    /**
-     * Binds the tile-owned subscription to a storage handler.
-     *
-     * @param handler storage handler, or {@code null} to detach
-     */
     protected final void bindStorageHandler(@Nullable IStorageHandler<?, ?> handler) {
         if (subscribedStorage == handler && !storageSubscription.isClosed()) {
             return;
@@ -674,9 +497,6 @@ public abstract class ControllableDrawerTile extends TileEntity {
         }
     }
 
-    /**
-     * Closes the tile-owned subscription; safe to call repeatedly.
-     */
     protected final void closeStorageSubscription() {
         StorageSubscription current = storageSubscription;
         storageSubscription = StorageSubscription.CLOSED;
@@ -685,18 +505,12 @@ public abstract class ControllableDrawerTile extends TileEntity {
         }
     }
 
-    /**
-     * Rebuilds a closed subscription after a chunk reload.
-     */
     protected final void rebuildStorageSubscription() {
         if (subscribedStorage != null && storageSubscription.isClosed()) {
             storageSubscription = subscribedStorage.subscribe(change -> onStorageChanged());
         }
     }
 
-    /**
-     * Marks the tile dirty and schedules one update packet.
-     */
     protected final void onStorageChanged() {
         markDirty();
         requestUpdatePacket();
@@ -836,18 +650,8 @@ public abstract class ControllableDrawerTile extends TileEntity {
         }
     }
 
-    /**
-     * Writes resource-specific storage state.
-     *
-     * @param tag destination tag
-     */
     protected abstract void writeStorageData(@Nonnull NBTTagCompound tag);
 
-    /**
-     * Reads resource-specific storage state.
-     *
-     * @param tag source tag
-     */
     protected abstract void readStorageData(@Nonnull NBTTagCompound tag);
 
     private boolean tryInstallStorageUpgrade(@Nonnull EntityPlayer player, @Nonnull ItemStack held) {

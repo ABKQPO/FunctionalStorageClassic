@@ -13,14 +13,8 @@ import com.hfstudio.functionalstorage.common.block.base.DrawerBlock;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 import com.hfstudio.functionalstorage.common.tile.compact.CompactingDrawerTile;
 
-/**
- * Simple compacting drawer block with two visible compression tiers.
- */
 public class SimpleCompactingDrawerBlock extends DrawerBlock {
 
-    /**
-     * Number of visible compression tiers of this drawer.
-     */
     public static final int TIER_COUNT = 2;
 
     public SimpleCompactingDrawerBlock() {

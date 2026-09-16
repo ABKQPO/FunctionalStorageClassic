@@ -18,15 +18,7 @@ import com.hfstudio.functionalstorage.common.inventory.base.BigFluidHandler;
 import com.hfstudio.functionalstorage.common.storage.DrawerLayout;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 
-/**
- * Fluid drawer tile. Holds one long-capacity tank per layout slot and exposes
- * it through the generic fluid capability.
- *
- * <p>
- * The tile implements Forge's {@link IFluidHandler} directly so fluid pipes
- * and machines can find it without a capability lookup.
- * </p>
- */
+/** Implements Forge IFluidHandler directly for native pipe compatibility. */
 public class FluidDrawerTile extends ControllableDrawerTile implements IFluidHandler {
 
     private static final String KEY_TANKS = "Tanks";
@@ -76,17 +68,11 @@ public class FluidDrawerTile extends ControllableDrawerTile implements IFluidHan
         };
     }
 
-    /**
-     * @return the Forge fluid handler view used by pipes and machines
-     */
     @Nonnull
     public DrawerFluidHandler getForgeFluidHandler() {
         return fluidHandler;
     }
 
-    /**
-     * @return the slot layout of this drawer
-     */
     @Nonnull
     public DrawerLayout getDrawerLayout() {
         return layout;

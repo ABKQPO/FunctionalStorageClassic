@@ -14,10 +14,7 @@ import com.hfstudio.functionalstorage.common.storage.DrawerWoodType;
 import com.hfstudio.functionalstorage.common.tile.WoodDrawerTile;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 
-/**
- * Wooden drawer block. One block instance covers every layout of a single wood
- * type; the layout and wood type together form the stable identifier.
- */
+/** One block per wood type and layout, with a stable registry and asset identifier. */
 public class WoodDrawerBlock extends DrawerBlock {
 
     private final DrawerWoodType woodType;
@@ -38,25 +35,16 @@ public class WoodDrawerBlock extends DrawerBlock {
         };
     }
 
-    /**
-     * @return the wood variant of this block
-     */
     @Nonnull
     public DrawerWoodType getWoodType() {
         return woodType;
     }
 
-    /**
-     * @return the slot layout of this block
-     */
     @Nonnull
     public DrawerLayout getDrawerLayout() {
         return layout;
     }
 
-    /**
-     * @return the stable identifier used for registration, assets, and lang keys
-     */
     @Nonnull
     public String getDrawerId() {
         return woodType.getId() + "_" + layout.getSlotCount();

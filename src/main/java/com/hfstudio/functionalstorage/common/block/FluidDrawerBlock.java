@@ -12,10 +12,6 @@ import com.hfstudio.functionalstorage.common.storage.DrawerLayout;
 import com.hfstudio.functionalstorage.common.tile.FluidDrawerTile;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 
-/**
- * Fluid drawer block. One block instance per slot count; the tanks are exposed
- * through Forge's fluid handler capability by the tile.
- */
 public class FluidDrawerBlock extends DrawerBlock {
 
     private final DrawerLayout layout;
@@ -29,9 +25,6 @@ public class FluidDrawerBlock extends DrawerBlock {
         setBlockTextureName("functionalstorage:fluid_front");
     }
 
-    /**
-     * @return the slot layout of this fluid drawer
-     */
     @Nonnull
     public DrawerLayout getDrawerLayout() {
         return layout;

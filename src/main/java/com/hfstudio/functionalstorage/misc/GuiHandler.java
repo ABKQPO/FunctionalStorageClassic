@@ -12,15 +12,9 @@ import cpw.mods.fml.common.network.IGuiHandler;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
-/**
- * Routes drawer GUI requests to the right container and screen. The client side
- * class is only touched on the client, so a dedicated server never loads it.
- */
+/** Routes GUI requests to the server container and the sided client screen. */
 public class GuiHandler implements IGuiHandler {
 
-    /**
-     * GUI id of the drawer screen.
-     */
     public static final int GUI_DRAWER = 0;
 
     @Override

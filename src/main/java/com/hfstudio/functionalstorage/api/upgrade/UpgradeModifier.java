@@ -28,38 +28,19 @@ public class UpgradeModifier {
     private final Operation operation;
     private final double value;
 
-    /**
-     * Creates a modifier.
-     *
-     * @param operation operation to perform; never {@code null}
-     * @param value     operand used by the operation
-     * @throws NullPointerException if {@code operation} is {@code null}
-     */
     public UpgradeModifier(Operation operation, double value) {
         this.operation = Objects.requireNonNull(operation, "operation");
         this.value = value;
     }
 
-    /**
-     * @param value replacement base value
-     * @return a modifier that replaces the base value
-     */
     public static UpgradeModifier setBase(double value) {
         return new UpgradeModifier(Operation.SET_BASE, value);
     }
 
-    /**
-     * @param value amount added to the base value
-     * @return a modifier that adds to the base value
-     */
     public static UpgradeModifier addBase(double value) {
         return new UpgradeModifier(Operation.ADD_BASE, value);
     }
 
-    /**
-     * @param value factor applied to the adjusted base value
-     * @return a modifier that multiplies the adjusted base value
-     */
     public static UpgradeModifier multiply(double value) {
         return new UpgradeModifier(Operation.MULTIPLY, value);
     }
@@ -123,21 +104,12 @@ public class UpgradeModifier {
         return "UpgradeModifier{" + operation + ", value=" + value + '}';
     }
 
-    /**
-     * Supported modifier operations, listed in their fixed evaluation order.
-     */
     public enum Operation {
         /**
          * Replace the current base value. If repeated, the last value wins.
          */
         SET_BASE,
-        /**
-         * Add to the base value after every base replacement has run.
-         */
         ADD_BASE,
-        /**
-         * Multiply the fully adjusted base value.
-         */
         MULTIPLY
     }
 }

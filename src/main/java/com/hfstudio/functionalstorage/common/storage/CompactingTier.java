@@ -35,42 +35,24 @@ public class CompactingTier {
         this.baseUnits = Math.max(1L, baseUnits);
     }
 
-    /**
-     * @return the shared empty tier
-     */
     @Nonnull
     public static CompactingTier empty() {
         return EMPTY;
     }
 
-    /**
-     * @return a detached count-one template, or {@code null} for an empty tier
-     */
     @Nullable
     public ItemStack getTemplate() {
         return ItemUtil.copyWithSizeOne(template);
     }
 
-    /**
-     * @return whether this tier carries an item
-     */
     public boolean hasTemplate() {
         return template != null;
     }
 
-    /**
-     * Compares the item and unit value of two tiers, ignoring stored amounts.
-     *
-     * @param other tier to compare against
-     * @return whether both tiers describe the same item and unit value
-     */
     public boolean sameDefinition(@Nullable CompactingTier other) {
         return other != null && baseUnits == other.baseUnits && ItemUtil.areItemStacksEqual(template, other.template);
     }
 
-    /**
-     * @return a detached copy of this tier
-     */
     @Nonnull
     public CompactingTier copy() {
         return new CompactingTier(template, baseUnits);

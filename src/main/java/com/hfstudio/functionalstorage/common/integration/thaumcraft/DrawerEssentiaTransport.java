@@ -30,16 +30,14 @@ public class DrawerEssentiaTransport implements IEssentiaTransport {
             return;
         }
         for (ForgeDirection side : ForgeDirection.VALID_DIRECTIONS) {
-            int suction = getSuctionAmount(side);
-            if (suction == 0) {
-                continue;
-            }
             TileEntity neighbor = world
                 .getTileEntity(owner.xCoord + side.offsetX, owner.yCoord + side.offsetY, owner.zCoord + side.offsetZ);
             ForgeDirection opposite = side.getOpposite();
-            if (!(neighbor instanceof IEssentiaTransport source) || !source.canOutputTo(opposite)
-                || source.getSuctionAmount(opposite) >= suction
-                || source.getMinimumSuction() > suction) {
+            if (!(neighbor instanceof IEssentiaTransport source) || !source.canOutputTo(opposite)) {
+                continue;
+            }
+            int suction = getSuctionAmount(side);
+            if (suction == 0 || source.getSuctionAmount(opposite) >= suction || source.getMinimumSuction() > suction) {
                 continue;
             }
             Aspect aspect = source.getEssentiaType(opposite);

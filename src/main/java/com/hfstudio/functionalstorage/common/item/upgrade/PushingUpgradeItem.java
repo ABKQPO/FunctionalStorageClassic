@@ -9,6 +9,7 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
+import com.hfstudio.functionalstorage.common.integration.thaumcraft.EssentiaTransfer;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 import com.hfstudio.functionalstorage.config.FunctionalStorageConfig;
 import com.hfstudio.functionalstorage.util.TransferUtil;
@@ -17,7 +18,7 @@ import com.hfstudio.functionalstorage.util.UpgradeTargeting;
 import lombok.Getter;
 
 /**
- * Pushing upgrade. Moves items and fluids from the drawer into a neighbour.
+ * Pushes items, fluids, or essentia through the selected neighbouring or wireless endpoint.
  *
  * <p>
  * The wired variant works on the block touching a chosen side of the drawer.
@@ -43,10 +44,12 @@ public class PushingUpgradeItem extends AutomationUpgradeItem {
             return;
         }
         TileEntity target = resolveTarget(tile, stack);
-        if (target == null) {
+        if (target == null || target == tile) {
             return;
         }
-        ForgeDirection access = wireless ? ForgeDirection.UNKNOWN : UpgradeTargeting.targetDirection(tile, stack);
+        ForgeDirection access = wireless ? ForgeDirection.UNKNOWN
+            : UpgradeTargeting.targetDirection(tile, stack)
+                .getOpposite();
         if (tile.getItemHandler() != null) {
             TransferUtil
                 .pushItems(tile.getItemHandler(), target, access, FunctionalStorageConfig.UPGRADES.upgradePushItems);
@@ -54,6 +57,10 @@ public class PushingUpgradeItem extends AutomationUpgradeItem {
         if (tile.getFluidHandler() != null) {
             TransferUtil
                 .pushFluid(tile.getFluidHandler(), target, access, FunctionalStorageConfig.UPGRADES.upgradePushFluid);
+        }
+        if (tile.getAspectHandler() != null) {
+            EssentiaTransfer
+                .push(tile.getAspectHandler(), target, access, FunctionalStorageConfig.UPGRADES.upgradePushAspect);
         }
     }
 
@@ -70,22 +77,10 @@ public class PushingUpgradeItem extends AutomationUpgradeItem {
                 .getTileEntity(target[0], target[1], target[2]);
     }
 
-    /**
-     * Records the coordinate this wireless upgrade should push to.
-     *
-     * @param stack upgrade stack
-     * @param x     target x
-     * @param y     target y
-     * @param z     target z
-     */
     public void setWirelessTarget(@Nonnull ItemStack stack, int x, int y, int z) {
         tagOf(stack).setIntArray(KEY_TARGET, new int[] { x, y, z });
     }
 
-    /**
-     * @param stack upgrade stack
-     * @return the recorded coordinate, or {@code null} when unset
-     */
     @Nullable
     public int[] getWirelessTarget(@Nonnull ItemStack stack) {
         NBTTagCompound tag = tagOf(stack);

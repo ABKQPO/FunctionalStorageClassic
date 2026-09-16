@@ -9,6 +9,7 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
+import com.hfstudio.functionalstorage.common.integration.thaumcraft.EssentiaTransfer;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 import com.hfstudio.functionalstorage.config.FunctionalStorageConfig;
 import com.hfstudio.functionalstorage.util.TransferUtil;
@@ -17,7 +18,7 @@ import com.hfstudio.functionalstorage.util.UpgradeTargeting;
 import lombok.Getter;
 
 /**
- * Pulling upgrade. Moves items and fluids from a neighbour into the drawer.
+ * Pulls items, fluids, or essentia through the selected neighbouring or wireless endpoint.
  *
  * <p>
  * The wired variant works on the block touching a chosen side of the drawer.
@@ -42,7 +43,7 @@ public class PullingUpgradeItem extends AutomationUpgradeItem {
             return;
         }
         TileEntity source = resolveSource(tile, stack);
-        if (source == null) {
+        if (source == null || source == tile) {
             return;
         }
         ForgeDirection access = accessSide(tile, stack, source);
@@ -53,6 +54,10 @@ public class PullingUpgradeItem extends AutomationUpgradeItem {
         if (tile.getFluidHandler() != null) {
             TransferUtil
                 .pullFluid(tile.getFluidHandler(), source, access, FunctionalStorageConfig.UPGRADES.upgradePullFluid);
+        }
+        if (tile.getAspectHandler() != null) {
+            EssentiaTransfer
+                .pull(tile.getAspectHandler(), source, access, FunctionalStorageConfig.UPGRADES.upgradePullAspect);
         }
     }
 
@@ -81,22 +86,10 @@ public class PullingUpgradeItem extends AutomationUpgradeItem {
         return ForgeDirection.UNKNOWN;
     }
 
-    /**
-     * Records the coordinate this wireless upgrade should pull from.
-     *
-     * @param stack upgrade stack
-     * @param x     target x
-     * @param y     target y
-     * @param z     target z
-     */
     public void setWirelessTarget(@Nonnull ItemStack stack, int x, int y, int z) {
         tagOf(stack).setIntArray("WirelessTarget", new int[] { x, y, z });
     }
 
-    /**
-     * @param stack upgrade stack
-     * @return the recorded coordinate, or {@code null} when unset
-     */
     @Nullable
     public int[] getWirelessTarget(@Nonnull ItemStack stack) {
         NBTTagCompound tag = tagOf(stack);

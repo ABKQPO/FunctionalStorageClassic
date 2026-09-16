@@ -18,25 +18,11 @@ import com.hfstudio.functionalstorage.api.storage.IBigItemHandler;
 import com.hfstudio.functionalstorage.api.storage.ItemStorageView;
 import com.hfstudio.functionalstorage.api.storage.StorageAction;
 
-/**
- * Cross-block item and fluid transfer used by the pulling, pushing, and
- * collecting upgrades. Everything goes through vanilla {@code IInventory} and
- * Forge {@code IFluidHandler}, which are the only common 1.7.10 contracts, so
- * these upgrades work with any container mod without special casing.
- */
+/** Transfers through native IInventory and IFluidHandler contracts for cross-mod compatibility. */
 public class TransferUtil {
 
     private TransferUtil() {}
 
-    /**
-     * Moves items from an external block into a drawer.
-     *
-     * @param drawer     destination drawer
-     * @param source     source tile entity, or {@code null}
-     * @param sourceSide side of the source being accessed
-     * @param limit      maximum number of items to move
-     * @return whether anything moved
-     */
     public static boolean pullItems(@Nonnull IBigItemHandler drawer, @Nullable TileEntity source,
         @Nonnull ForgeDirection sourceSide, int limit) {
         IInventory inventory = asInventory(source);
@@ -69,15 +55,6 @@ public class TransferUtil {
         return moved;
     }
 
-    /**
-     * Moves items from a drawer into an external block.
-     *
-     * @param drawer     source drawer
-     * @param target     destination tile entity, or {@code null}
-     * @param targetSide side of the target being accessed
-     * @param limit      maximum number of items to move
-     * @return whether anything moved
-     */
     public static boolean pushItems(@Nonnull IBigItemHandler drawer, @Nullable TileEntity target,
         @Nonnull ForgeDirection targetSide, int limit) {
         IInventory inventory = asInventory(target);
@@ -119,15 +96,6 @@ public class TransferUtil {
         return moved;
     }
 
-    /**
-     * Moves fluid from an external block into a drawer.
-     *
-     * @param drawer     destination drawer
-     * @param source     source tile entity, or {@code null}
-     * @param sourceSide side of the source being accessed
-     * @param limit      maximum millibuckets to move
-     * @return whether anything moved
-     */
     public static boolean pullFluid(@Nonnull IBigFluidHandler drawer, @Nullable TileEntity source,
         @Nonnull ForgeDirection sourceSide, int limit) {
         IFluidHandler handler = asFluidHandler(source);
@@ -150,15 +118,6 @@ public class TransferUtil {
         return true;
     }
 
-    /**
-     * Moves fluid from a drawer into an external block.
-     *
-     * @param drawer     source drawer
-     * @param target     destination tile entity, or {@code null}
-     * @param targetSide side of the target being accessed
-     * @param limit      maximum millibuckets to move
-     * @return whether anything moved
-     */
     public static boolean pushFluid(@Nonnull IBigFluidHandler drawer, @Nullable TileEntity target,
         @Nonnull ForgeDirection targetSide, int limit) {
         IFluidHandler handler = asFluidHandler(target);
@@ -229,31 +188,16 @@ public class TransferUtil {
         return remaining.stackSize <= 0 ? null : remaining;
     }
 
-    /**
-     * @param tile candidate tile entity
-     * @return the tile as an inventory, or {@code null}
-     */
     @Nullable
     public static IInventory asInventory(@Nullable TileEntity tile) {
         return tile instanceof IInventory ? (IInventory) tile : null;
     }
 
-    /**
-     * @param tile candidate tile entity
-     * @return the tile as a fluid handler, or {@code null}
-     */
     @Nullable
     public static IFluidHandler asFluidHandler(@Nullable TileEntity tile) {
         return tile instanceof IFluidHandler ? (IFluidHandler) tile : null;
     }
 
-    /**
-     * Resolves the slots of an inventory reachable from one side.
-     *
-     * @param inventory inventory to inspect
-     * @param side      side being accessed
-     * @return the reachable slot indices
-     */
     @Nonnull
     public static int[] accessibleSlots(@Nonnull IInventory inventory, @Nonnull ForgeDirection side) {
         if (inventory instanceof ISidedInventory) {

@@ -32,9 +32,6 @@ public class FluidStorageKey implements StorageKey {
         this.hashCode = computeHashCode();
     }
 
-    /**
-     * @return the represented fluid
-     */
     @Nonnull
     public Fluid getFluid() {
         return fluid;

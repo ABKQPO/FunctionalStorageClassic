@@ -50,12 +50,16 @@ public class BigFluidStack implements StorageSnapshot<BigFluidStack, FluidStorag
         this.amount = Math.max(0L, amount);
     }
 
-    /**
-     * @return the shared immutable empty snapshot
-     */
     @Nonnull
     public static BigFluidStack empty() {
         return EMPTY;
+    }
+
+    // Only existing snapshots may share the private, never-exposed template.
+    private BigFluidStack(FluidStack template, FluidStorageKey key, long amount) {
+        this.template = template;
+        this.key = key;
+        this.amount = amount;
     }
 
     /**
@@ -69,35 +73,26 @@ public class BigFluidStack implements StorageSnapshot<BigFluidStack, FluidStorag
         return template == null ? null : template.copy();
     }
 
-    /**
-     * @return immutable exact fluid key, or {@code null} when unconfigured
-     */
     @Nullable
     @Override
     public FluidStorageKey getKey() {
         return key;
     }
 
-    /**
-     * @return the represented amount
-     */
     @Override
     public long getAmount() {
         return amount;
     }
 
-    /**
-     * Creates the same fluid snapshot with a different amount. The template is
-     * copied again; a non-positive amount produces a typed zero snapshot when
-     * this snapshot has a retained template.
-     *
-     * @param newAmount new represented amount
-     * @return an immutable snapshot with the requested amount
-     */
+    /** Changing the amount retains the resource type, including at zero. */
     @Nonnull
     @Override
     public BigFluidStack withAmount(long newAmount) {
-        return template == null ? empty() : new BigFluidStack(template, newAmount);
+        if (template == null) {
+            return empty();
+        }
+        long normalized = Math.max(0L, newAmount);
+        return normalized == amount ? this : new BigFluidStack(template, key, normalized);
     }
 
     /**

@@ -12,10 +12,6 @@ import com.hfstudio.functionalstorage.common.block.DrawerFaceLayout;
 import com.hfstudio.functionalstorage.common.block.base.DrawerBlock;
 import com.hfstudio.functionalstorage.common.tile.controller.ControllerExtensionTile;
 
-/**
- * Controller extension block. Drawers can link through an extension, so a
- * network can reach further without consuming another controller.
- */
 public class ControllerExtensionBlock extends DrawerBlock {
 
     public ControllerExtensionBlock() {

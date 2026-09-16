@@ -8,10 +8,7 @@ import net.minecraft.nbt.NBTTagCompound;
 import com.hfstudio.functionalstorage.common.item.ConfigurationToolItem;
 import com.hfstudio.functionalstorage.config.FunctionalStorageConfig;
 
-/**
- * Per-drawer rendering configuration set through the configuration tool.
- * Values are persisted with the tile and synchronized to the client.
- */
+/** Display options persisted with the tile and synchronized to clients. */
 public class DrawerOptions {
 
     private static final String ADVANCED_PREFIX = "Advanced_";
@@ -34,70 +31,36 @@ public class DrawerOptions {
         this.advancedValues.put(ConfigurationToolItem.ConfigurationAction.INDICATOR, 0);
     }
 
-    /**
-     * @param action configuration action
-     * @return whether the action is enabled
-     */
     public boolean isActive(ConfigurationToolItem.ConfigurationAction action) {
         Boolean value = toggles.get(action);
         return value == null || value;
     }
 
-    /**
-     * @return whether stored icons should render
-     */
     public boolean isShowItemRender() {
         return isActive(ConfigurationToolItem.ConfigurationAction.TOGGLE_RENDER);
     }
 
-    /**
-     * @return whether stored amounts should render
-     */
     public boolean isShowItemCount() {
         return isActive(ConfigurationToolItem.ConfigurationAction.TOGGLE_NUMBERS);
     }
 
-    /**
-     * @return whether upgrade icons should render
-     */
     public boolean isShowUpgrades() {
         return isActive(ConfigurationToolItem.ConfigurationAction.TOGGLE_UPGRADES);
     }
 
-    /**
-     * @param action configuration action
-     * @return the advanced value, or zero when unset
-     */
     public int getAdvancedValue(ConfigurationToolItem.ConfigurationAction action) {
         Integer value = advancedValues.get(action);
         return value == null ? 0 : value;
     }
 
-    /**
-     * Sets a boolean option.
-     *
-     * @param action configuration action
-     * @param active new value
-     */
     public void setActive(ConfigurationToolItem.ConfigurationAction action, boolean active) {
         toggles.put(action, active);
     }
 
-    /**
-     * Sets an advanced value.
-     *
-     * @param action configuration action
-     * @param value  new value
-     */
     public void setAdvancedValue(ConfigurationToolItem.ConfigurationAction action, int value) {
         advancedValues.put(action, value);
     }
 
-    /**
-     * Cycles an option to its next value.
-     *
-     * @param action configuration action
-     */
     public void cycle(ConfigurationToolItem.ConfigurationAction action) {
         if (action.getMaxValue() == 1) {
             setActive(action, !isActive(action));
@@ -106,9 +69,6 @@ public class DrawerOptions {
         }
     }
 
-    /**
-     * @return a fresh tag holding the current options
-     */
     public NBTTagCompound serializeNBT() {
         NBTTagCompound tag = new NBTTagCompound();
         for (Map.Entry<ConfigurationToolItem.ConfigurationAction, Boolean> entry : toggles.entrySet()) {

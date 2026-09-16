@@ -23,17 +23,9 @@ import mcp.mobius.waila.api.IWailaDataAccessor;
 import mcp.mobius.waila.api.IWailaDataProvider;
 import mcp.mobius.waila.api.IWailaRegistrar;
 
-/**
- * Waila provider that reports drawer contents, capacity, and lock state.
- * Registered reflectively so the mod loads fine without Waila installed.
- */
+/** Reports drawer contents, capacity, and lock state through Waila. */
 public class DrawerWailaProvider implements IWailaDataProvider {
 
-    /**
-     * Registers this provider with Waila.
-     *
-     * @param registrar Waila registrar supplied by the plugin callback
-     */
     public static void register(IWailaRegistrar registrar) {
         DrawerWailaProvider provider = new DrawerWailaProvider();
         registrar.registerBodyProvider(provider, DrawerBlock.class);

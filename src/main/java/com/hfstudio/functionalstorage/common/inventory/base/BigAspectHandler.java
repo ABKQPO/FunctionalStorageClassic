@@ -7,9 +7,6 @@ import com.hfstudio.functionalstorage.api.storage.BigAspectStack;
 import com.hfstudio.functionalstorage.api.storage.IBigAspectHandler;
 import com.hfstudio.functionalstorage.common.storage.AspectStorageResource;
 
-/**
- * Concrete essentia storage over the generic core.
- */
 public class BigAspectHandler extends AbstractStorageHandler<BigAspectStack, AspectStorageKey>
     implements IBigAspectHandler {
 

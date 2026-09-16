@@ -13,11 +13,7 @@ import com.hfstudio.functionalstorage.common.storage.DrawerLayout;
 import com.hfstudio.functionalstorage.common.tile.EssentiaDrawerTile;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 
-/**
- * Essentia drawer block. Stores Thaumcraft essentia and exposes it through the
- * native {@code IAspectContainer} interface so jars, tubes, and alembics can
- * interact with it directly.
- */
+/** Exposes essentia storage through Thaumcraft container and tube interfaces. */
 public class EssentiaDrawerBlock extends DrawerBlock {
 
     private final DrawerLayout layout;
@@ -31,9 +27,6 @@ public class EssentiaDrawerBlock extends DrawerBlock {
         setBlockTextureName("functionalstorage:fluid_front");
     }
 
-    /**
-     * @return the slot layout of this essentia drawer
-     */
     @Nonnull
     public DrawerLayout getDrawerLayout() {
         return layout;

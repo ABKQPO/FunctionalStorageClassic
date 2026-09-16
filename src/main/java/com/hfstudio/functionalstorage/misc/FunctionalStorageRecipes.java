@@ -24,17 +24,11 @@ import com.hfstudio.functionalstorage.config.FunctionalStorageConfig;
 
 import cpw.mods.fml.common.registry.GameRegistry;
 
-/**
- * Crafting and compacting rule registration. Everything is registered with
- * vanilla recipe types so the mod needs no recipe framework to be present.
- */
+/** Registers vanilla crafting recipes and compacting rules. */
 public class FunctionalStorageRecipes {
 
     private FunctionalStorageRecipes() {}
 
-    /**
-     * Registers every recipe that does not depend on other mods.
-     */
     public static void registerEarlyRecipes() {
         registerDrawerRecipes();
         registerFramedRecipes(new ItemStack(Blocks.planks));
@@ -43,9 +37,6 @@ public class FunctionalStorageRecipes {
         registerToolRecipes();
     }
 
-    /**
-     * Registers recipes that require ore dictionary or other mod entries.
-     */
     public static void registerLateRecipes() {
         if (FunctionalStorageConfig.GENERAL.registerExtraCompactingRules) {
             registerExtraCompactingRules();
@@ -85,12 +76,6 @@ public class FunctionalStorageRecipes {
         }
     }
 
-    /**
-     * Registers the framed drawer recipes. The 2x2 grid takes four identical
-     * blocks and converts the matching wooden drawer into its framed form.
-     *
-     * @param material block used as the framed exterior in the default recipe
-     */
     private static void registerFramedRecipes(ItemStack material) {
         for (FramedDrawerBlock framed : RegistrationHandler.framedDrawers) {
             ItemStack wooden = matchingWoodenDrawer(framed.getDrawerLayout());
@@ -101,10 +86,6 @@ public class FunctionalStorageRecipes {
         }
     }
 
-    /**
-     * @param layout drawer layout
-     * @return the oak drawer of that layout, or {@code null}
-     */
     @Nullable
     private static ItemStack matchingWoodenDrawer(DrawerLayout layout) {
         for (WoodDrawerBlock block : RegistrationHandler.woodDrawers) {
@@ -199,12 +180,6 @@ public class FunctionalStorageRecipes {
         registerGenerationRecipes(chest);
     }
 
-    /**
-     * Registers the generation upgrades. Each tier costs the base upgrade plus
-     * more of its resource, so tier four is the expensive endgame option.
-     *
-     * @param chest crafting core shared by the utility upgrades
-     */
     private static void registerGenerationRecipes(ItemStack chest) {
         registerGenerationTier(RegistrationHandler.waterGenerationUpgrades, new ItemStack(Items.water_bucket), chest);
         registerGenerationTier(
@@ -236,11 +211,6 @@ public class FunctionalStorageRecipes {
         }
     }
 
-    /**
-     * Registers the automation upgrades merged in from More Functional Storage.
-     *
-     * @param chest crafting core shared by the utility upgrades
-     */
     private static void registerAutomationRecipes(ItemStack chest) {
         if (RegistrationHandler.breakerUpgrade != null) {
             GameRegistry.addRecipe(
@@ -355,13 +325,6 @@ public class FunctionalStorageRecipes {
         }
     }
 
-    /**
-     * Resolves the blocks that share a wood type so addons can generate
-     * matching recipes.
-     *
-     * @param woodType wood variant to inspect
-     * @return the drawer blocks of that wood type
-     */
     public static List<Block> blocksOf(@Nonnull DrawerWoodType woodType) {
         List<Block> blocks = new ArrayList<>();
         for (WoodDrawerBlock block : RegistrationHandler.woodDrawers) {

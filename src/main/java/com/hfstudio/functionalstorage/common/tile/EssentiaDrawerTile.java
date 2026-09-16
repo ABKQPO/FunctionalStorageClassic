@@ -23,11 +23,7 @@ import thaumcraft.api.aspects.AspectList;
 import thaumcraft.api.aspects.IAspectContainer;
 import thaumcraft.api.aspects.IEssentiaTransport;
 
-/**
- * Essentia drawer tile. Stores Thaumcraft essentia with the same long-capacity
- * semantics as item and fluid drawers, and adapts the generic handler to
- * Thaumcraft's integer based {@link IAspectContainer} contract.
- */
+/** Adapts long-capacity essentia storage to Thaumcraft containers and tubes. */
 public class EssentiaDrawerTile extends ControllableDrawerTile implements IAspectContainer, IEssentiaTransport {
 
     private static final String KEY_ASPECTS = "Aspects";
@@ -76,9 +72,6 @@ public class EssentiaDrawerTile extends ControllableDrawerTile implements IAspec
         };
     }
 
-    /**
-     * @return the slot layout of this drawer
-     */
     @Nonnull
     public DrawerLayout getDrawerLayout() {
         return layout;

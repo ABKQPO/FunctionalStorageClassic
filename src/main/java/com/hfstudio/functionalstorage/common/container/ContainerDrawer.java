@@ -15,11 +15,7 @@ import com.hfstudio.functionalstorage.common.item.upgrade.MaxStorageUpgradeItem;
 import com.hfstudio.functionalstorage.common.item.upgrade.StorageUpgradeItem;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 
-/**
- * Container for a controllable drawer. Exposes the drawer's visible storage
- * slots, its upgrade slots, and the player inventory, so upgrades can be
- * installed and swapped without breaking the block.
- */
+/** Physical storage and upgrade slots backed by the owning drawer. */
 public class ContainerDrawer extends Container {
 
     private static final int PLAYER_ROWS = 3;
@@ -65,17 +61,11 @@ public class ContainerDrawer extends Container {
         }
     }
 
-    /**
-     * @return the owning drawer
-     */
     @Nonnull
     public ControllableDrawerTile getTile() {
         return tile;
     }
 
-    /**
-     * @return the number of visible storage slots in this container
-     */
     public int getVisibleStorageSlots() {
         return visibleStorageSlots();
     }
@@ -136,10 +126,7 @@ public class ContainerDrawer extends Container {
         return inventory == null ? 0 : Math.min(inventory.getSizeInventory(), MAX_VISIBLE_STORAGE_SLOTS);
     }
 
-    /**
-     * Slot that reads and writes the drawer through its aggregated inventory
-     * view, so one visible slot can represent a long amount.
-     */
+    /** Vanilla slot view of one physical drawer with a long-capacity reserve. */
     public static class StorageSlot extends Slot {
 
         public StorageSlot(IInventory inventory, int index, int x, int y) {

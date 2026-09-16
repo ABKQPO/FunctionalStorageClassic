@@ -63,10 +63,6 @@ public class ItemStorageView {
         return new ArrayList<>(byKey.values());
     }
 
-    /**
-     * @param handler handler to inspect
-     * @return whether any unconfigured index can accept an insertion
-     */
     public static boolean hasEmptyStorage(@Nonnull IBigItemHandler handler) {
         int count = Math.max(0, handler.getStorageCount());
         for (int index = 0; index < count; index++) {
@@ -105,10 +101,6 @@ public class ItemStorageView {
         return index < 0 || index >= storages.size() ? null : storages.get(index);
     }
 
-    /**
-     * @param value arbitrary capacity
-     * @return saturated Forge slot limit
-     */
     public static int toForgeLimit(long value) {
         long capacity = Math.max(0L, value);
         return capacity >= Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) capacity;
@@ -120,16 +112,10 @@ public class ItemStorageView {
         return safeLeft > Long.MAX_VALUE - safeRight ? Long.MAX_VALUE : safeLeft + safeRight;
     }
 
-    /**
-     * @return whether any contributing index voids compatible overflow
-     */
     public boolean voidsOverflow() {
         return voidsOverflow;
     }
 
-    /**
-     * @return a fresh count-saturated stack for external display, or {@code null}
-     */
     public ItemStack toItemStack() {
         return snapshot.toItemStack();
     }

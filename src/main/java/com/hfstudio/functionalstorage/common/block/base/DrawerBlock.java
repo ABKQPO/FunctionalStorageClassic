@@ -41,11 +41,7 @@ import com.hfstudio.functionalstorage.util.HitBoxesUtil;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
-/**
- * Base class for every drawer block. A drawer is a full cube whose metadata
- * encodes the surface it is attached to and its horizontal rotation, so one
- * block instance covers all twelve orientations.
- */
+/** Metadata encodes attachment and horizontal rotation for all twelve orientations. */
 public abstract class DrawerBlock extends BlockContainer implements IBlockModelProvider {
 
     private static final float HARDNESS = 2.5F;
@@ -66,44 +62,24 @@ public abstract class DrawerBlock extends BlockContainer implements IBlockModelP
         useNeighborBrightness = true;
     }
 
-    /**
-     * @return the arrangement of interactive regions on the front face
-     */
     @Nonnull
     public DrawerFaceLayout getFaceLayout() {
         return faceLayout;
     }
 
-    /**
-     * @return the tile entity class backing this block
-     */
     @Nonnull
     public abstract Class<? extends TileEntity> getTileEntityClass();
 
-    /**
-     * @param metadata block metadata
-     * @return the attachment encoded in the metadata
-     */
     @Nonnull
     public static DrawerAttachment getAttachment(int metadata) {
         return DrawerAttachment.byIndex((metadata & 0xF) / 4);
     }
 
-    /**
-     * @param metadata block metadata
-     * @return the horizontal facing encoded in the metadata
-     */
     @Nonnull
     public static ForgeDirection getHorizontalFacing(int metadata) {
         return HitBoxesUtil.HORIZONTAL[metadata & 3];
     }
 
-    /**
-     * Resolves the physical face the drawer opens towards.
-     *
-     * @param metadata block metadata
-     * @return the front facing
-     */
     @Nonnull
     public static ForgeDirection getFrontFacing(int metadata) {
         return switch (getAttachment(metadata)) {
@@ -113,13 +89,6 @@ public abstract class DrawerBlock extends BlockContainer implements IBlockModelP
         };
     }
 
-    /**
-     * Encodes attachment and facing into metadata.
-     *
-     * @param attachment       attachment surface
-     * @param horizontalFacing horizontal rotation
-     * @return the metadata value
-     */
     public static int getMetadata(@Nonnull DrawerAttachment attachment, @Nonnull ForgeDirection horizontalFacing) {
         return attachment.ordinal() * 4 + HitBoxesUtil.horizontalIndex(horizontalFacing);
     }
@@ -363,20 +332,12 @@ public abstract class DrawerBlock extends BlockContainer implements IBlockModelP
         return getMetadata(attachment, facing);
     }
 
-    /**
-     * @param stack drawer item stack
-     * @return whether the stack carries stored contents
-     */
     public static boolean hasStoredContents(@Nullable ItemStack stack) {
         return stack != null && stack.hasTagCompound()
             && stack.getTagCompound()
                 .hasKey("TileData", 10);
     }
 
-    /**
-     * @param stack drawer item stack
-     * @return the persisted tile data, or {@code null}
-     */
     @Nullable
     public static NBTTagCompound getTileData(@Nullable ItemStack stack) {
         if (!hasStoredContents(stack)) {
@@ -386,9 +347,6 @@ public abstract class DrawerBlock extends BlockContainer implements IBlockModelP
             .getCompoundTag("TileData");
     }
 
-    /**
-     * @return the localized block name suffix list for this block's variants
-     */
     @Nonnull
     public abstract List<String> getVariantNames();
 }

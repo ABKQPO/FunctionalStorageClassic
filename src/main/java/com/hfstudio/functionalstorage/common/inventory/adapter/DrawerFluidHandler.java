@@ -118,9 +118,6 @@ public class DrawerFluidHandler implements IFluidHandler {
         return false;
     }
 
-    /**
-     * @return the wrapped drawer tank handler
-     */
     @Nonnull
     public IBigFluidHandler getHandler() {
         return handler;

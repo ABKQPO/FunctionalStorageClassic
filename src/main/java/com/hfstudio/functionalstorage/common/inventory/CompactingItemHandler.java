@@ -206,9 +206,6 @@ public abstract class CompactingItemHandler implements IBigItemHandler {
         }
     }
 
-    /**
-     * @return an unmodifiable list of detached tier definitions
-     */
     @Nonnull
     public List<CompactingTier> getTiers() {
         List<CompactingTier> copies = new ArrayList<>(tiers.length);
@@ -218,16 +215,10 @@ public abstract class CompactingItemHandler implements IBigItemHandler {
         return Collections.unmodifiableList(copies);
     }
 
-    /**
-     * @return the exact stored amount counted in lowest-tier units
-     */
     public long getStoredBaseAmount() {
         return baseAmount;
     }
 
-    /**
-     * @return the maximum shared amount in lowest-tier units
-     */
     public long getTotalBaseCapacity() {
         return getTotalBaseCapacity(getMultiplier());
     }
@@ -269,10 +260,6 @@ public abstract class CompactingItemHandler implements IBigItemHandler {
         return capacity <= 0D ? 0L : (long) Math.floor(capacity);
     }
 
-    /**
-     * @param index candidate index
-     * @return whether the index participates in insertion
-     */
     public boolean canDoubleClickSlot(int index) {
         return isValidIndex(index) && (isLocked() || tiers[index].hasTemplate());
     }
@@ -290,9 +277,6 @@ public abstract class CompactingItemHandler implements IBigItemHandler {
         changeDispatcher.dispatch(StorageChange.reset());
     }
 
-    /**
-     * @return a fresh tag holding the shared amount and every tier definition
-     */
     @Nonnull
     public NBTTagCompound serializeNBT() {
         NBTTagCompound root = new NBTTagCompound();
@@ -314,11 +298,6 @@ public abstract class CompactingItemHandler implements IBigItemHandler {
         return root;
     }
 
-    /**
-     * Replaces tiers and contents from persisted data.
-     *
-     * @param tag previously produced by {@link #serializeNBT()}
-     */
     public void deserializeNBT(@Nullable NBTTagCompound tag) {
         CompactingTier[] beforeTiers = tiers.clone();
         long beforeAmount = baseAmount;
@@ -363,28 +342,16 @@ public abstract class CompactingItemHandler implements IBigItemHandler {
         return changeDispatcher.subscribe(listener);
     }
 
-    /**
-     * @return the compacting storage multiplier
-     */
     public abstract double getMultiplier();
 
-    /**
-     * @return whether ore-dictionary equivalents may share a tier
-     */
     protected boolean allowsEquivalentItems() {
         return false;
     }
 
-    /**
-     * @return whether finite capacity is replaced with {@link Long#MAX_VALUE}
-     */
     protected boolean hasMaxStorage() {
         return false;
     }
 
-    /**
-     * @return whether this handler's owning container currently allows transactions
-     */
     protected boolean isOperationEnabled() {
         return true;
     }

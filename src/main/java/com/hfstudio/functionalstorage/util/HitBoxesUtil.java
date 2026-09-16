@@ -18,10 +18,6 @@ public class HitBoxesUtil {
 
     private HitBoxesUtil() {}
 
-    /**
-     * @param facing horizontal facing
-     * @return the index of the facing in {@link #HORIZONTAL}, or zero
-     */
     public static int horizontalIndex(@Nonnull ForgeDirection facing) {
         for (int index = 0; index < HORIZONTAL.length; index++) {
             if (HORIZONTAL[index] == facing) {
@@ -31,23 +27,11 @@ public class HitBoxesUtil {
         return 0;
     }
 
-    /**
-     * Converts a vanilla rotation quadrant into a horizontal facing.
-     *
-     * @param quadrant rotation quadrant
-     * @return the matching facing
-     */
     @Nonnull
     public static ForgeDirection horizontalFromQuadrant(int quadrant) {
         return HORIZONTAL[((quadrant % 4) + 4) % 4];
     }
 
-    /**
-     * Maps a clicked block face to the drawer attachment it implies.
-     *
-     * @param side clicked face ordinal
-     * @return the resulting attachment
-     */
     @Nonnull
     public static DrawerAttachment attachmentForFace(int side) {
         if (side == ForgeDirection.UP.ordinal()) {

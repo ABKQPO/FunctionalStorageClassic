@@ -205,11 +205,6 @@ public class CompactingUtil {
         return results.size() > maxSlots ? new ArrayList<>(results.subList(0, maxSlots)) : results;
     }
 
-    /**
-     * @param world world used for recipe lookup
-     * @param input lower tier item
-     * @return the recipe that compresses the item, or {@code null}
-     */
     @Nullable
     public static HigherTier findHigherTier(@Nullable World world, @Nullable ItemStack input) {
         HigherTier configured = findConfiguredHigherTier(input);
@@ -220,11 +215,6 @@ public class CompactingUtil {
         return result != null ? result : tryCompact(world, input, 2);
     }
 
-    /**
-     * @param world world used for recipe lookup
-     * @param input higher tier item
-     * @return the recipe that decompresses the item, or {@code null}
-     */
     @Nullable
     public static LowerTier findLowerTier(@Nullable World world, @Nullable ItemStack input) {
         LowerTier configured = findConfiguredLowerTier(input);
@@ -356,9 +346,6 @@ public class CompactingUtil {
         return value > Long.MAX_VALUE / factor ? Long.MAX_VALUE : value * factor;
     }
 
-    /**
-     * One compression step from a lower tier item to a higher tier item.
-     */
     public static class HigherTier {
 
         public final ItemStack result;
@@ -370,9 +357,6 @@ public class CompactingUtil {
         }
     }
 
-    /**
-     * One decompression step from a higher tier item to several lower tier items.
-     */
     public static class LowerTier {
 
         public final ItemStack result;
@@ -384,9 +368,6 @@ public class CompactingUtil {
         }
     }
 
-    /**
-     * A configured higher and lower tier pair.
-     */
     public static class ConfiguredRule {
 
         public final ItemStack higher;

@@ -5,10 +5,7 @@ import cpw.mods.fml.common.event.FMLLoadCompleteEvent;
 import cpw.mods.fml.common.event.FMLPostInitializationEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 
-/**
- * Client side proxy. Adds item and tile-entity renderers on top of the common
- * registration path.
- */
+/** Registers client rendering after common content initialization. */
 public class ClientProxy extends CommonProxy {
 
     @Override

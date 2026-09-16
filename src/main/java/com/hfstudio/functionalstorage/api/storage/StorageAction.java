@@ -7,28 +7,13 @@ package com.hfstudio.functionalstorage.api.storage;
  */
 public enum StorageAction {
 
-    /**
-     * Apply the operation to storage.
-     */
     EXECUTE,
-    /**
-     * Calculate the result without changing any observable state.
-     */
     SIMULATE;
 
-    /**
-     * Converts Forge's simulation flag to an explicit action.
-     *
-     * @param simulate {@code true} when Forge requested a simulation
-     * @return the corresponding action
-     */
     public static StorageAction fromSimulation(boolean simulate) {
         return simulate ? SIMULATE : EXECUTE;
     }
 
-    /**
-     * @return {@code true} only for a side-effect-free simulation
-     */
     public boolean isSimulation() {
         return this == SIMULATE;
     }

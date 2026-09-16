@@ -17,12 +17,6 @@ import net.minecraft.item.ItemStack;
  */
 public interface IStorageUpgrade {
 
-    /**
-     * Adds this stack's numeric and feature contributions to the supplied builder.
-     *
-     * @param stack   installed upgrade stack
-     * @param builder accumulator for this stack's contributions
-     */
     void applyUpgrade(@Nonnull ItemStack stack, @Nonnull UpgradeState.Builder builder);
 
     /**

@@ -49,12 +49,7 @@ public class FluidStorageResource implements StorageResource<BigFluidStack, Flui
 
     @Override
     public boolean accepts(@Nonnull BigFluidStack template, @Nonnull BigFluidStack candidate) {
-        FluidStack templateStack = template.getTemplate();
-        FluidStack candidateStack = candidate.getTemplate();
-        if (templateStack == null || candidateStack == null) {
-            return false;
-        }
-        return templateStack.isFluidEqual(candidateStack);
+        return matches(template, candidate);
     }
 
     @Override

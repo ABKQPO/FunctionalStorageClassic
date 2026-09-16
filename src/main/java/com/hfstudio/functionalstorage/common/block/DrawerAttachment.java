@@ -33,9 +33,6 @@ public enum DrawerAttachment {
         return index < 0 || index >= values.length ? WALL : values[index];
     }
 
-    /**
-     * @return the outward direction this attachment faces
-     */
     public ForgeDirection asDirection() {
         return switch (this) {
             case FLOOR -> ForgeDirection.UP;
@@ -44,9 +41,6 @@ public enum DrawerAttachment {
         };
     }
 
-    /**
-     * @return the localized display name
-     */
     public String getLocalizedName() {
         return StatCollector.translateToLocal("functionalstorage.attachment." + id);
     }

@@ -16,30 +16,16 @@ import javax.annotation.Nullable;
  */
 public interface StorageRoutingPolicy<S extends StorageSnapshot<S, K>, K extends StorageKey> {
 
-    /**
-     * @param snapshot candidate snapshot
-     * @return the exact key used by the primary index, or null when unconfigured
-     */
     @Nullable
     default K getExactKey(@Nonnull S snapshot) {
         return snapshot.getKey();
     }
 
-    /**
-     * @param snapshot candidate snapshot
-     * @return stable compatibility alias keys used by secondary indexes
-     */
     @Nonnull
     default Collection<? extends StorageKey> getCompatibleAliases(@Nonnull S snapshot) {
         return Collections.emptyList();
     }
 
-    /**
-     * @param handler storage handler being routed into
-     * @param index   candidate index
-     * @param request requested resource
-     * @return whether an unconfigured index may accept this request
-     */
     boolean isEmptySlotEligible(@Nonnull IStorageHandler<S, K> handler, int index, @Nonnull S request);
 
     /**

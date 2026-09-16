@@ -14,27 +14,15 @@ public class AspectStorageKey implements StorageKey {
 
     private final Aspect aspect;
 
-    /**
-     * Creates a key.
-     *
-     * @param aspect represented aspect
-     * @throws NullPointerException if {@code aspect} is null
-     */
     public AspectStorageKey(@Nonnull Aspect aspect) {
         this.aspect = Objects.requireNonNull(aspect, "aspect");
     }
 
-    /**
-     * @return the represented aspect
-     */
     @Nonnull
     public Aspect getAspect() {
         return aspect;
     }
 
-    /**
-     * @return the stable aspect tag used for serialization
-     */
     @Nonnull
     public String getTag() {
         return aspect.getTag();
