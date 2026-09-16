@@ -25,6 +25,8 @@ import com.hfstudio.functionalstorage.common.storage.CompactingTier;
 import com.hfstudio.functionalstorage.common.storage.ItemStorageResource;
 import com.hfstudio.functionalstorage.util.ItemUtil;
 
+import lombok.Getter;
+
 /**
  * Long-capacity item storage whose visible slots are lossless views of one
  * shared amount counted in the lowest configured tier. Storing a block of iron
@@ -49,6 +51,7 @@ public abstract class CompactingItemHandler implements IBigItemHandler {
     private final StorageChangeDispatcher<BigItemStack, ItemStorageKey> changeDispatcher = new StorageChangeDispatcher<>();
 
     private long baseAmount;
+    @Getter
     private boolean configured;
 
     public CompactingItemHandler(int slots) {
@@ -213,13 +216,6 @@ public abstract class CompactingItemHandler implements IBigItemHandler {
             copies.add(tier.copy());
         }
         return Collections.unmodifiableList(copies);
-    }
-
-    /**
-     * @return whether at least one tier carries an item
-     */
-    public boolean isConfigured() {
-        return configured;
     }
 
     /**

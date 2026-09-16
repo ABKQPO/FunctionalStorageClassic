@@ -1,0 +1,209 @@
+package com.hfstudio.functionalstorage.common.storage;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
+import net.minecraft.item.ItemBlock;
+import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NBTTagCompound;
+
+/**
+ * Immutable material selection for the three visible parts of a framed drawer:
+ * the exterior casing, the drawer fronts, and the divider between slots.
+ */
+public class FramedDrawerStyle {
+
+    public static final String NBT_KEY = "FramedStyle";
+    public static final FramedDrawerStyle EMPTY = new FramedDrawerStyle(null, null, null);
+
+    private static final String KEY_EXTERIOR = "Exterior";
+    private static final String KEY_FRONT = "Front";
+    private static final String KEY_DIVIDER = "Divider";
+
+    @Nullable
+    private final ItemStack exterior;
+    @Nullable
+    private final ItemStack front;
+    @Nullable
+    private final ItemStack divider;
+    private final String cacheKey;
+
+    public FramedDrawerStyle(@Nullable ItemStack exterior, @Nullable ItemStack front, @Nullable ItemStack divider) {
+        this.exterior = normalize(exterior);
+        this.front = normalize(front);
+        this.divider = normalize(divider);
+        this.cacheKey = buildCacheKey();
+    }
+
+    /**
+     * Reads a style from persisted data.
+     *
+     * @param tag style tag, or {@code null}
+     * @return the parsed style, or {@link #EMPTY} when unusable
+     */
+    @Nonnull
+    public static FramedDrawerStyle fromNBT(@Nullable NBTTagCompound tag) {
+        if (tag == null || tag.hasNoTags()) {
+            return EMPTY;
+        }
+        FramedDrawerStyle style = new FramedDrawerStyle(
+            readStack(tag, KEY_EXTERIOR),
+            readStack(tag, KEY_FRONT),
+            readStack(tag, KEY_DIVIDER));
+        return style.isConfigured() ? style : EMPTY;
+    }
+
+    /**
+     * Reads a style out of a framed drawer's dropped item.
+     *
+     * @param drawer drawer item stack
+     * @return the parsed style, or {@link #EMPTY}
+     */
+    @Nonnull
+    public static FramedDrawerStyle fromDrawerStack(@Nullable ItemStack drawer) {
+        if (drawer == null || drawer.getItem() == null || !drawer.hasTagCompound()) {
+            return EMPTY;
+        }
+        NBTTagCompound root = drawer.getTagCompound();
+        if (!root.hasKey("TileData", 10)) {
+            return EMPTY;
+        }
+        NBTTagCompound tileData = root.getCompoundTag("TileData");
+        return tileData.hasKey(NBT_KEY, 10) ? fromNBT(tileData.getCompoundTag(NBT_KEY)) : EMPTY;
+    }
+
+    /**
+     * @return whether both required parts are configured
+     */
+    public boolean isConfigured() {
+        return exterior != null && front != null;
+    }
+
+    /**
+     * @return the exterior casing material, or {@code null}
+     */
+    @Nullable
+    public ItemStack getExterior() {
+        return exterior == null ? null : exterior.copy();
+    }
+
+    /**
+     * @return the drawer front material, or {@code null}
+     */
+    @Nullable
+    public ItemStack getFront() {
+        return front == null ? null : front.copy();
+    }
+
+    /**
+     * An omitted divider follows the exterior material.
+     *
+     * @return the divider material, or {@code null}
+     */
+    @Nullable
+    public ItemStack getDivider() {
+        ItemStack source = divider != null ? divider : exterior;
+        return source == null ? null : source.copy();
+    }
+
+    /**
+     * @return a stable key identifying this material combination
+     */
+    @Nonnull
+    public String getCacheKey() {
+        return cacheKey;
+    }
+
+    /**
+     * @return a fresh tag holding this style
+     */
+    @Nonnull
+    public NBTTagCompound writeToNBT() {
+        NBTTagCompound tag = new NBTTagCompound();
+        writeStack(tag, KEY_EXTERIOR, exterior);
+        writeStack(tag, KEY_FRONT, front);
+        writeStack(tag, KEY_DIVIDER, divider);
+        return tag;
+    }
+
+    /**
+     * Writes this style into a framed drawer's dropped item.
+     *
+     * @param drawer drawer item stack
+     */
+    public void applyDrawerStyle(@Nonnull ItemStack drawer) {
+        if (drawer.getItem() == null || !isConfigured()) {
+            return;
+        }
+        if (!drawer.hasTagCompound()) {
+            drawer.setTagCompound(new NBTTagCompound());
+        }
+        NBTTagCompound root = drawer.getTagCompound();
+        NBTTagCompound tileData = root.hasKey("TileData", 10) ? root.getCompoundTag("TileData") : new NBTTagCompound();
+        tileData.setTag(NBT_KEY, writeToNBT());
+        root.setTag("TileData", tileData);
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        if (this == object) {
+            return true;
+        }
+        if (!(object instanceof FramedDrawerStyle)) {
+            return false;
+        }
+        return cacheKey.equals(((FramedDrawerStyle) object).cacheKey);
+    }
+
+    @Override
+    public int hashCode() {
+        return cacheKey.hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return cacheKey;
+    }
+
+    @Nullable
+    private static ItemStack normalize(@Nullable ItemStack stack) {
+        if (stack == null || stack.getItem() == null || !(stack.getItem() instanceof ItemBlock)) {
+            return null;
+        }
+        ItemStack copy = stack.copy();
+        copy.stackSize = 1;
+        return copy;
+    }
+
+    private static void writeStack(@Nonnull NBTTagCompound parent, @Nonnull String key, @Nullable ItemStack stack) {
+        if (stack != null) {
+            parent.setTag(key, stack.writeToNBT(new NBTTagCompound()));
+        }
+    }
+
+    @Nullable
+    private static ItemStack readStack(@Nonnull NBTTagCompound parent, @Nonnull String key) {
+        if (!parent.hasKey(key, 10)) {
+            return null;
+        }
+        ItemStack stack = ItemStack.loadItemStackFromNBT(parent.getCompoundTag(key));
+        return stack == null || stack.getItem() == null ? null : stack;
+    }
+
+    @Nonnull
+    private String buildCacheKey() {
+        return describe(exterior) + '|' + describe(front) + '|' + describe(divider);
+    }
+
+    @Nonnull
+    private static String describe(@Nullable ItemStack stack) {
+        if (stack == null) {
+            return "none";
+        }
+        NBTTagCompound tag = stack.getTagCompound();
+        return stack.getItem()
+            .getUnlocalizedName() + '@'
+            + stack.getItemDamage()
+            + (tag == null ? "" : tag.toString());
+    }
+}

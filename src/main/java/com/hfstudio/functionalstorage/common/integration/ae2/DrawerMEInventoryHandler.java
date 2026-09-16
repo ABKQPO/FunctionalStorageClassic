@@ -20,6 +20,7 @@ import appeng.api.storage.IMEInventoryHandler;
 import appeng.api.storage.StorageChannel;
 import appeng.api.storage.data.IAEItemStack;
 import appeng.api.storage.data.IItemList;
+import lombok.Getter;
 
 /**
  * Bridges a drawer's long-capacity item storage to AE2's ME inventory contract.
@@ -29,6 +30,7 @@ import appeng.api.storage.data.IItemList;
  */
 public class DrawerMEInventoryHandler implements IMEInventoryHandler<IAEItemStack> {
 
+    @Getter
     private final IBigItemHandler handler;
     private final int priority;
 
@@ -140,13 +142,6 @@ public class DrawerMEInventoryHandler implements IMEInventoryHandler<IAEItemStac
     @Override
     public boolean validForPass(int pass) {
         return true;
-    }
-
-    /**
-     * @return the wrapped drawer handler
-     */
-    public IBigItemHandler getHandler() {
-        return handler;
     }
 
     /**

@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import lombok.Getter;
+
 /**
  * An immutable numeric contribution made by a storage upgrade.
  *
@@ -20,6 +22,7 @@ import java.util.Objects;
  * are only read and must not be mutated concurrently.
  * </p>
  */
+@Getter
 public class UpgradeModifier {
 
     private final Operation operation;
@@ -99,29 +102,14 @@ public class UpgradeModifier {
         return Double.isNaN(result) || result <= 0.0D ? 0.0D : result;
     }
 
-    /**
-     * @return this modifier's operation
-     */
-    public Operation getOperation() {
-        return operation;
-    }
-
-    /**
-     * @return this modifier's operand
-     */
-    public double getValue() {
-        return value;
-    }
-
     @Override
     public boolean equals(Object other) {
         if (this == other) {
             return true;
         }
-        if (!(other instanceof UpgradeModifier)) {
+        if (!(other instanceof UpgradeModifier that)) {
             return false;
         }
-        UpgradeModifier that = (UpgradeModifier) other;
         return operation == that.operation && Double.doubleToLongBits(value) == Double.doubleToLongBits(that.value);
     }
 

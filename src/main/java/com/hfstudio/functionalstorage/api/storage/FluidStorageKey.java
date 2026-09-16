@@ -63,10 +63,9 @@ public class FluidStorageKey implements StorageKey {
         if (this == object) {
             return true;
         }
-        if (!(object instanceof FluidStorageKey)) {
+        if (!(object instanceof FluidStorageKey other)) {
             return false;
         }
-        FluidStorageKey other = (FluidStorageKey) object;
         return fluid == other.fluid && Objects.equals(tag, other.tag);
     }
 

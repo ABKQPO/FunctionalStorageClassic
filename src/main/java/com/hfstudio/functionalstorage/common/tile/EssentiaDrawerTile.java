@@ -192,7 +192,6 @@ public class EssentiaDrawerTile extends ControllableDrawerTile implements IAspec
         return (int) Math.min(Integer.MAX_VALUE, total);
     }
 
-    @SuppressWarnings("deprecation")
     @Override
     public boolean takeFromContainer(AspectList aspects) {
         if (aspects == null) {
@@ -209,7 +208,6 @@ public class EssentiaDrawerTile extends ControllableDrawerTile implements IAspec
         return true;
     }
 
-    @SuppressWarnings("deprecation")
     @Override
     public boolean doesContainerContain(AspectList aspects) {
         if (aspects == null) {

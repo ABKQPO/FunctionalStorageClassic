@@ -67,8 +67,9 @@ synchronization behaviour.
 | Family | Variants | Notes |
 |:-------|:---------|:------|
 | Wood Drawers | 6 woods × 1/2/4 slots | Oak, spruce, birch, jungle, acacia, dark oak |
-| Fluid Drawers | 1/2/4 tanks | One long-capacity tank per slot, registered when Thaumcraft is absent |
-| Essentia Drawers | 1/2/4 slots | Thaumcraft essentia; registered only when Thaumcraft is present |
+| Framed Drawers | 1/2/4 slots | Exterior, front, and divider take any block's texture |
+| Fluid Drawers | 1/2/4 tanks | One long-capacity tank per slot |
+| Essentia Drawers | 1/2/4 slots | Thaumcraft essentia; registered when Thaumcraft is present |
 | Compacting Drawers | 3 tiers | Compacts 9→1 and 4→1 chains automatically |
 | Simple Compacting Drawers | 2 tiers | Lightweight compacting |
 | Ender Drawers | 1 slot | Frequency based shared storage, per save |
@@ -85,20 +86,12 @@ Placement drives the orientation; the model and the rendered contents rotate to 
 Drawers are linked with the **Linking Tool**: right-click a controller to select it, then
 right-click drawers to bind them.
 
-### Not yet implemented
+### Framed Drawers
 
-This port is under active development. The following are known gaps:
-
-* **Framed drawers** — the material-swapping framed drawer variant is not ported yet, so the
-  framed blockstates and the `functionalstorage:blocks/framed_*` textures are currently unused.
-* **Pulling, pushing, collector, and generation upgrades** — the upgrade items exist and can be
-  installed, but their per-tick automation behaviour is not implemented yet. The Breaker,
-  Placer, Refill, Dimensional Refill, and Stonecutting upgrades merged from More Functional
-  Storage *are* implemented.
-* **Wireless pulling and pushing** — as above.
-* **In-game verification** — the build is green and the layout is complete, but the mod has not
-  yet been launched to confirm drawer orientation, UV rotation, and essentia icon rendering at
-  runtime.
+A framed drawer borrows the look of any block. Craft it from four identical blocks plus a
+matching wooden drawer, or apply a block to a placed framed drawer with the Configuration
+Tool. Sneaking while applying sets the exterior; applying normally sets the fronts and the
+divider.
 
 <hr>
 
@@ -126,11 +119,21 @@ upgrade in hand; the replaced upgrade is returned to the player.
 |:--------|:-------|
 | Void Upgrade | destroys overflow that no longer fits |
 | Redstone Upgrade | comparator-style redstone output based on fill level |
-| Pulling Upgrade | pulls items and fluids from the block behind the drawer |
-| Pushing Upgrade | pushes items and fluids into the block behind the drawer |
-| Collector Upgrade | collects nearby dropped items and fluids |
+| Pulling Upgrade | pulls items and fluids from the chosen side |
+| Pushing Upgrade | pushes items and fluids to the chosen side |
+| Collector Upgrade | collects nearby dropped items and fluid sources |
 | Ore Dictionary Upgrade | treats ore dictionary equivalents as one stored type |
-| Wireless Pulling / Pushing | remote transfer to and from linked inventories |
+| Wireless Pulling / Pushing | transfer to and from a recorded coordinate |
+
+### Generation Upgrades
+
+Each comes in four tiers that differ only in output rate.
+
+| Upgrade | Effect |
+|:--------|:-------|
+| Water Generation | fills a fluid drawer with water |
+| Stone Generation | produces cobblestone in a drawer |
+| Universal Item Generation | produces the configured item, or the upgrade's own filter |
 
 ### More Functional Storage upgrades
 

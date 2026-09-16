@@ -1,25 +1,30 @@
 package com.hfstudio.functionalstorage.common.item.upgrade;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 import com.hfstudio.functionalstorage.config.FunctionalStorageConfig;
 import com.hfstudio.functionalstorage.util.TransferUtil;
 import com.hfstudio.functionalstorage.util.UpgradeTargeting;
 
+import lombok.Getter;
+
 /**
  * Pushing upgrade. Moves items and fluids from the drawer into a neighbour.
  *
- * <p>The wired variant works on the block touching a chosen side of the drawer.
- * The wireless variant works on a coordinate recorded on the upgrade stack.</p>
+ * <p>
+ * The wired variant works on the block touching a chosen side of the drawer.
+ * The wireless variant works on a coordinate recorded on the upgrade stack.
+ * </p>
  */
+@Getter
 public class PushingUpgradeItem extends AutomationUpgradeItem {
 
     private static final String KEY_TARGET = "WirelessTarget";
@@ -27,17 +32,8 @@ public class PushingUpgradeItem extends AutomationUpgradeItem {
     private final boolean wireless;
 
     public PushingUpgradeItem(boolean wireless) {
-        super(
-            wireless ? "wireless_pushing_upgrade" : "pushing_upgrade",
-            FunctionalStorageConfig.UPGRADES.upgradeTick);
+        super(wireless ? "wireless_pushing_upgrade" : "pushing_upgrade", FunctionalStorageConfig.UPGRADES.upgradeTick);
         this.wireless = wireless;
-    }
-
-    /**
-     * @return whether this upgrade pushes to a recorded coordinate
-     */
-    public boolean isWireless() {
-        return wireless;
     }
 
     @Override
@@ -50,21 +46,14 @@ public class PushingUpgradeItem extends AutomationUpgradeItem {
         if (target == null) {
             return;
         }
-        ForgeDirection access = wireless ? ForgeDirection.UNKNOWN
-            : UpgradeTargeting.targetDirection(tile, stack);
+        ForgeDirection access = wireless ? ForgeDirection.UNKNOWN : UpgradeTargeting.targetDirection(tile, stack);
         if (tile.getItemHandler() != null) {
-            TransferUtil.pushItems(
-                tile.getItemHandler(),
-                target,
-                access,
-                FunctionalStorageConfig.UPGRADES.upgradePushItems);
+            TransferUtil
+                .pushItems(tile.getItemHandler(), target, access, FunctionalStorageConfig.UPGRADES.upgradePushItems);
         }
         if (tile.getFluidHandler() != null) {
-            TransferUtil.pushFluid(
-                tile.getFluidHandler(),
-                target,
-                access,
-                FunctionalStorageConfig.UPGRADES.upgradePushFluid);
+            TransferUtil
+                .pushFluid(tile.getFluidHandler(), target, access, FunctionalStorageConfig.UPGRADES.upgradePushFluid);
         }
     }
 
@@ -73,10 +62,7 @@ public class PushingUpgradeItem extends AutomationUpgradeItem {
         if (!wireless) {
             ForgeDirection side = UpgradeTargeting.targetDirection(tile, stack);
             return tile.getWorldObj()
-                .getTileEntity(
-                    tile.xCoord + side.offsetX,
-                    tile.yCoord + side.offsetY,
-                    tile.zCoord + side.offsetZ);
+                .getTileEntity(tile.xCoord + side.offsetX, tile.yCoord + side.offsetY, tile.zCoord + side.offsetZ);
         }
         int[] target = getWirelessTarget(stack);
         return target == null ? null

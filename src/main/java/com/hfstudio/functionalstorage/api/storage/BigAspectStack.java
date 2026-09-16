@@ -128,10 +128,9 @@ public class BigAspectStack implements StorageSnapshot<BigAspectStack, AspectSto
         if (this == object) {
             return true;
         }
-        if (!(object instanceof BigAspectStack)) {
+        if (!(object instanceof BigAspectStack other)) {
             return false;
         }
-        BigAspectStack other = (BigAspectStack) object;
         return amount == other.amount && Objects.equals(key, other.key);
     }
 

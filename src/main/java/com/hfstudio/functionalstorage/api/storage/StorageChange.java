@@ -9,6 +9,8 @@ import java.util.Set;
 
 import javax.annotation.Nonnull;
 
+import lombok.Getter;
+
 /**
  * Immutable batch describing either indexed before/after deltas or an explicit
  * full reset. A reset never carries entries; a delta always carries at least
@@ -119,6 +121,7 @@ public class StorageChange<S extends StorageSnapshot<S, K>, K extends StorageKey
      */
     public static class Entry<S extends StorageSnapshot<S, K>, K extends StorageKey> {
 
+        @Getter
         private final int index;
         private final S before;
         private final S after;
@@ -137,13 +140,6 @@ public class StorageChange<S extends StorageSnapshot<S, K>, K extends StorageKey
             this.index = index;
             this.before = Objects.requireNonNull(before, "before");
             this.after = Objects.requireNonNull(after, "after");
-        }
-
-        /**
-         * @return the changed index
-         */
-        public int getIndex() {
-            return index;
         }
 
         /**

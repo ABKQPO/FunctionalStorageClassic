@@ -16,6 +16,7 @@ import com.hfstudio.functionalstorage.common.block.DrawerBlockProperties;
 import com.hfstudio.functionalstorage.common.block.EnderDrawerBlock;
 import com.hfstudio.functionalstorage.common.block.EssentiaDrawerBlock;
 import com.hfstudio.functionalstorage.common.block.FluidDrawerBlock;
+import com.hfstudio.functionalstorage.common.block.FramedDrawerBlock;
 import com.hfstudio.functionalstorage.common.block.WoodDrawerBlock;
 import com.hfstudio.functionalstorage.common.block.base.DrawerBlock;
 import com.hfstudio.functionalstorage.common.block.compact.CompactingDrawerBlock;
@@ -38,7 +39,7 @@ import com.hfstudio.functionalstorage.common.item.upgrade.RefillUpgradeItem;
 import com.hfstudio.functionalstorage.common.item.upgrade.StonecuttingUpgradeItem;
 import com.hfstudio.functionalstorage.common.item.upgrade.StorageUpgradeItem;
 import com.hfstudio.functionalstorage.common.item.upgrade.UpgradeItem;
-import com.hfstudio.functionalstorage.common.item.upgrade.UtilityUpgradeItem;
+import com.hfstudio.functionalstorage.common.item.upgrade.VoidUpgradeItem;
 import com.hfstudio.functionalstorage.common.storage.DrawerLayout;
 import com.hfstudio.functionalstorage.common.storage.DrawerWoodType;
 import com.hfstudio.functionalstorage.config.FunctionalStorageConfig;
@@ -75,6 +76,7 @@ public class RegistrationHandler {
     public static final List<WoodDrawerBlock> woodDrawers = new ArrayList<>();
     public static final List<FluidDrawerBlock> fluidDrawers = new ArrayList<>();
     public static final List<EssentiaDrawerBlock> essentiaDrawers = new ArrayList<>();
+    public static final List<FramedDrawerBlock> framedDrawers = new ArrayList<>();
     public static final List<DrawerBlock> specialDrawers = new ArrayList<>();
 
     public static DrawerBlock storageController;
@@ -90,7 +92,7 @@ public class RegistrationHandler {
     public static StorageUpgradeItem diamondUpgrade;
     public static StorageUpgradeItem netheriteUpgrade;
     public static MaxStorageUpgradeItem maxStorageUpgrade;
-    public static UtilityUpgradeItem voidUpgrade;
+    public static VoidUpgradeItem voidUpgrade;
     public static RedstoneUpgradeItem redstoneUpgrade;
     public static PullingUpgradeItem pullingUpgrade;
     public static PushingUpgradeItem pushingUpgrade;
@@ -154,6 +156,12 @@ public class RegistrationHandler {
         GameRegistry.registerBlock(controllerExtension, "controller_extension");
         specialDrawers.add(controllerExtension);
 
+        for (DrawerLayout layout : DrawerLayout.values()) {
+            FramedDrawerBlock block = new FramedDrawerBlock(layout);
+            framedDrawers.add(block);
+            GameRegistry.registerBlock(block, block.getDrawerId());
+        }
+
         if (FunctionalStorageConfig.COMPATIBILITY.enableThaumcraftCompatibility && Loader.isModLoaded("Thaumcraft")) {
             for (DrawerLayout layout : DrawerLayout.values()) {
                 EssentiaDrawerBlock block = new EssentiaDrawerBlock(layout);
@@ -198,9 +206,7 @@ public class RegistrationHandler {
             "netherite_upgrade");
         maxStorageUpgrade = registerUpgrade(new MaxStorageUpgradeItem(), "max_storage_upgrade");
 
-        voidUpgrade = registerUpgrade(
-            new UtilityUpgradeItem(UtilityUpgradeItem.UtilityKind.VOID_OVERFLOW),
-            "void_upgrade");
+        voidUpgrade = registerUpgrade(new VoidUpgradeItem(), "void_upgrade");
         redstoneUpgrade = registerUpgrade(new RedstoneUpgradeItem(), "redstone_upgrade");
         pullingUpgrade = registerUpgrade(new PullingUpgradeItem(false), "pulling_upgrade");
         pushingUpgrade = registerUpgrade(new PushingUpgradeItem(false), "pushing_upgrade");
@@ -243,6 +249,10 @@ public class RegistrationHandler {
             String name = block.getVariantNames()
                 .get(0);
             GameRegistry.registerTileEntity(block.getTileEntityClass(), FunctionalStorage.MOD_ID + "." + name);
+        }
+        for (FramedDrawerBlock block : framedDrawers) {
+            GameRegistry
+                .registerTileEntity(block.getTileEntityClass(), FunctionalStorage.MOD_ID + "." + block.getDrawerId());
         }
         for (EssentiaDrawerBlock block : essentiaDrawers) {
             GameRegistry.registerTileEntity(
@@ -303,12 +313,8 @@ public class RegistrationHandler {
     @Nonnull
     public static List<DrawerBlock> allDrawerBlocks() {
         List<DrawerBlock> blocks = new ArrayList<>();
-        for (WoodDrawerBlock block : woodDrawers) {
-            blocks.add(block);
-        }
-        for (FluidDrawerBlock block : fluidDrawers) {
-            blocks.add(block);
-        }
+        blocks.addAll(woodDrawers);
+        blocks.addAll(fluidDrawers);
         if (storageController != null) {
             blocks.add(storageController);
         }

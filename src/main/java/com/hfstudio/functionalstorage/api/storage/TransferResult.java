@@ -4,6 +4,8 @@ import java.util.Objects;
 
 import javax.annotation.Nonnull;
 
+import lombok.Getter;
+
 /**
  * Immutable outcome of a storage request. The processed snapshot describes
  * what the caller may insert, remove, or otherwise consume. For void and
@@ -14,6 +16,7 @@ import javax.annotation.Nonnull;
  */
 public class TransferResult<S extends StorageSnapshot<S, K>, K extends StorageKey> {
 
+    @Getter
     private final long requestedAmount;
     private final S processed;
     private final StorageAction action;
@@ -42,13 +45,6 @@ public class TransferResult<S extends StorageSnapshot<S, K>, K extends StorageKe
             throw new IllegalArgumentException("processed emptiness must match its amount");
         }
         this.requestedAmount = requestedAmount;
-    }
-
-    /**
-     * @return the originally requested amount
-     */
-    public long getRequestedAmount() {
-        return requestedAmount;
     }
 
     /**

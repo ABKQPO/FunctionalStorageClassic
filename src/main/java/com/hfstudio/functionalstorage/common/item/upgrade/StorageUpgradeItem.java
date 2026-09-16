@@ -12,6 +12,8 @@ import com.hfstudio.functionalstorage.api.upgrade.UpgradeState;
 import com.hfstudio.functionalstorage.common.storage.FluidStorageResource;
 import com.hfstudio.functionalstorage.config.FunctionalStorageConfig;
 
+import lombok.Getter;
+
 /**
  * Storage capacity upgrade. Each tier installs a multiplicative capacity
  * modifier whose magnitude depends on the resource kind's configured divisor.
@@ -21,6 +23,7 @@ public class StorageUpgradeItem extends UpgradeItem implements IStorageUpgrade {
     /**
      * Available storage upgrade tiers.
      */
+    @Getter
     public enum StorageTier {
 
         IRON("iron_downgrade", 1, Integer.MIN_VALUE),
@@ -39,26 +42,6 @@ public class StorageUpgradeItem extends UpgradeItem implements IStorageUpgrade {
             this.priority = priority;
         }
 
-        /**
-         * @return the stable identifier
-         */
-        public String getId() {
-            return id;
-        }
-
-        /**
-         * @return the configured capacity multiplier
-         */
-        public int getMultiplier() {
-            return multiplier;
-        }
-
-        /**
-         * @return the replacement priority, lower values are weaker
-         */
-        public int getPriority() {
-            return priority;
-        }
     }
 
     private final StorageTier tier;

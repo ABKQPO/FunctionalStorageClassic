@@ -137,10 +137,9 @@ public class DrawerOptions {
             return;
         }
         for (Object keyObject : tag.func_150296_c()) {
-            if (!(keyObject instanceof String)) {
+            if (!(keyObject instanceof String key)) {
                 continue;
             }
-            String key = (String) keyObject;
             boolean advanced = key.startsWith(ADVANCED_PREFIX);
             String actionName = advanced ? key.substring(ADVANCED_PREFIX.length()) : key;
             ConfigurationToolItem.ConfigurationAction action = ConfigurationToolItem.ConfigurationAction

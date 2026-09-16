@@ -74,7 +74,7 @@ public class BigItemStack implements StorageSnapshot<BigItemStack, ItemStorageKe
         }
         NBTTagCompound leftTag = left.getTagCompound();
         NBTTagCompound rightTag = right.getTagCompound();
-        return leftTag == null ? rightTag == null : leftTag.equals(rightTag);
+        return Objects.equals(leftTag, rightTag);
     }
 
     /**
@@ -137,7 +137,7 @@ public class BigItemStack implements StorageSnapshot<BigItemStack, ItemStorageKe
      * @return {@code true} when this snapshot and the stack represent the same item type
      */
     public boolean isSameType(@Nullable ItemStack other) {
-        return template != null && matches(template, other);
+        return matches(template, other);
     }
 
     /**
@@ -161,10 +161,9 @@ public class BigItemStack implements StorageSnapshot<BigItemStack, ItemStorageKe
         if (this == object) {
             return true;
         }
-        if (!(object instanceof BigItemStack)) {
+        if (!(object instanceof BigItemStack other)) {
             return false;
         }
-        BigItemStack other = (BigItemStack) object;
         return amount == other.amount && Objects.equals(key, other.key);
     }
 

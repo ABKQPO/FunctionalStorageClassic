@@ -1,5 +1,6 @@
 package com.hfstudio.functionalstorage.common.block.base;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
@@ -97,14 +98,11 @@ public abstract class DrawerBlock extends BlockContainer {
      */
     @Nonnull
     public static ForgeDirection getFrontFacing(int metadata) {
-        switch (getAttachment(metadata)) {
-            case FLOOR:
-                return ForgeDirection.UP;
-            case CEILING:
-                return ForgeDirection.DOWN;
-            default:
-                return getHorizontalFacing(metadata);
-        }
+        return switch (getAttachment(metadata)) {
+            case FLOOR -> ForgeDirection.UP;
+            case CEILING -> ForgeDirection.DOWN;
+            default -> getHorizontalFacing(metadata);
+        };
     }
 
     /**
@@ -226,10 +224,9 @@ public abstract class DrawerBlock extends BlockContainer {
             return true;
         }
         TileEntity tile = world.getTileEntity(x, y, z);
-        if (!(tile instanceof ControllableDrawerTile)) {
+        if (!(tile instanceof ControllableDrawerTile drawer)) {
             return false;
         }
-        ControllableDrawerTile drawer = (ControllableDrawerTile) tile;
         int slot = getHitSlot(world, x, y, z, player);
         return drawer.onSlotActivated(player, side, hitX, hitY, hitZ, slot);
     }
@@ -252,8 +249,7 @@ public abstract class DrawerBlock extends BlockContainer {
     @Override
     public void breakBlock(World world, int x, int y, int z, Block block, int metadata) {
         TileEntity tile = world.getTileEntity(x, y, z);
-        if (tile instanceof ControllableDrawerTile) {
-            ControllableDrawerTile drawer = (ControllableDrawerTile) tile;
+        if (tile instanceof ControllableDrawerTile drawer) {
             drawer.onBlockBroken();
             drawer.detachFromController(world);
         }
@@ -261,8 +257,8 @@ public abstract class DrawerBlock extends BlockContainer {
     }
 
     @Override
-    public java.util.ArrayList<ItemStack> getDrops(World world, int x, int y, int z, int metadata, int fortune) {
-        java.util.ArrayList<ItemStack> drops = new java.util.ArrayList<>();
+    public ArrayList<ItemStack> getDrops(World world, int x, int y, int z, int metadata, int fortune) {
+        ArrayList<ItemStack> drops = new ArrayList<>();
         TileEntity tile = world.getTileEntity(x, y, z);
         if (tile instanceof ControllableDrawerTile && FunctionalStorageConfig.GENERAL.keepContentsOnBreak) {
             drops.add(((ControllableDrawerTile) tile).createDropStack(new ItemStack(this, 1, 0)));

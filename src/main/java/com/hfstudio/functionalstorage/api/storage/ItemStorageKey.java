@@ -9,6 +9,8 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 
+import lombok.Getter;
+
 /**
  * Immutable exact item identity containing item, metadata, and stack NBT.
  * Stack count is deliberately excluded.
@@ -16,6 +18,7 @@ import net.minecraft.nbt.NBTTagCompound;
 public class ItemStorageKey implements StorageKey {
 
     private final Item item;
+    @Getter
     private final int metadata;
     @Nullable
     private final NBTTagCompound tag;
@@ -49,13 +52,6 @@ public class ItemStorageKey implements StorageKey {
     }
 
     /**
-     * @return the represented item metadata
-     */
-    public int getMetadata() {
-        return metadata;
-    }
-
-    /**
      * @return a defensive copy of the represented stack NBT, or {@code null}
      */
     @Nullable
@@ -80,10 +76,9 @@ public class ItemStorageKey implements StorageKey {
         if (this == object) {
             return true;
         }
-        if (!(object instanceof ItemStorageKey)) {
+        if (!(object instanceof ItemStorageKey other)) {
             return false;
         }
-        ItemStorageKey other = (ItemStorageKey) object;
         return item == other.item && metadata == other.metadata && Objects.equals(tag, other.tag);
     }
 

@@ -18,6 +18,7 @@ import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
+import lombok.Getter;
 
 /**
  * Base for the automation upgrades merged in from More Functional Storage.
@@ -35,6 +36,7 @@ public class AutomationUpgradeItem extends UpgradeItem implements IStorageUpgrad
     /**
      * Side of the drawer an automation upgrade works on, relative to its face.
      */
+    @Getter
     public enum RelativeDirection {
 
         FRONT("front"),
@@ -48,13 +50,6 @@ public class AutomationUpgradeItem extends UpgradeItem implements IStorageUpgrad
 
         RelativeDirection(String id) {
             this.id = id;
-        }
-
-        /**
-         * @return the stable identifier used in NBT and lang keys
-         */
-        public String getId() {
-            return id;
         }
 
         /**

@@ -40,18 +40,10 @@ public class AttachmentBlockProperty implements BlockProperty<DrawerAttachment>,
 
     @Override
     public boolean hasTrait(BlockPropertyTrait trait) {
-        switch (trait) {
-            case SupportsWorld:
-            case SupportsStacks:
-            case OnlyNeedsMeta:
-            case WorldMutable:
-            case StackMutable:
-            case Config:
-            case Transformable:
-                return true;
-            default:
-                return false;
-        }
+        return switch (trait) {
+            case SupportsWorld, SupportsStacks, OnlyNeedsMeta, WorldMutable, StackMutable, Config, Transformable -> true;
+            default -> false;
+        };
     }
 
     @Override
@@ -79,14 +71,11 @@ public class AttachmentBlockProperty implements BlockProperty<DrawerAttachment>,
     @Override
     public DrawerAttachment transform(@Nonnull DrawerAttachment value, @Nonnull DirectionTransform transform) {
         ForgeDirection direction = transform.apply(value.asDirection());
-        switch (direction) {
-            case UP:
-                return DrawerAttachment.FLOOR;
-            case DOWN:
-                return DrawerAttachment.CEILING;
-            default:
-                return DrawerAttachment.WALL;
-        }
+        return switch (direction) {
+            case UP -> DrawerAttachment.FLOOR;
+            case DOWN -> DrawerAttachment.CEILING;
+            default -> DrawerAttachment.WALL;
+        };
     }
 
     @Override

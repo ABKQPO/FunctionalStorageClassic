@@ -1,8 +1,8 @@
 package com.hfstudio.functionalstorage.common.item.upgrade;
 
-import net.minecraft.item.ItemStack;
-
 import javax.annotation.Nonnull;
+
+import net.minecraft.item.ItemStack;
 
 import com.hfstudio.functionalstorage.api.upgrade.IStorageUpgrade;
 import com.hfstudio.functionalstorage.api.upgrade.StorageFeature;

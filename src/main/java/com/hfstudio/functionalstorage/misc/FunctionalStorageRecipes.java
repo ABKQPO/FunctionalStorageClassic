@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import net.minecraft.block.Block;
 import net.minecraft.init.Blocks;
@@ -13,7 +14,9 @@ import net.minecraft.item.ItemStack;
 import net.minecraftforge.oredict.ShapedOreRecipe;
 
 import com.hfstudio.functionalstorage.common.block.FluidDrawerBlock;
+import com.hfstudio.functionalstorage.common.block.FramedDrawerBlock;
 import com.hfstudio.functionalstorage.common.block.WoodDrawerBlock;
+import com.hfstudio.functionalstorage.common.item.upgrade.GenerationUpgradeItem;
 import com.hfstudio.functionalstorage.common.storage.DrawerLayout;
 import com.hfstudio.functionalstorage.common.storage.DrawerWoodType;
 import com.hfstudio.functionalstorage.config.FunctionalStorageConfig;
@@ -33,6 +36,7 @@ public class FunctionalStorageRecipes {
      */
     public static void registerEarlyRecipes() {
         registerDrawerRecipes();
+        registerFramedRecipes(new ItemStack(Blocks.planks));
         registerUpgradeRecipes();
         registerToolRecipes();
     }
@@ -77,6 +81,36 @@ public class FunctionalStorageRecipes {
                     .addRecipe(new ShapedOreRecipe(result, "GPG", "PPP", "GPG", 'P', planks, 'G', "blockGlass"));
             }
         }
+    }
+
+    /**
+     * Registers the framed drawer recipes. The 2x2 grid takes four identical
+     * blocks and converts the matching wooden drawer into its framed form.
+     *
+     * @param material block used as the framed exterior in the default recipe
+     */
+    private static void registerFramedRecipes(ItemStack material) {
+        for (FramedDrawerBlock framed : RegistrationHandler.framedDrawers) {
+            ItemStack wooden = matchingWoodenDrawer(framed.getDrawerLayout());
+            if (wooden == null) {
+                continue;
+            }
+            GameRegistry.addRecipe(new ShapedOreRecipe(new ItemStack(framed), "MM", "MW", 'M', material, 'W', wooden));
+        }
+    }
+
+    /**
+     * @param layout drawer layout
+     * @return the oak drawer of that layout, or {@code null}
+     */
+    @Nullable
+    private static ItemStack matchingWoodenDrawer(DrawerLayout layout) {
+        for (WoodDrawerBlock block : RegistrationHandler.woodDrawers) {
+            if (block.getDrawerLayout() == layout && block.getWoodType() == DrawerWoodType.OAK) {
+                return new ItemStack(block);
+            }
+        }
+        return null;
     }
 
     private static void registerUpgradeRecipes() {
@@ -160,6 +194,44 @@ public class FunctionalStorageRecipes {
         }
 
         registerAutomationRecipes(chest);
+        registerGenerationRecipes(chest);
+    }
+
+    /**
+     * Registers the generation upgrades. Each tier costs the base upgrade plus
+     * more of its resource, so tier four is the expensive endgame option.
+     *
+     * @param chest crafting core shared by the utility upgrades
+     */
+    private static void registerGenerationRecipes(ItemStack chest) {
+        registerGenerationTier(RegistrationHandler.waterGenerationUpgrades, new ItemStack(Items.water_bucket), chest);
+        registerGenerationTier(
+            RegistrationHandler.stoneGenerationUpgrades,
+            new ItemStack(Blocks.cobblestone, 8),
+            chest);
+        registerGenerationTier(
+            RegistrationHandler.universalGenerationUpgrades,
+            new ItemStack(Items.nether_star),
+            chest);
+    }
+
+    private static void registerGenerationTier(List<GenerationUpgradeItem> upgrades, ItemStack resource,
+        ItemStack chest) {
+        int amount = 1;
+        for (GenerationUpgradeItem upgrade : upgrades) {
+            int copies = Math.min(8, amount);
+            GameRegistry.addRecipe(
+                new ShapedOreRecipe(
+                    new ItemStack(upgrade),
+                    "RRR",
+                    "RCR",
+                    "RRR",
+                    'R',
+                    new ItemStack(resource.getItem(), copies, resource.getItemDamage()),
+                    'C',
+                    chest));
+            amount *= 2;
+        }
     }
 
     /**

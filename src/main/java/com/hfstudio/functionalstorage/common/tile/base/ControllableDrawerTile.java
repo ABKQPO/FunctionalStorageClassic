@@ -15,10 +15,12 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
 
 import com.hfstudio.functionalstorage.FunctionalStorage;
+import com.hfstudio.functionalstorage.api.storage.BigItemStack;
 import com.hfstudio.functionalstorage.api.storage.IBigAspectHandler;
 import com.hfstudio.functionalstorage.api.storage.IBigFluidHandler;
 import com.hfstudio.functionalstorage.api.storage.IBigItemHandler;
 import com.hfstudio.functionalstorage.api.storage.IStorageHandler;
+import com.hfstudio.functionalstorage.api.storage.StorageAction;
 import com.hfstudio.functionalstorage.api.storage.StorageSubscription;
 import com.hfstudio.functionalstorage.api.upgrade.IStorageUpgrade;
 import com.hfstudio.functionalstorage.api.upgrade.StorageFeature;
@@ -161,6 +163,14 @@ public abstract class ControllableDrawerTile extends TileEntity {
     }
 
     /**
+     * Persists and synchronizes a change made to this drawer's display options.
+     */
+    public void markOptionsDirty() {
+        markDirty();
+        requestUpdatePacket();
+    }
+
+    /**
      * @param slot upgrade slot index
      * @return the storage upgrade stack, or {@code null} when the slot is empty
      */
@@ -297,12 +307,14 @@ public abstract class ControllableDrawerTile extends TileEntity {
      * @return the current redstone output
      */
     public int getRedstoneSignal(int side) {
-        for (ItemStack stack : utilityUpgrades) {
-            if (stack != null && stack.getItem() instanceof UpgradeItem) {
-                return calculateRedstoneSignal();
-            }
-        }
-        return 0;
+        return hasRedstoneUpgrade() ? calculateRedstoneSignal() : 0;
+    }
+
+    /**
+     * @return whether a redstone upgrade is installed
+     */
+    public boolean hasRedstoneUpgrade() {
+        return getUpgradeState().hasFeature(StorageFeature.REDSTONE_OUTPUT);
     }
 
     /**
@@ -354,25 +366,21 @@ public abstract class ControllableDrawerTile extends TileEntity {
         int slot) {
         ItemStack held = player.getHeldItem();
         if (held == null) {
-            if (player.isSneaking() && hasUpgradeSlots()) {
-                return openGui(player);
-            }
+            // Sneaking with an empty hand opens the interface, which is the only
+            // place upgrades can be rearranged without breaking the block.
+            return player.isSneaking() && hasUpgradeSlots() && openGui(player);
+        }
+        if (held.getItem() == RegistrationHandler.configurationTool) {
             return false;
         }
-        if (held.getItem() == RegistrationHandler.configurationTool
-            || held.getItem() == RegistrationHandler.linkingTool) {
+        if (held.getItem() == RegistrationHandler.linkingTool) {
             return false;
         }
         if (held.getItem() instanceof IStorageUpgrade && tryInstallStorageUpgrade(player, held)) {
             return true;
         }
-        if (held.getItem() instanceof UpgradeItem) {
-            if (tryInstallUtilityUpgrade(player, held)) {
-                return true;
-            }
-        }
-        if (player.isSneaking() && hasUpgradeSlots()) {
-            return openGui(player);
+        if (held.getItem() instanceof UpgradeItem && tryInstallUtilityUpgrade(player, held)) {
+            return true;
         }
         return false;
     }
@@ -392,12 +400,39 @@ public abstract class ControllableDrawerTile extends TileEntity {
     }
 
     /**
-     * Handles a left-click on one drawer slot.
+     * Handles a left-click on one drawer slot. Extracts a single item from that
+     * slot, or a full stack while the player is sneaking.
      *
      * @param player interacting player
-     * @param slot   resolved slot index
+     * @param slot   resolved slot index, or {@code -1}
      */
-    public void onSlotClicked(@Nonnull EntityPlayer player, int slot) {}
+    public void onSlotClicked(@Nonnull EntityPlayer player, int slot) {
+        if (worldObj == null || worldObj.isRemote || slot < 0) {
+            return;
+        }
+        IBigItemHandler itemHandler = getItemHandler();
+        if (itemHandler == null) {
+            return;
+        }
+        BigItemStack snapshot = itemHandler.getSnapshot(slot);
+        ItemStack template = snapshot.getTemplate();
+        if (template == null) {
+            return;
+        }
+        int amount = player.isSneaking() ? Math.max(1, template.getMaxStackSize()) : 1;
+        ItemStack extracted = itemHandler.extractRouted(new BigItemStack(template, amount), StorageAction.EXECUTE)
+            .getProcessed()
+            .toItemStack();
+        if (extracted == null || extracted.getItem() == null) {
+            return;
+        }
+        if (!player.inventory.addItemStackToInventory(extracted)) {
+            player.dropPlayerItemWithRandomChoice(extracted, false);
+        }
+        player.inventory.markDirty();
+        markDirty();
+        requestUpdatePacket();
+    }
 
     /**
      * @return the current upgrade contributions, recomputed when stale

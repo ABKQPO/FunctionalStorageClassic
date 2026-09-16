@@ -31,14 +31,11 @@ public class WoodDrawerBlock extends DrawerBlock {
     }
 
     private static DrawerFaceLayout faceLayoutOf(@Nonnull DrawerLayout layout) {
-        switch (layout) {
-            case X_2:
-                return DrawerFaceLayout.X_2;
-            case X_4:
-                return DrawerFaceLayout.X_4;
-            default:
-                return DrawerFaceLayout.X_1;
-        }
+        return switch (layout) {
+            case X_2 -> DrawerFaceLayout.X_2;
+            case X_4 -> DrawerFaceLayout.X_4;
+            default -> DrawerFaceLayout.X_1;
+        };
     }
 
     /**

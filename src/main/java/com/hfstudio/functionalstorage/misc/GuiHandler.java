@@ -29,10 +29,9 @@ public class GuiHandler implements IGuiHandler {
             return null;
         }
         TileEntity tile = world.getTileEntity(x, y, z);
-        if (!(tile instanceof ControllableDrawerTile)) {
+        if (!(tile instanceof ControllableDrawerTile drawer)) {
             return null;
         }
-        ControllableDrawerTile drawer = (ControllableDrawerTile) tile;
         return drawer.hasUpgradeSlots() ? new ContainerDrawer(drawer, player) : null;
     }
 
@@ -43,10 +42,9 @@ public class GuiHandler implements IGuiHandler {
             return null;
         }
         TileEntity tile = world.getTileEntity(x, y, z);
-        if (!(tile instanceof ControllableDrawerTile)) {
+        if (!(tile instanceof ControllableDrawerTile drawer)) {
             return null;
         }
-        ControllableDrawerTile drawer = (ControllableDrawerTile) tile;
         return drawer.hasUpgradeSlots() ? new GuiDrawer(player, drawer) : null;
     }
 }

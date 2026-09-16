@@ -13,6 +13,7 @@ import com.hfstudio.functionalstorage.misc.RegistrationHandler;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
+import lombok.Getter;
 
 /**
  * Base class for every drawer upgrade item. Carries the registry name, icon,
@@ -20,6 +21,7 @@ import cpw.mods.fml.relauncher.SideOnly;
  */
 public class UpgradeItem extends Item {
 
+    @Getter
     private final String id;
     private IIcon icon;
 
@@ -28,13 +30,6 @@ public class UpgradeItem extends Item {
         setMaxStackSize(1);
         setCreativeTab(RegistrationHandler.CREATIVE_TAB);
         setUnlocalizedName("functionalstorage." + id);
-    }
-
-    /**
-     * @return the stable identifier used for registration and localization
-     */
-    public String getId() {
-        return id;
     }
 
     /**

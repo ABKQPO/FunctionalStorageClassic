@@ -1,5 +1,9 @@
 package com.hfstudio.functionalstorage.util;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -33,7 +37,7 @@ public class ItemUtil {
         }
         NBTTagCompound leftTag = left.getTagCompound();
         NBTTagCompound rightTag = right.getTagCompound();
-        return leftTag == null ? rightTag == null : leftTag.equals(rightTag);
+        return Objects.equals(leftTag, rightTag);
     }
 
     /**
@@ -130,9 +134,9 @@ public class ItemUtil {
      * @return the matching stacks, never null
      */
     @Nonnull
-    public static java.util.List<ItemStack> oreEntries(String oreName) {
-        java.util.List<ItemStack> entries = OreDictionary.getOres(oreName);
-        return entries == null ? java.util.Collections.emptyList() : entries;
+    public static List<ItemStack> oreEntries(String oreName) {
+        List<ItemStack> entries = OreDictionary.getOres(oreName);
+        return entries == null ? Collections.emptyList() : entries;
     }
 
     /**

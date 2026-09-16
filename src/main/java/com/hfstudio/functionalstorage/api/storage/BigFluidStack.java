@@ -1,5 +1,7 @@
 package com.hfstudio.functionalstorage.api.storage;
 
+import java.util.Objects;
+
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -140,11 +142,10 @@ public class BigFluidStack implements StorageSnapshot<BigFluidStack, FluidStorag
         if (this == object) {
             return true;
         }
-        if (!(object instanceof BigFluidStack)) {
+        if (!(object instanceof BigFluidStack other)) {
             return false;
         }
-        BigFluidStack other = (BigFluidStack) object;
-        return amount == other.amount && java.util.Objects.equals(key, other.key);
+        return amount == other.amount && Objects.equals(key, other.key);
     }
 
     @Override

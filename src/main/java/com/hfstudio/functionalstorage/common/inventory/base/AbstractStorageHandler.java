@@ -345,7 +345,6 @@ public abstract class AbstractStorageHandler<S extends StorageSnapshot<S, K>, K 
         return resource.hasTemplate(templates[index]);
     }
 
-    @SuppressWarnings("unchecked")
     private S[] copyTemplates() {
         return templates.clone();
     }

@@ -89,10 +89,9 @@ public class DrawerWailaProvider implements IWailaDataProvider {
     @Override
     public NBTTagCompound getNBTData(EntityPlayerMP player, TileEntity tile, NBTTagCompound tag, World world, int x,
         int y, int z) {
-        if (!(tile instanceof ControllableDrawerTile)) {
+        if (!(tile instanceof ControllableDrawerTile drawer)) {
             return tag;
         }
-        ControllableDrawerTile drawer = (ControllableDrawerTile) tile;
         tag.setBoolean("Locked", drawer.isLocked());
 
         int upgrades = 0;

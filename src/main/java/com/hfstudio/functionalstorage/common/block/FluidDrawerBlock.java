@@ -1,6 +1,5 @@
 package com.hfstudio.functionalstorage.common.block;
 
-import java.util.Arrays;
 import java.util.List;
 
 import javax.annotation.Nonnull;
@@ -52,6 +51,6 @@ public class FluidDrawerBlock extends DrawerBlock {
     @Nonnull
     @Override
     public List<String> getVariantNames() {
-        return Arrays.asList("fluid_" + layout.getSlotCount());
+        return List.of("fluid_" + layout.getSlotCount());
     }
 }

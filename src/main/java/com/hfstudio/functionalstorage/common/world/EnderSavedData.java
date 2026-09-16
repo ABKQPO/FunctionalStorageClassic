@@ -80,10 +80,9 @@ public class EnderSavedData extends WorldSavedData {
         frequencies.clear();
         NBTTagCompound all = tag.getCompoundTag("Frequencies");
         for (Object keyObject : all.func_150296_c()) {
-            if (!(keyObject instanceof String)) {
+            if (!(keyObject instanceof String key)) {
                 continue;
             }
-            String key = (String) keyObject;
             UUID frequency;
             try {
                 frequency = UUID.fromString(key);

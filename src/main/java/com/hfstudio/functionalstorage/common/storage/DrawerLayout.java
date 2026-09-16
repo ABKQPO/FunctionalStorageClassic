@@ -5,6 +5,8 @@ import java.util.Map;
 
 import com.hfstudio.functionalstorage.config.FunctionalStorageConfig;
 
+import lombok.Getter;
+
 /**
  * Server-side drawer layout data with stable serialized identifiers.
  *
@@ -27,7 +29,9 @@ public enum DrawerLayout {
         }
     }
 
+    @Getter
     private final String id;
+    @Getter
     private final int slotCount;
     private final double capacityScale;
 
@@ -57,20 +61,6 @@ public enum DrawerLayout {
     public static DrawerLayout byIndex(int index) {
         DrawerLayout[] values = values();
         return index < 0 || index >= values.length ? X_1 : values[index];
-    }
-
-    /**
-     * @return the stable string used in NBT and other persistent data
-     */
-    public String getId() {
-        return id;
-    }
-
-    /**
-     * @return the number of independent slots
-     */
-    public int getSlotCount() {
-        return slotCount;
     }
 
     /**

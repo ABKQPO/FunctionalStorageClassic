@@ -3,10 +3,13 @@ package com.hfstudio.functionalstorage.common.block;
 import net.minecraft.util.StatCollector;
 import net.minecraftforge.common.util.ForgeDirection;
 
+import lombok.Getter;
+
 /**
  * Physical surface to which a drawer block is attached. Values are ordered so
  * that {@code ordinal()} doubles as the metadata group index.
  */
+@Getter
 public enum DrawerAttachment {
 
     WALL("wall"),
@@ -31,24 +34,14 @@ public enum DrawerAttachment {
     }
 
     /**
-     * @return the stable low-case identifier used by blockstate files
-     */
-    public String getId() {
-        return id;
-    }
-
-    /**
      * @return the outward direction this attachment faces
      */
     public ForgeDirection asDirection() {
-        switch (this) {
-            case FLOOR:
-                return ForgeDirection.UP;
-            case CEILING:
-                return ForgeDirection.DOWN;
-            default:
-                return ForgeDirection.NORTH;
-        }
+        return switch (this) {
+            case FLOOR -> ForgeDirection.UP;
+            case CEILING -> ForgeDirection.DOWN;
+            default -> ForgeDirection.NORTH;
+        };
     }
 
     /**

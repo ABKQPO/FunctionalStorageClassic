@@ -1,5 +1,8 @@
 package com.hfstudio.functionalstorage.client.render;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.renderer.OpenGlHelper;
@@ -21,15 +24,14 @@ import org.lwjgl.opengl.GL11;
 import com.hfstudio.functionalstorage.api.storage.BigAspectStack;
 import com.hfstudio.functionalstorage.api.storage.BigFluidStack;
 import com.hfstudio.functionalstorage.api.storage.BigItemStack;
+import com.hfstudio.functionalstorage.api.storage.IBigAspectHandler;
+import com.hfstudio.functionalstorage.api.storage.IBigFluidHandler;
+import com.hfstudio.functionalstorage.api.storage.IBigItemHandler;
 import com.hfstudio.functionalstorage.common.block.DrawerAttachment;
 import com.hfstudio.functionalstorage.common.block.DrawerFaceLayout;
 import com.hfstudio.functionalstorage.common.block.base.DrawerBlock;
 import com.hfstudio.functionalstorage.common.item.ConfigurationToolItem;
-import com.hfstudio.functionalstorage.common.tile.EssentiaDrawerTile;
-import com.hfstudio.functionalstorage.common.tile.FluidDrawerTile;
-import com.hfstudio.functionalstorage.common.tile.WoodDrawerTile;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
-import com.hfstudio.functionalstorage.common.tile.compact.CompactingDrawerTile;
 import com.hfstudio.functionalstorage.config.FunctionalStorageConfig;
 import com.hfstudio.functionalstorage.util.NumberUtils;
 
@@ -39,6 +41,11 @@ import thaumcraft.api.aspects.Aspect;
  * Draws the stored icon, amount, and fill indicator onto a drawer's front face.
  * The face transform is derived from the block metadata, so wall, floor, and
  * ceiling placements all render upright and correctly mirrored.
+ *
+ * <p>
+ * All three storage kinds render through one path: the drawer supplies its
+ * handler, and this renderer only decides how to draw the snapshot.
+ * </p>
  */
 public class DrawerRenderer extends TileEntitySpecialRenderer {
 
@@ -48,17 +55,17 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
     private static final float ICON_HALF_EXTENT = 0.15F;
     private static final float INDICATOR_HALF_WIDTH = 0.24F;
     private static final float INDICATOR_HALF_HEIGHT = 0.02F;
+    private static final float TEXT_SCALE = 0.02F;
 
     @Override
     public void renderTileEntityAt(TileEntity tile, double x, double y, double z, float partialTicks) {
-        if (!(tile instanceof ControllableDrawerTile) || !(tile.getBlockType() instanceof DrawerBlock)) {
+        if (!(tile instanceof ControllableDrawerTile drawer) || !(tile.getBlockType() instanceof DrawerBlock block)) {
             return;
         }
         if (!isWithinRenderRange(tile)) {
             return;
         }
 
-        DrawerBlock block = (DrawerBlock) tile.getBlockType();
         int metadata = tile.getBlockMetadata();
         applyBrightness(tile);
 
@@ -69,68 +76,83 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
             DrawerBlock.getHorizontalFacing(metadata),
             block.getFaceLayout());
 
-        DrawerOptions options = ((ControllableDrawerTile) tile).getDrawerOptions();
-        if (tile instanceof FluidDrawerTile) {
-            renderFluidDrawer((FluidDrawerTile) tile, block.getFaceLayout(), options);
-        } else if (tile instanceof EssentiaDrawerTile) {
-            renderEssentiaDrawer((EssentiaDrawerTile) tile, block.getFaceLayout(), options);
-        } else if (tile instanceof CompactingDrawerTile) {
-            renderCompactingDrawer((CompactingDrawerTile) tile, block.getFaceLayout(), options);
-        } else if (tile instanceof WoodDrawerTile) {
-            renderItemDrawer((WoodDrawerTile) tile, block.getFaceLayout(), options);
+        DrawerOptions options = drawer.getDrawerOptions();
+        DrawerFaceLayout layout = block.getFaceLayout();
+        IBigItemHandler itemHandler = drawer.getItemHandler();
+        IBigFluidHandler fluidHandler = drawer.getFluidHandler();
+        IBigAspectHandler aspectHandler = drawer.getAspectHandler();
+        if (itemHandler != null) {
+            renderItemSlots(itemHandler, layout, options);
+        } else if (fluidHandler != null) {
+            renderFluidSlots(fluidHandler, layout, options);
+        } else if (aspectHandler != null) {
+            renderAspectSlots(aspectHandler, layout, options);
         }
 
         GL11.glPopMatrix();
     }
 
-    private void renderCompactingDrawer(CompactingDrawerTile tile, DrawerFaceLayout layout, DrawerOptions options) {
+    private void renderItemSlots(@Nonnull IBigItemHandler handler, @Nonnull DrawerFaceLayout layout,
+        @Nonnull DrawerOptions options) {
         for (int slot = 0; slot < slotCount(layout); slot++) {
-            BigItemStack snapshot = tile.getItemHandler()
-                .getSnapshot(slot);
+            BigItemStack snapshot = handler.getSnapshot(slot);
             if (!snapshot.hasTemplate()) {
                 continue;
             }
             ItemStack stack = snapshot.getTemplate();
-            long capacity = tile.getItemHandler()
-                .getCapacity(slot);
             float[] center = slotCenter(layout, slot);
-            float scale = iconScale(layout);
             if (options.isShowItemRender()) {
-                renderStack(stack, center[0], center[1], scale);
+                renderStack(stack, center[0], center[1], iconScale(layout));
             }
             if (options.isShowItemCount()) {
                 renderText(NumberUtils.formatCompact(snapshot.getAmount()), center[0], center[1]);
             }
-            renderIndicator(center[0], center[1], ratio(snapshot.getAmount(), capacity), options);
+            renderIndicator(center[0], center[1], ratio(snapshot.getAmount(), handler.getCapacity(slot)), options);
         }
     }
 
-    private void renderEssentiaDrawer(EssentiaDrawerTile tile, DrawerFaceLayout layout, DrawerOptions options) {
+    private void renderFluidSlots(@Nonnull IBigFluidHandler handler, @Nonnull DrawerFaceLayout layout,
+        @Nonnull DrawerOptions options) {
         for (int slot = 0; slot < slotCount(layout); slot++) {
-            BigAspectStack snapshot = tile.getAspectHandler()
-                .getSnapshot(slot);
+            BigFluidStack snapshot = handler.getSnapshot(slot);
+            if (!snapshot.hasTemplate()) {
+                continue;
+            }
+            FluidStack fluid = snapshot.getTemplate();
+            float[] center = slotCenter(layout, slot);
+            if (options.isShowItemRender()) {
+                renderFluid(fluid, center[0], center[1], iconScale(layout));
+            }
+            if (options.isShowItemCount()) {
+                renderText(NumberUtils.formatFluid(snapshot.getAmount()), center[0], center[1]);
+            }
+            renderIndicator(center[0], center[1], ratio(snapshot.getAmount(), handler.getCapacity(slot)), options);
+        }
+    }
+
+    private void renderAspectSlots(@Nonnull IBigAspectHandler handler, @Nonnull DrawerFaceLayout layout,
+        @Nonnull DrawerOptions options) {
+        for (int slot = 0; slot < slotCount(layout); slot++) {
+            BigAspectStack snapshot = handler.getSnapshot(slot);
             Aspect aspect = snapshot.getAspect();
             if (aspect == null) {
                 continue;
             }
-            long capacity = tile.getAspectHandler()
-                .getCapacity(slot);
             float[] center = slotCenter(layout, slot);
-            float scale = iconScale(layout);
             if (options.isShowItemRender()) {
-                renderAspect(aspect, center[0], center[1], scale);
+                renderAspect(aspect, center[0], center[1], iconScale(layout));
             }
             if (options.isShowItemCount()) {
                 renderText(NumberUtils.formatAspect(snapshot.getAmount()), center[0], center[1]);
             }
-            renderIndicator(center[0], center[1], ratio(snapshot.getAmount(), capacity), options);
+            renderIndicator(center[0], center[1], ratio(snapshot.getAmount(), handler.getCapacity(slot)), options);
         }
     }
 
     private void applyBrightness(TileEntity tile) {
         int light = tile.getWorldObj()
             .getLightBrightnessForSkyBlocks(tile.xCoord + 1, tile.yCoord + 1, tile.zCoord + 1, 0);
-        OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, light % 65536, light / 65536);
+        OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, light % 65536, light / 65536f);
     }
 
     private boolean isWithinRenderRange(TileEntity tile) {
@@ -144,59 +166,12 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
             Minecraft.getMinecraft().thePlayer.posZ) <= range * range;
     }
 
-    private void renderItemDrawer(WoodDrawerTile tile, DrawerFaceLayout layout, DrawerOptions options) {
-        for (int slot = 0; slot < slotCount(layout); slot++) {
-            BigItemStack snapshot = tile.getItemHandler()
-                .getSnapshot(slot);
-            if (!snapshot.hasTemplate()) {
-                continue;
-            }
-            ItemStack stack = snapshot.getTemplate();
-            long capacity = tile.getItemHandler()
-                .getCapacity(slot);
-            float[] center = slotCenter(layout, slot);
-            float scale = iconScale(layout);
-            if (options.isShowItemRender()) {
-                renderStack(stack, center[0], center[1], scale);
-            }
-            if (options.isShowItemCount()) {
-                renderText(NumberUtils.formatCompact(snapshot.getAmount()), center[0], center[1]);
-            }
-            renderIndicator(center[0], center[1], ratio(snapshot.getAmount(), capacity), options);
-        }
-    }
-
-    private void renderFluidDrawer(FluidDrawerTile tile, DrawerFaceLayout layout, DrawerOptions options) {
-        for (int slot = 0; slot < slotCount(layout); slot++) {
-            BigFluidStack snapshot = tile.getFluidHandler()
-                .getSnapshot(slot);
-            if (!snapshot.hasTemplate()) {
-                continue;
-            }
-            FluidStack fluid = snapshot.getTemplate();
-            long capacity = tile.getFluidHandler()
-                .getCapacity(slot);
-            float[] center = slotCenter(layout, slot);
-            float scale = iconScale(layout);
-            if (options.isShowItemRender()) {
-                renderFluid(fluid, center[0], center[1], scale);
-            }
-            if (options.isShowItemCount()) {
-                renderText(NumberUtils.formatFluid(snapshot.getAmount()), center[0], center[1]);
-            }
-            renderIndicator(center[0], center[1], ratio(snapshot.getAmount(), capacity), options);
-        }
-    }
-
     private int slotCount(DrawerFaceLayout layout) {
-        switch (layout) {
-            case X_2:
-                return 2;
-            case X_4:
-                return 4;
-            default:
-                return 1;
-        }
+        return switch (layout) {
+            case X_2 -> 2;
+            case X_4 -> 4;
+            default -> 1;
+        };
     }
 
     private float iconScale(DrawerFaceLayout layout) {
@@ -208,14 +183,11 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
     }
 
     private float[] slotCenter(DrawerFaceLayout layout, int slot) {
-        switch (layout) {
-            case X_2:
-                return new float[] { 0.5F, slot == 0 ? 0.25F : 0.75F };
-            case X_4:
-                return new float[] { slot % 2 == 0 ? 0.25F : 0.75F, slot < 2 ? 0.25F : 0.75F };
-            default:
-                return new float[] { 0.5F, 0.5F };
-        }
+        return switch (layout) {
+            case X_2 -> new float[] { 0.5F, slot == 0 ? 0.25F : 0.75F };
+            case X_4 -> new float[] { slot % 2 == 0 ? 0.25F : 0.75F, slot < 2 ? 0.25F : 0.75F };
+            default -> new float[] { 0.5F, 0.5F };
+        };
     }
 
     /**
@@ -224,7 +196,8 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
      *
      * @param attachment surface the drawer is mounted on
      * @param facing     horizontal rotation stored in metadata
-     * @param layout     face layout, used to pick the front plane depth
+     * @param layout     face layout, unused by the transform but kept for
+     *                   symmetry with the model transform
      */
     private void applyFaceTransform(DrawerAttachment attachment, ForgeDirection facing, DrawerFaceLayout layout) {
         GL11.glTranslatef(0.5F, 0.5F, 0.5F);
@@ -244,21 +217,19 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
     }
 
     private float facingAngle(ForgeDirection facing) {
-        switch (facing) {
-            case SOUTH:
-                return 0F;
-            case WEST:
-                return 90F;
-            case NORTH:
-                return 180F;
-            case EAST:
-                return 270F;
-            default:
-                return 0F;
-        }
+        return switch (facing) {
+            case SOUTH -> 0F;
+            case WEST -> 90F;
+            case NORTH -> 180F;
+            case EAST -> 270F;
+            default -> 0F;
+        };
     }
 
     private void renderStack(ItemStack stack, float centerX, float centerY, float scale) {
+        if (stack == null || stack.getItem() == null) {
+            return;
+        }
         GL11.glPushMatrix();
         GL11.glTranslatef(centerX, centerY, Z_ICON);
         GL11.glScalef(scale, scale, 0.00001F);
@@ -312,9 +283,8 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
 
     /**
      * Draws an aspect using Thaumcraft's own aspect icon, tinted with the
-     * aspect colour and blended with the aspect's configured blend mode. Using
-     * the upstream texture keeps compound aspects and addon aspects correct
-     * without shipping any Thaumcraft assets.
+     * aspect colour. Using the upstream texture keeps compound aspects and
+     * addon aspects correct without shipping any Thaumcraft assets.
      *
      * @param aspect  aspect to draw
      * @param centerX local x of the slot centre
@@ -355,7 +325,7 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
         int width = font.getStringWidth(text);
         GL11.glPushMatrix();
         GL11.glTranslatef(centerX, centerY + 0.16F, Z_TEXT);
-        GL11.glScalef(0.02F, -0.02F, 0.02F);
+        GL11.glScalef(TEXT_SCALE, -TEXT_SCALE, TEXT_SCALE);
         GL11.glDisable(GL11.GL_LIGHTING);
         GL11.glDisable(GL11.GL_DEPTH_TEST);
         font.drawStringWithShadow(text, -width / 2, 0, 0xFFFFFF);
@@ -394,5 +364,14 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
         tessellator.addVertex(halfWidth, INDICATOR_HALF_HEIGHT, 0D);
         tessellator.addVertex(halfWidth, -INDICATOR_HALF_HEIGHT, 0D);
         tessellator.addVertex(-halfWidth, -INDICATOR_HALF_HEIGHT, 0D);
+    }
+
+    /**
+     * @param tile candidate tile
+     * @return the drawer's item handler, or {@code null}
+     */
+    @Nullable
+    public static IBigItemHandler itemHandlerOf(@Nullable TileEntity tile) {
+        return tile instanceof ControllableDrawerTile ? ((ControllableDrawerTile) tile).getItemHandler() : null;
     }
 }

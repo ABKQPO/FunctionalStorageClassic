@@ -10,6 +10,8 @@ import net.minecraft.block.Block;
 import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemStack;
 
+import lombok.Getter;
+
 /**
  * Wood variants a wooden drawer can use. Metadata values match vanilla plank
  * metadata so crafting recipes can use plain plank items.
@@ -33,6 +35,7 @@ public enum DrawerWoodType {
 
     private final String id;
     private final Block log;
+    @Getter
     private final int logMetadata;
     private final int plankMetadata;
 
@@ -81,13 +84,6 @@ public enum DrawerWoodType {
     @Nonnull
     public Block getLog() {
         return log;
-    }
-
-    /**
-     * @return the log metadata for this wood
-     */
-    public int getLogMetadata() {
-        return logMetadata;
     }
 
     /**

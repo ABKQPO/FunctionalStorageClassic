@@ -21,6 +21,11 @@ tile.functionalstorage.dark_oak_1.name=深色橡木抽屉（1 格）
 tile.functionalstorage.dark_oak_2.name=深色橡木抽屉（2 格）
 tile.functionalstorage.dark_oak_4.name=深色橡木抽屉（4 格）
 
+# 框架抽屉
+tile.functionalstorage.framed_1.name=框架抽屉（1 格）
+tile.functionalstorage.framed_2.name=框架抽屉（2 格）
+tile.functionalstorage.framed_4.name=框架抽屉（4 格）
+
 # 特殊方块
 tile.functionalstorage.fluid_1.name=流体抽屉（1 罐）
 tile.functionalstorage.fluid_2.name=流体抽屉（2 罐）
@@ -131,6 +136,10 @@ functionalstorage.configuration.numbers=显示数量
 functionalstorage.configuration.render=显示内容
 functionalstorage.configuration.upgrades=显示升级
 functionalstorage.configuration.indicator=填充指示条
+functionalstorage.configuration.state.on=开
+functionalstorage.configuration.state.off=关
+functionalstorage.configuration_tool.cycled=%s：%s
+functionalstorage.configuration_tool.material_applied=已将材质应用到框架抽屉。
 
 # 抽屉交互
 functionalstorage.attachment.wall=墙面

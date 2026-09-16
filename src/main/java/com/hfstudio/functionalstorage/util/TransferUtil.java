@@ -1,6 +1,7 @@
 package com.hfstudio.functionalstorage.util;
 
-import java.util.List;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import net.minecraft.inventory.IInventory;
 import net.minecraft.inventory.ISidedInventory;
@@ -9,9 +10,6 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraftforge.common.util.ForgeDirection;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.IFluidHandler;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 import com.hfstudio.functionalstorage.api.storage.BigFluidStack;
 import com.hfstudio.functionalstorage.api.storage.BigItemStack;
@@ -28,19 +26,19 @@ import com.hfstudio.functionalstorage.api.storage.StorageAction;
  */
 public class TransferUtil {
 
-    private TransferUtil() {
-    }
+    private TransferUtil() {}
 
     /**
      * Moves items from an external block into a drawer.
      *
-     * @param drawer      destination drawer
-     * @param source      source tile entity, or {@code null}
-     * @param sourceSide  side of the source being accessed
-     * @param limit       maximum number of items to move
+     * @param drawer     destination drawer
+     * @param source     source tile entity, or {@code null}
+     * @param sourceSide side of the source being accessed
+     * @param limit      maximum number of items to move
      * @return whether anything moved
      */
-    public static boolean pullItems(@Nonnull IBigItemHandler drawer, @Nullable TileEntity source, @Nonnull ForgeDirection sourceSide, int limit) {
+    public static boolean pullItems(@Nonnull IBigItemHandler drawer, @Nullable TileEntity source,
+        @Nonnull ForgeDirection sourceSide, int limit) {
         IInventory inventory = asInventory(source);
         if (inventory == null || limit <= 0) {
             return false;
@@ -80,7 +78,8 @@ public class TransferUtil {
      * @param limit      maximum number of items to move
      * @return whether anything moved
      */
-    public static boolean pushItems(@Nonnull IBigItemHandler drawer, @Nullable TileEntity target, @Nonnull ForgeDirection targetSide, int limit) {
+    public static boolean pushItems(@Nonnull IBigItemHandler drawer, @Nullable TileEntity target,
+        @Nonnull ForgeDirection targetSide, int limit) {
         IInventory inventory = asInventory(target);
         if (inventory == null || limit <= 0) {
             return false;
@@ -97,8 +96,12 @@ public class TransferUtil {
             if (template == null) {
                 continue;
             }
-            int request = (int) Math.min(remaining, Math.min(Integer.MAX_VALUE, view.getSnapshot()
-                .getAmount()));
+            int request = (int) Math.min(
+                remaining,
+                Math.min(
+                    Integer.MAX_VALUE,
+                    view.getSnapshot()
+                        .getAmount()));
             if (request <= 0) {
                 continue;
             }
@@ -125,7 +128,8 @@ public class TransferUtil {
      * @param limit      maximum millibuckets to move
      * @return whether anything moved
      */
-    public static boolean pullFluid(@Nonnull IBigFluidHandler drawer, @Nullable TileEntity source, @Nonnull ForgeDirection sourceSide, int limit) {
+    public static boolean pullFluid(@Nonnull IBigFluidHandler drawer, @Nullable TileEntity source,
+        @Nonnull ForgeDirection sourceSide, int limit) {
         IFluidHandler handler = asFluidHandler(source);
         if (handler == null || limit <= 0) {
             return false;
@@ -155,7 +159,8 @@ public class TransferUtil {
      * @param limit      maximum millibuckets to move
      * @return whether anything moved
      */
-    public static boolean pushFluid(@Nonnull IBigFluidHandler drawer, @Nullable TileEntity target, @Nonnull ForgeDirection targetSide, int limit) {
+    public static boolean pushFluid(@Nonnull IBigFluidHandler drawer, @Nullable TileEntity target,
+        @Nonnull ForgeDirection targetSide, int limit) {
         IFluidHandler handler = asFluidHandler(target);
         if (handler == null || limit <= 0) {
             return false;

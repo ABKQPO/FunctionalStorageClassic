@@ -2,33 +2,36 @@ package com.hfstudio.functionalstorage.common.item.upgrade;
 
 import java.util.Locale;
 
-import net.minecraft.block.Block;
+import javax.annotation.Nonnull;
+
 import net.minecraft.init.Blocks;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraftforge.common.util.ForgeDirection;
 import net.minecraftforge.fluids.FluidRegistry;
 import net.minecraftforge.fluids.FluidStack;
 
-import javax.annotation.Nonnull;
-
-import com.hfstudio.functionalstorage.api.storage.StorageAction;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 import com.hfstudio.functionalstorage.config.FunctionalStorageConfig;
 import com.hfstudio.functionalstorage.util.ItemUtil;
+
+import lombok.Getter;
 
 /**
  * Generation upgrades. Water generation fills a fluid drawer, stone generation
  * produces cobblestone, and universal generation produces a configured item.
  * Each tier changes only the amount produced per run.
  *
- * <p>Generation is limited to safe, always-available resources so an unconfigured
- * pack cannot be turned into an infinite source of arbitrary items.</p>
+ * <p>
+ * Generation is limited to safe, always-available resources so an unconfigured
+ * pack cannot be turned into an infinite source of arbitrary items.
+ * </p>
  */
 public class GenerationUpgradeItem extends AutomationUpgradeItem {
 
     /**
      * Resource a generation upgrade produces.
      */
+    @Getter
     public enum GenerationKind {
 
         WATER("water_generation_upgrade", 1),
@@ -43,23 +46,12 @@ public class GenerationUpgradeItem extends AutomationUpgradeItem {
             this.tierCount = tierCount;
         }
 
-        /**
-         * @return the identifier prefix used for registration and lang keys
-         */
-        public String getIdPrefix() {
-            return idPrefix;
-        }
-
-        /**
-         * @return the highest tier available for this kind
-         */
-        public int getTierCount() {
-            return tierCount;
-        }
     }
 
     private final GenerationKind kind;
+    @Getter
     private final int tier;
+
     public GenerationUpgradeItem(@Nonnull GenerationKind kind, int tier) {
         super(kind.getIdPrefix() + "_t" + Math.max(1, tier), 1);
         this.kind = kind;
@@ -72,13 +64,6 @@ public class GenerationUpgradeItem extends AutomationUpgradeItem {
     @Nonnull
     public GenerationKind getKind() {
         return kind;
-    }
-
-    /**
-     * @return the tier of this upgrade
-     */
-    public int getTier() {
-        return tier;
     }
 
     @Override
@@ -151,7 +136,7 @@ public class GenerationUpgradeItem extends AutomationUpgradeItem {
             return null;
         }
         String description = FunctionalStorageConfig.UPGRADES.universalGenerationItem;
-        net.minecraft.item.Item item = ItemUtil.itemFromDescription(description);
+        Item item = ItemUtil.itemFromDescription(description);
         if (item == null) {
             return null;
         }
@@ -159,29 +144,21 @@ public class GenerationUpgradeItem extends AutomationUpgradeItem {
     }
 
     private int waterRate() {
-        switch (tier) {
-            case 2:
-                return FunctionalStorageConfig.UPGRADES.waterGenerationTier2;
-            case 3:
-                return FunctionalStorageConfig.UPGRADES.waterGenerationTier3;
-            case 4:
-                return FunctionalStorageConfig.UPGRADES.waterGenerationTier4;
-            default:
-                return FunctionalStorageConfig.UPGRADES.waterGenerationTier1;
-        }
+        return switch (tier) {
+            case 2 -> FunctionalStorageConfig.UPGRADES.waterGenerationTier2;
+            case 3 -> FunctionalStorageConfig.UPGRADES.waterGenerationTier3;
+            case 4 -> FunctionalStorageConfig.UPGRADES.waterGenerationTier4;
+            default -> FunctionalStorageConfig.UPGRADES.waterGenerationTier1;
+        };
     }
 
     private int stoneRate() {
-        switch (tier) {
-            case 2:
-                return FunctionalStorageConfig.UPGRADES.stoneGenerationTier2;
-            case 3:
-                return FunctionalStorageConfig.UPGRADES.stoneGenerationTier3;
-            case 4:
-                return FunctionalStorageConfig.UPGRADES.stoneGenerationTier4;
-            default:
-                return FunctionalStorageConfig.UPGRADES.stoneGenerationTier1;
-        }
+        return switch (tier) {
+            case 2 -> FunctionalStorageConfig.UPGRADES.stoneGenerationTier2;
+            case 3 -> FunctionalStorageConfig.UPGRADES.stoneGenerationTier3;
+            case 4 -> FunctionalStorageConfig.UPGRADES.stoneGenerationTier4;
+            default -> FunctionalStorageConfig.UPGRADES.stoneGenerationTier1;
+        };
     }
 
     /**

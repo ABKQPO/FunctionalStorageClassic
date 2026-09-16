@@ -1,42 +1,38 @@
 package com.hfstudio.functionalstorage.common.item.upgrade;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 import com.hfstudio.functionalstorage.config.FunctionalStorageConfig;
 import com.hfstudio.functionalstorage.util.TransferUtil;
 import com.hfstudio.functionalstorage.util.UpgradeTargeting;
 
+import lombok.Getter;
+
 /**
  * Pulling upgrade. Moves items and fluids from a neighbour into the drawer.
  *
- * <p>The wired variant works on the block touching a chosen side of the drawer.
+ * <p>
+ * The wired variant works on the block touching a chosen side of the drawer.
  * The wireless variant works on a coordinate recorded on the upgrade stack, which
- * lets a drawer pull from a container it is not touching.</p>
+ * lets a drawer pull from a container it is not touching.
+ * </p>
  */
+@Getter
 public class PullingUpgradeItem extends AutomationUpgradeItem {
 
     private final boolean wireless;
 
     public PullingUpgradeItem(boolean wireless) {
-        super(
-            wireless ? "wireless_pulling_upgrade" : "pulling_upgrade",
-            FunctionalStorageConfig.UPGRADES.upgradeTick);
+        super(wireless ? "wireless_pulling_upgrade" : "pulling_upgrade", FunctionalStorageConfig.UPGRADES.upgradeTick);
         this.wireless = wireless;
-    }
-
-    /**
-     * @return whether this upgrade pulls from a recorded coordinate
-     */
-    public boolean isWireless() {
-        return wireless;
     }
 
     @Override
@@ -51,18 +47,12 @@ public class PullingUpgradeItem extends AutomationUpgradeItem {
         }
         ForgeDirection access = accessSide(tile, stack, source);
         if (tile.getItemHandler() != null) {
-            TransferUtil.pullItems(
-                tile.getItemHandler(),
-                source,
-                access,
-                FunctionalStorageConfig.UPGRADES.upgradePullItems);
+            TransferUtil
+                .pullItems(tile.getItemHandler(), source, access, FunctionalStorageConfig.UPGRADES.upgradePullItems);
         }
         if (tile.getFluidHandler() != null) {
-            TransferUtil.pullFluid(
-                tile.getFluidHandler(),
-                source,
-                access,
-                FunctionalStorageConfig.UPGRADES.upgradePullFluid);
+            TransferUtil
+                .pullFluid(tile.getFluidHandler(), source, access, FunctionalStorageConfig.UPGRADES.upgradePullFluid);
         }
     }
 
@@ -71,10 +61,7 @@ public class PullingUpgradeItem extends AutomationUpgradeItem {
         if (!wireless) {
             ForgeDirection side = UpgradeTargeting.targetDirection(tile, stack);
             return tile.getWorldObj()
-                .getTileEntity(
-                    tile.xCoord + side.offsetX,
-                    tile.yCoord + side.offsetY,
-                    tile.zCoord + side.offsetZ);
+                .getTileEntity(tile.xCoord + side.offsetX, tile.yCoord + side.offsetY, tile.zCoord + side.offsetZ);
         }
         int[] target = getWirelessTarget(stack);
         if (target == null) {
@@ -85,7 +72,8 @@ public class PullingUpgradeItem extends AutomationUpgradeItem {
     }
 
     @Nonnull
-    private ForgeDirection accessSide(@Nonnull ControllableDrawerTile tile, @Nonnull ItemStack stack, @Nonnull TileEntity source) {
+    private ForgeDirection accessSide(@Nonnull ControllableDrawerTile tile, @Nonnull ItemStack stack,
+        @Nonnull TileEntity source) {
         if (!wireless) {
             return UpgradeTargeting.targetDirection(tile, stack)
                 .getOpposite();

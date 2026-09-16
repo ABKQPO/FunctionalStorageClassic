@@ -2,6 +2,8 @@ package com.hfstudio.functionalstorage.common.item.upgrade;
 
 import java.util.List;
 
+import javax.annotation.Nonnull;
+
 import net.minecraft.block.Block;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.item.ItemStack;
@@ -10,8 +12,6 @@ import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.IFluidBlock;
-
-import javax.annotation.Nonnull;
 
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 import com.hfstudio.functionalstorage.config.FunctionalStorageConfig;
@@ -57,7 +57,6 @@ public class CollectorUpgradeItem extends AutomationUpgradeItem {
             targetY + COLLECT_RADIUS,
             targetZ + COLLECT_RADIUS);
 
-        @SuppressWarnings("unchecked")
         List<EntityItem> entities = world.getEntitiesWithinAABB(EntityItem.class, area);
         if (entities == null || entities.isEmpty()) {
             return;
@@ -101,10 +100,9 @@ public class CollectorUpgradeItem extends AutomationUpgradeItem {
         int z = tile.zCoord + side.offsetZ;
 
         Block block = world.getBlock(x, y, z);
-        if (!(block instanceof IFluidBlock)) {
+        if (!(block instanceof IFluidBlock fluidBlock)) {
             return;
         }
-        IFluidBlock fluidBlock = (IFluidBlock) block;
         if (fluidBlock.getFluid() == null) {
             return;
         }

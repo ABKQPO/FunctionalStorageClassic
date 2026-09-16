@@ -47,10 +47,9 @@ public class GuiDrawer extends GuiContainer {
         drawRect(guiLeft, guiTop + ySize - 1, guiLeft + xSize, guiTop + ySize, PANEL_SHADOW);
 
         for (Object slotObject : inventorySlots.inventorySlots) {
-            if (!(slotObject instanceof Slot)) {
+            if (!(slotObject instanceof Slot slot)) {
                 continue;
             }
-            Slot slot = (Slot) slotObject;
             int left = guiLeft + slot.xDisplayPosition;
             int top = guiTop + slot.yDisplayPosition;
             drawRect(left - 1, top - 1, left + 17, top + 17, SLOT_BORDER);

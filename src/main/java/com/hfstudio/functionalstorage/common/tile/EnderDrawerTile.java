@@ -1,5 +1,6 @@
 package com.hfstudio.functionalstorage.common.tile;
 
+import java.util.Objects;
 import java.util.UUID;
 
 import javax.annotation.Nonnull;
@@ -43,7 +44,7 @@ public class EnderDrawerTile extends ControllableDrawerTile {
      * @param frequency new frequency, or {@code null} to unbind
      */
     public void setFrequency(@Nullable UUID frequency) {
-        if (frequency == null ? this.frequency == null : frequency.equals(this.frequency)) {
+        if (Objects.equals(frequency, this.frequency)) {
             return;
         }
         this.frequency = frequency;

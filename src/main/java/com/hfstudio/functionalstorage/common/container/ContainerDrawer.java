@@ -11,8 +11,8 @@ import net.minecraft.item.ItemStack;
 
 import com.hfstudio.functionalstorage.api.upgrade.IStorageUpgrade;
 import com.hfstudio.functionalstorage.common.inventory.adapter.UpgradeSlotInventory;
-import com.hfstudio.functionalstorage.common.item.upgrade.AutomationUpgradeItem;
-import com.hfstudio.functionalstorage.common.item.upgrade.UtilityUpgradeItem;
+import com.hfstudio.functionalstorage.common.item.upgrade.MaxStorageUpgradeItem;
+import com.hfstudio.functionalstorage.common.item.upgrade.StorageUpgradeItem;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 
 /**
@@ -91,7 +91,7 @@ public class ContainerDrawer extends Container {
         if (index < 0 || index >= inventorySlots.size()) {
             return null;
         }
-        Slot slot = (Slot) inventorySlots.get(index);
+        Slot slot = inventorySlots.get(index);
         if (!slot.getHasStack()) {
             return null;
         }
@@ -106,7 +106,7 @@ public class ContainerDrawer extends Container {
         boolean moved;
         if (index < playerStart) {
             moved = mergeItemStack(stack, playerStart, inventorySlots.size(), true);
-        } else if (stack.getItem() instanceof IStorageUpgrade || stack.getItem() instanceof AutomationUpgradeItem) {
+        } else if (stack.getItem() instanceof IStorageUpgrade) {
             moved = mergeItemStack(stack, upgradeStart, playerStart, false)
                 || mergeItemStack(stack, 0, storageSlots, false);
         } else {
@@ -172,9 +172,9 @@ public class ContainerDrawer extends Container {
             if (stack.getItem() == null || !(stack.getItem() instanceof IStorageUpgrade)) {
                 return false;
             }
-            boolean utility = stack.getItem() instanceof UtilityUpgradeItem
-                || stack.getItem() instanceof AutomationUpgradeItem;
-            return storage != utility;
+            boolean storageUpgrade = stack.getItem() instanceof StorageUpgradeItem
+                || stack.getItem() instanceof MaxStorageUpgradeItem;
+            return storage == storageUpgrade;
         }
 
         @Override

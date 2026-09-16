@@ -41,18 +41,10 @@ public class HorizontalFacingBlockProperty
 
     @Override
     public boolean hasTrait(BlockPropertyTrait trait) {
-        switch (trait) {
-            case SupportsWorld:
-            case SupportsStacks:
-            case OnlyNeedsMeta:
-            case WorldMutable:
-            case StackMutable:
-            case Config:
-            case Transformable:
-                return true;
-            default:
-                return false;
-        }
+        return switch (trait) {
+            case SupportsWorld, SupportsStacks, OnlyNeedsMeta, WorldMutable, StackMutable, Config, Transformable -> true;
+            default -> false;
+        };
     }
 
     @Override

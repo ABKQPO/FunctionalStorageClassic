@@ -21,6 +21,11 @@ tile.functionalstorage.dark_oak_1.name=Dark Oak Drawer (1 Slot)
 tile.functionalstorage.dark_oak_2.name=Dark Oak Drawer (2 Slots)
 tile.functionalstorage.dark_oak_4.name=Dark Oak Drawer (4 Slots)
 
+# Framed drawers
+tile.functionalstorage.framed_1.name=Framed Drawer (1 Slot)
+tile.functionalstorage.framed_2.name=Framed Drawer (2 Slots)
+tile.functionalstorage.framed_4.name=Framed Drawer (4 Slots)
+
 # Special blocks
 tile.functionalstorage.fluid_1.name=Fluid Drawer (1 Tank)
 tile.functionalstorage.fluid_2.name=Fluid Drawer (2 Tanks)
@@ -131,6 +136,10 @@ functionalstorage.configuration.numbers=Show Amounts
 functionalstorage.configuration.render=Show Contents
 functionalstorage.configuration.upgrades=Show Upgrades
 functionalstorage.configuration.indicator=Fill Indicator
+functionalstorage.configuration.state.on=on
+functionalstorage.configuration.state.off=off
+functionalstorage.configuration_tool.cycled=%s: %s
+functionalstorage.configuration_tool.material_applied=Applied material to the framed drawer.
 
 # Drawer interaction
 functionalstorage.attachment.wall=Wall

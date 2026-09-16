@@ -9,6 +9,8 @@ import javax.annotation.Nonnull;
 
 import net.minecraft.item.ItemStack;
 
+import lombok.Getter;
+
 /**
  * Read-only aggregation view that collapses a multi-index item handler into one
  * entry per distinct item key. Used by the Forge-facing bridges so external
@@ -16,7 +18,9 @@ import net.minecraft.item.ItemStack;
  */
 public class ItemStorageView {
 
+    @Getter
     private final BigItemStack snapshot;
+    @Getter
     private final long capacity;
     private final boolean voidsOverflow;
 
@@ -114,20 +118,6 @@ public class ItemStorageView {
         long safeLeft = Math.max(0L, left);
         long safeRight = Math.max(0L, right);
         return safeLeft > Long.MAX_VALUE - safeRight ? Long.MAX_VALUE : safeLeft + safeRight;
-    }
-
-    /**
-     * @return the aggregated stored amount
-     */
-    public BigItemStack getSnapshot() {
-        return snapshot;
-    }
-
-    /**
-     * @return the aggregated capacity
-     */
-    public long getCapacity() {
-        return capacity;
     }
 
     /**

@@ -18,6 +18,8 @@ import com.hfstudio.functionalstorage.config.FunctionalStorageConfig;
 import com.hfstudio.functionalstorage.util.ItemUtil;
 import com.hfstudio.functionalstorage.util.UpgradeTargeting;
 
+import lombok.Getter;
+
 /**
  * Refill upgrade, merged in from More Functional Storage. Tops up the owning
  * player's held stack from the drawer whenever it runs low.
@@ -30,6 +32,7 @@ import com.hfstudio.functionalstorage.util.UpgradeTargeting;
  * intent explicit.
  * </p>
  */
+@Getter
 public class RefillUpgradeItem extends AutomationUpgradeItem {
 
     private final boolean dimensional;
@@ -44,13 +47,6 @@ public class RefillUpgradeItem extends AutomationUpgradeItem {
     @Override
     public boolean hasDirection() {
         return false;
-    }
-
-    /**
-     * @return whether this upgrade can refill a player in another dimension
-     */
-    public boolean isDimensional() {
-        return dimensional;
     }
 
     @Override
@@ -89,7 +85,7 @@ public class RefillUpgradeItem extends AutomationUpgradeItem {
             BigItemStack snapshot = tile.getItemHandler()
                 .getSnapshot(index);
             ItemStack template = snapshot.getTemplate();
-            if (template == null || !ItemUtil.areItemStacksEqual(template, held)) {
+            if (!ItemUtil.areItemStacksEqual(template, held)) {
                 continue;
             }
             if (filter != null && !ItemUtil.areItemStacksEqual(filter, template)) {
@@ -113,9 +109,9 @@ public class RefillUpgradeItem extends AutomationUpgradeItem {
             if (tile.getWorldObj() == null) {
                 return null;
             }
-            for (Object candidate : tile.getWorldObj().playerEntities) {
-                if (candidate instanceof EntityPlayer && owner.equals(((EntityPlayer) candidate).getUniqueID())) {
-                    return (EntityPlayer) candidate;
+            for (EntityPlayer candidate : tile.getWorldObj().playerEntities) {
+                if (candidate instanceof EntityPlayer && owner.equals(candidate.getUniqueID())) {
+                    return candidate;
                 }
             }
             return null;
@@ -124,9 +120,9 @@ public class RefillUpgradeItem extends AutomationUpgradeItem {
         if (server == null) {
             return null;
         }
-        for (Object candidate : server.getConfigurationManager().playerEntityList) {
-            if (candidate instanceof EntityPlayerMP && owner.equals(((EntityPlayerMP) candidate).getUniqueID())) {
-                return (EntityPlayerMP) candidate;
+        for (EntityPlayerMP candidate : server.getConfigurationManager().playerEntityList) {
+            if (candidate instanceof EntityPlayerMP && owner.equals(candidate.getUniqueID())) {
+                return candidate;
             }
         }
         return null;

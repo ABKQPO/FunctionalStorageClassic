@@ -47,20 +47,14 @@ public class UpgradeTargeting {
      */
     @Nonnull
     public static ForgeDirection resolve(@Nonnull ForgeDirection front, @Nonnull RelativeDirection relative) {
-        switch (relative) {
-            case BACK:
-                return front.getOpposite();
-            case UP:
-                return ForgeDirection.UP;
-            case DOWN:
-                return ForgeDirection.DOWN;
-            case LEFT:
-                return horizontalLeft(front);
-            case RIGHT:
-                return horizontalLeft(front).getOpposite();
-            default:
-                return front;
-        }
+        return switch (relative) {
+            case BACK -> front.getOpposite();
+            case UP -> ForgeDirection.UP;
+            case DOWN -> ForgeDirection.DOWN;
+            case LEFT -> horizontalLeft(front);
+            case RIGHT -> horizontalLeft(front).getOpposite();
+            default -> front;
+        };
     }
 
     /**
@@ -69,18 +63,13 @@ public class UpgradeTargeting {
      */
     @Nonnull
     public static ForgeDirection horizontalLeft(@Nonnull ForgeDirection front) {
-        switch (front) {
-            case NORTH:
-                return ForgeDirection.WEST;
-            case WEST:
-                return ForgeDirection.SOUTH;
-            case SOUTH:
-                return ForgeDirection.EAST;
-            case EAST:
-                return ForgeDirection.NORTH;
-            default:
-                return ForgeDirection.NORTH;
-        }
+        return switch (front) {
+            case NORTH -> ForgeDirection.WEST;
+            case WEST -> ForgeDirection.SOUTH;
+            case SOUTH -> ForgeDirection.EAST;
+            case EAST -> ForgeDirection.NORTH;
+            default -> ForgeDirection.NORTH;
+        };
     }
 
     /**

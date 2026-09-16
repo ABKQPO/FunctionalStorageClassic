@@ -20,6 +20,8 @@ import com.hfstudio.functionalstorage.common.storage.CompactingTier;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 import com.hfstudio.functionalstorage.util.CompactingUtil;
 
+import lombok.Getter;
+
 /**
  * Compacting drawer tile. Stores one shared amount in lowest-tier units and
  * exposes one visible slot per configured compression tier.
@@ -28,6 +30,7 @@ public class CompactingDrawerTile extends ControllableDrawerTile {
 
     private static final String KEY_COMPACTING = "Compacting";
 
+    @Getter
     private final int slotCount;
     private CompactingItemHandler handler;
     private boolean recipesChecked;
@@ -40,13 +43,6 @@ public class CompactingDrawerTile extends ControllableDrawerTile {
         this.slotCount = Math.max(1, slotCount);
         this.handler = createHandler();
         bindStorageHandler(handler);
-    }
-
-    /**
-     * @return the number of visible compression tiers
-     */
-    public int getSlotCount() {
-        return slotCount;
     }
 
     @Nonnull

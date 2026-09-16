@@ -7,6 +7,8 @@ import net.minecraft.item.ItemStack;
 
 import com.hfstudio.functionalstorage.util.ItemUtil;
 
+import lombok.Getter;
+
 /**
  * Immutable definition of one visible compression tier. A tier names an item
  * and how many lowest-tier units it represents, for example a block that
@@ -18,6 +20,7 @@ public class CompactingTier {
 
     @Nullable
     private final ItemStack template;
+    @Getter
     private final long baseUnits;
 
     /**
@@ -46,13 +49,6 @@ public class CompactingTier {
     @Nullable
     public ItemStack getTemplate() {
         return ItemUtil.copyWithSizeOne(template);
-    }
-
-    /**
-     * @return how many lowest-tier units this tier represents
-     */
-    public long getBaseUnits() {
-        return baseUnits;
     }
 
     /**

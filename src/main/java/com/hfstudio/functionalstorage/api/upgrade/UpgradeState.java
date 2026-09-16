@@ -9,6 +9,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import lombok.Getter;
+
 /**
  * Immutable snapshot of all contributions made by installed storage upgrades.
  *
@@ -18,6 +20,7 @@ import java.util.Set;
  * thread-safe after construction; {@link Builder} itself is mutable and not thread-safe.
  * </p>
  */
+@Getter
 public class UpgradeState {
 
     private static final UpgradeState EMPTY = new Builder().build();
@@ -28,7 +31,7 @@ public class UpgradeState {
     private UpgradeState(Builder builder) {
         EnumMap<UpgradeAttribute, List<UpgradeModifier>> modifierCopies = new EnumMap<>(UpgradeAttribute.class);
         for (Map.Entry<UpgradeAttribute, List<UpgradeModifier>> entry : builder.modifiers.entrySet()) {
-            modifierCopies.put(entry.getKey(), Collections.unmodifiableList(new ArrayList<>(entry.getValue())));
+            modifierCopies.put(entry.getKey(), List.copyOf(entry.getValue()));
         }
         modifiers = Collections.unmodifiableMap(modifierCopies);
         features = builder.features.isEmpty() ? Collections.emptySet()
@@ -75,20 +78,6 @@ public class UpgradeState {
     public List<UpgradeModifier> getModifiers(UpgradeAttribute attribute) {
         List<UpgradeModifier> values = modifiers.get(Objects.requireNonNull(attribute, "attribute"));
         return values == null ? Collections.emptyList() : values;
-    }
-
-    /**
-     * @return an immutable map whose values are immutable modifier lists
-     */
-    public Map<UpgradeAttribute, List<UpgradeModifier>> getModifiers() {
-        return modifiers;
-    }
-
-    /**
-     * @return the immutable set of enabled features
-     */
-    public Set<StorageFeature> getFeatures() {
-        return features;
     }
 
     /**
