@@ -3,6 +3,8 @@ package com.hfstudio.functionalstorage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.gtnewhorizon.gtnhlib.config.ConfigException;
+import com.hfstudio.functionalstorage.config.FunctionalStorageConfig;
 import com.hfstudio.functionalstorage.misc.CommonProxy;
 import com.hfstudio.functionalstorage.misc.GuiHandler;
 
@@ -47,6 +49,11 @@ public class FunctionalStorage {
 
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
+        try {
+            FunctionalStorageConfig.registerConfig();
+        } catch (ConfigException exception) {
+            throw new IllegalStateException("Unable to register the Functional Storage config", exception);
+        }
         network = NetworkRegistry.INSTANCE.newSimpleChannel(MOD_ID);
         NetworkRegistry.INSTANCE.registerGuiHandler(this, new GuiHandler());
         proxy.preInit(event);

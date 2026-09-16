@@ -5,10 +5,6 @@ import com.gtnewhorizon.gtnhlib.config.ConfigException;
 import com.gtnewhorizon.gtnhlib.config.ConfigurationManager;
 import com.hfstudio.functionalstorage.FunctionalStorage;
 
-/**
- * GTNHLib-backed configuration. Categories mirror the runtime concerns of the
- * mod so pack authors can tune storage, upgrades, and integrations separately.
- */
 @Config(
     modid = FunctionalStorage.MOD_ID,
     filename = FunctionalStorage.MOD_ID,
@@ -18,11 +14,6 @@ import com.hfstudio.functionalstorage.FunctionalStorage;
 @Config.Comment("Functional Storage configuration")
 public class FunctionalStorageConfig {
 
-    /**
-     * Registers this configuration with GTNHLib.
-     *
-     * @throws ConfigException when the annotated structure cannot be registered
-     */
     public static void registerConfig() throws ConfigException {
         ConfigurationManager.registerConfig(FunctionalStorageConfig.class);
     }
@@ -43,9 +34,6 @@ public class FunctionalStorageConfig {
     @Config.RequiresMcRestart
     public static final Client CLIENT = new Client();
 
-    /**
-     * General behaviour options.
-     */
     public static class General {
 
         @Config.Comment("Keep stored contents, filters, lock state, and upgrades in the dropped block when broken")
@@ -82,10 +70,6 @@ public class FunctionalStorageConfig {
         public String[] oreDictionaryWhitelist = {};
     }
 
-    /**
-     * Storage capacity tuning options. Values are multipliers applied on top of
-     * the per-layout base capacity.
-     */
     public static class Storage {
 
         @Config.Comment("Copper Upgrade storage multiplier")
@@ -139,9 +123,6 @@ public class FunctionalStorageConfig {
         public int baseAspectCapacity = 256;
     }
 
-    /**
-     * Functional upgrade tuning.
-     */
     public static class Upgrades {
 
         @Config.Comment("Every how many ticks drawer upgrades run")
@@ -263,9 +244,6 @@ public class FunctionalStorageConfig {
         public int refillTick = 20;
     }
 
-    /**
-     * Optional integration toggles.
-     */
     public static class Compatibility {
 
         @Config.Comment("Enable the Waila integration for drawers and controllers")
@@ -284,9 +262,6 @@ public class FunctionalStorageConfig {
         public boolean enableThaumcraftCompatibility = true;
     }
 
-    /**
-     * Client side rendering options.
-     */
     public static class Client {
 
         @Config.Comment("Distance in blocks at which drawer contents stop rendering")

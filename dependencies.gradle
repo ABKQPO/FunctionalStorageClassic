@@ -13,7 +13,9 @@ dependencies {
     runtimeOnlyNonPublishable("com.github.GTNewHorizons:Applied-Energistics-2-Unofficial:rv3-beta-1040-GTNH:dev")
 
     compileOnly("thaumcraft:Thaumcraft:1.7.10-4.2.3.5:dev")
-    runtimeOnlyNonPublishable("thaumcraft:Thaumcraft:1.7.10-4.2.3.5:dev")
+    implementation("thaumcraft:Thaumcraft:1.7.10-4.2.3.5:dev") { transitive = false }
+
+    runtimeOnlyNonPublishable("com.github.GTNewHorizons:Baubles-Expanded:2.2.23-GTNH:dev")
 
     // jvmDowngrader
     compileOnly("javax.xml.bind:jaxb-api:2.3.1")
@@ -32,3 +34,15 @@ configurations.configureEach {
     exclude group: "com.github.GTNewHorizons", module: "Hodgepodge"
     exclude group: "com.github.GTNewHorizons", module: "Baubles"
 }
+
+// deps may transitively add Baubles, so we replace it
+project.getConfigurations()
+        .all(c -> {
+            final DependencySubstitutions ds = c.getResolutionStrategy()
+                    .getDependencySubstitution();
+            ds.substitute(ds.module("com.github.GTNewHorizons:Baubles"))
+                    .using(ds.module("com.github.GTNewHorizons:Baubles-Expanded:2.2.23-GTNH"))
+                    .withClassifier("dev")
+                    .because("Baubles-Expanded replaces Baubles");
+        });
+
