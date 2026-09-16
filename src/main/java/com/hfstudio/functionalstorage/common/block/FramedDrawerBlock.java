@@ -47,6 +47,7 @@ public class FramedDrawerBlock extends DrawerBlock implements IBlockModelProvide
     public FramedDrawerBlock(@Nonnull DrawerLayout layout) {
         super(faceLayoutOf(layout), "functionalstorage.framed_" + layout.getSlotCount());
         this.layout = layout;
+        setBlockTextureName("functionalstorage:framed_side");
     }
 
     private static DrawerFaceLayout faceLayoutOf(@Nonnull DrawerLayout layout) {

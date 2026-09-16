@@ -8,7 +8,6 @@ import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.common.util.ForgeDirection;
 
-import com.gtnewhorizon.gtnhlib.blockstate.init.BlockPropertyInit;
 import com.gtnewhorizon.gtnhlib.blockstate.registry.BlockPropertyRegistry;
 import com.hfstudio.functionalstorage.common.block.base.DrawerBlock;
 import com.hfstudio.functionalstorage.misc.RegistrationHandler;
@@ -29,7 +28,6 @@ public class DrawerBlockProperties {
      * Registers the properties for every drawer block and matching item block.
      */
     public static void register() {
-        BlockPropertyInit.init();
         for (Block block : RegistrationHandler.allDrawerBlocks()) {
             BlockPropertyRegistry.registerBlockItemProperty(block, ATTACHMENT, DrawerAttachment.WALL);
             BlockPropertyRegistry.registerBlockItemProperty(block, HORIZONTAL_FACING, ForgeDirection.NORTH);

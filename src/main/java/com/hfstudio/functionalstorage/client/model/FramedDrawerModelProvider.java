@@ -16,6 +16,8 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.IIcon;
 import net.minecraft.world.IBlockAccess;
 
+import org.jetbrains.annotations.NotNull;
+
 import com.gtnewhorizon.gtnhlib.api.IBlockModelProvider;
 import com.gtnewhorizon.gtnhlib.client.model.BakedModelQuadContext;
 import com.gtnewhorizon.gtnhlib.client.model.baked.BakedModel;
@@ -257,7 +259,7 @@ public class FramedDrawerModelProvider implements IBlockModelProvider {
             return retextured;
         }
 
-        @Nullable
+        @NotNull
         private ModelQuadView retextureQuad(@Nonnull ModelQuadView quad) {
             Object spriteObject = quad.celeritas$getSprite();
             if (!(spriteObject instanceof TextureAtlasSprite marker)) {
