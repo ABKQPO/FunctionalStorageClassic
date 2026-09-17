@@ -5,7 +5,7 @@
   <p>
     <strong>High capacity drawer storage for items, fluids, and Thaumcraft essentia.</strong>
     <br>
-    A faithful backport of <b>Functional Storage</b> to <b>Minecraft 1.7.10</b>, with
+    A backport of <b>Functional Storage</b> to <b>Minecraft 1.7.10</b>, with
     <b>More Functional Storage</b> merged in and first class <b>Applied Energistics 2</b> and
     <b>Waila</b> integration.
   </p>
@@ -102,12 +102,13 @@ Each drawer has four **storage upgrade** slots and three **utility upgrade** slo
 
 | Upgrade | Default Capacity Multiplier |
 |:--------|:--------------------|
-| Iron Downgrade | resets to base capacity |
+| Iron Downgrade | limits item slots to 64 items |
 | Copper Upgrade | ×8 |
 | Gold Upgrade | ×16 |
 | Diamond Upgrade | ×24 |
 | Netherite Upgrade | ×32 |
 | Max Storage Upgrade | removes the capacity ceiling |
+| Creative Vending Upgrade | unlimited extraction of the configured resource; creative only |
 
 Copper, gold, diamond, and netherite multipliers come from the `storage` configuration.
 Fluid and essentia capacity modifiers apply their configured divisors. Reopen the world
@@ -130,13 +131,19 @@ remove an installed upgrade or exchange tiers.
 
 ### Generation Upgrades
 
-Each comes in four tiers that differ only in output rate.
+Legacy water and stone generators have four configurable output tiers. The four legacy
+Universal Item Generation items share the configured generation interval and produce one item per operation.
 
 | Upgrade | Effect |
 |:--------|:-------|
 | Water Generation | fills a fluid drawer with water |
 | Stone Generation | produces cobblestone in a drawer |
 | Universal Item Generation | produces the configured item, or the upgrade's own filter |
+| Water Generator Upgrade | generates 2,000 L of water per tick |
+| Dripping Upgrade | generates 20 L of lava every 20 ticks |
+| Obsidian Upgrade | generates one obsidian every 300 ticks |
+
+The dripping recipe uses netherrack in place of pointed dripstone, which does not exist in 1.7.10.
 
 ### More Functional Storage upgrades
 
@@ -146,9 +153,16 @@ The following upgrades from **More Functional Storage** are merged into this mod
 |:--------|:-------|
 | Breaker Upgrade | breaks the block in front of the drawer and stores the drops |
 | Placer Upgrade | places blocks from the drawer into the world |
-| Refill Upgrade | keeps a player's held stack topped up |
+| Refill Upgrade | refills existing stacks in the owner's hotbar, main inventory, or ender chest |
 | Dimensional Refill Upgrade | as above, across dimensions |
-| Stonecutting Upgrade | runs stonecutter-style conversions on stored items |
+| Speed Upgrade Augment | installs inside an upgrade's configuration screen to shorten its operation interval |
+
+Right-click an installed automation upgrade in the drawer interface to configure its direction,
+item filters, selected slots, redstone mode, or refill destination. The filter panel has nine
+ghost slots: left-click copies the cursor item, right-click clears it, and scrolling selects
+an ore dictionary entry. Breakers require a tool and
+preserve its durability. Redstone modes include always active, signal required, no signal,
+and once per pulse. Stonecutting Upgrade is intentionally omitted because 1.7.10 has no stonecutter.
 
 <hr>
 
@@ -200,8 +214,14 @@ inserts matching items from your inventory. Left-click extracts one item, or one
 sneaking. Buckets and registered fluid containers exchange with the clicked tank; Thaumcraft
 phials exchange with the clicked essentia slot.
 
+In creative mode, a normal left-click on the front extracts contents. Sneaking or clicking
+another face allows the block to be removed, following Storage Drawers.
+
 Right-clicking with an upgrade installs it in the appropriate upgrade group. Sneak with the
-Configuration Tool to toggle locking; use it normally to cycle display options.
+Configuration Tool and right-click air to cycle modes, then right-click drawers to apply
+locking, numbers, contents, upgrades, or indicator settings. The Linking Tool supports
+single and area selection, adding and removing links, and copying ender frequencies.
+Sneak-right-click a target block with a wireless upgrade to record its position and access face.
 
 <hr>
 
@@ -217,7 +237,8 @@ Categories:
 * `upgrades` — transfer amounts and tick intervals for every automation upgrade; `universalGenerationTick`
   controls the interval for Universal Item Generation upgrades
 * `compatibility` — Waila, Applied Energistics 2, and Thaumcraft toggles
-* `client` — drawer render distance and default display options
+* `client` — drawer render distance and default display options; `threeDimensionalBlockDisplay`
+  defaults to `true` and can be disabled to show flat block icons on drawer faces
 
 <hr>
 
@@ -230,6 +251,9 @@ The mod ships with:
 
 Both files cover block names, item names, tooltips, upgrade descriptions, Waila text, and every
 configuration entry.
+More Functional Storage's names and configuration tooltips are translated into Simplified
+Chinese. Both language files use matching categories and key order. Stored contents, filters,
+and installed upgrades have item previews in tooltips through GTNHLib's tooltip API.
 
 <hr>
 
@@ -279,10 +303,20 @@ projects, all of which permit reuse under the terms below.
 | Project | Author | License | What was used |
 |:--------|:-------|:--------|:--------------|
 | **Functional Storage** | [Buuz135](https://github.com/Buuz135), Rid | [MIT](https://mit-license.org/) | Original design, drawer and upgrade behaviour, textures |
-| **Functional Storage Legacy** | [xinyihl](https://github.com/xinyihl) | [MIT](https://mit-license.org/) | 1.12.2 port used as the primary reference, textures, models |
-| **More Functional Storage** | [Matyrobbrt](https://github.com/Matyrobbrt) | [MIT](https://mit-license.org/) | Breaker, placer, refill, dimensional refill, and stonecutting upgrades |
+| **Functional Storage Legacy** | [xinyihl](https://github.com/xinyihl) | [MIT](https://mit-license.org/) | Historical 1.12.2 port reference and inherited assets; current parity work follows modern Functional Storage |
+| **More Functional Storage** | [Matyrobbrt](https://github.com/Matyrobbrt) | [MIT](https://mit-license.org/) | Breaker, placer, refill, and dimensional refill upgrades merged into this mod |
 | **GTNHLib** | [GTNewHorizons](https://github.com/GTNewHorizons/GTNHLib) | [LGPLv3](https://www.gnu.org/licenses/lgpl-3.0.html) | Configuration system, block state API, JSON model pipeline |
 | **Applied Energistics 2** | [AlgorithmX2](https://github.com/AppliedEnergistics) and contributors | [LGPLv3](https://www.gnu.org/licenses/lgpl-3.0.html) | Compile-time API for the storage bridge |
+
+### Menus and previews
+
+Drawer menus use the drawer front texture and vanilla inventory slot textures. Upgrade headings appear only when the corresponding slots exist. Upgrade menus provide direct drawer-slot selection, nine ghost filters, direction controls, tool/speed attachments, and return navigation. Armory cabinets support localized tooltip search and scrolling through all slots; item IDs can be used for language-independent search. Installing NeverEnoughCharacters-Rework on the client also enables its pinyin search and configured matching rules. Priority is synchronized by the server and orders controller routing. Saved-content tooltips use compact item previews with overlaid amounts.
+
+The seven framed compacting, fluid and controller variants use the modern upstream model parts and retain their chosen materials across placement, rotation and saves. Ender frequencies share lock and void policies; storage upgrades cannot be newly installed in Ender drawers.
+
+### Recipe adaptations
+
+Crafting patterns and output counts follow modern Functional Storage and More Functional Storage. Converting an ordinary drawer to a framed drawer retains its stored contents and upgrades; recipes that consume a drawer reject filled or configured drawers. Netherite recipes use nether stars, dripping uses netherrack, and this mod's framed recipes use iron ingots when no iron nuggets are available. Copper uses the modpack's ore dictionary materials. Modern wood species absent from 1.7.10 are omitted.
 
 ### Notes on Thaumcraft
 

@@ -11,6 +11,11 @@ import com.hfstudio.functionalstorage.api.upgrade.UpgradeState;
 /** Removes the ordinary capacity ceiling while retaining finite stored amounts. */
 public class MaxStorageUpgradeItem extends UpgradeItem implements IStorageUpgrade {
 
+    @Override
+    public boolean isStorageUpgrade() {
+        return true;
+    }
+
     public MaxStorageUpgradeItem() {
         super("max_storage_upgrade");
     }

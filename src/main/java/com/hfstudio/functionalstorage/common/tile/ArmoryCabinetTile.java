@@ -2,14 +2,17 @@ package com.hfstudio.functionalstorage.common.tile;
 
 import javax.annotation.Nonnull;
 
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 
+import com.hfstudio.functionalstorage.api.storage.BigItemStack;
 import com.hfstudio.functionalstorage.api.storage.IBigItemHandler;
+import com.hfstudio.functionalstorage.common.inventory.adapter.DrawerInventoryAccess;
 import com.hfstudio.functionalstorage.common.inventory.base.BigItemHandler;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 import com.hfstudio.functionalstorage.config.FunctionalStorageConfig;
 
-public class ArmoryCabinetTile extends ControllableDrawerTile {
+public class ArmoryCabinetTile extends ControllableDrawerTile implements DrawerInventoryAccess {
 
     private static final String KEY_ITEMS = "Items";
 
@@ -21,6 +24,17 @@ public class ArmoryCabinetTile extends ControllableDrawerTile {
             @Override
             public boolean isLocked() {
                 return false;
+            }
+
+            @Override
+            protected boolean acceptsResource(BigItemStack resource) {
+                ItemStack item = resource.getTemplate();
+                return item != null && item.getMaxStackSize() == 1;
+            }
+
+            @Override
+            protected long capacityLimit() {
+                return 1L;
             }
         };
         bindStorageHandler(handler);

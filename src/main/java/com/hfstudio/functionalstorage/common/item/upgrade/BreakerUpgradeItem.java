@@ -2,117 +2,118 @@ package com.hfstudio.functionalstorage.common.item.upgrade;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import java.util.function.Predicate;
 
 import net.minecraft.block.Block;
+import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.item.EntityItem;
-import net.minecraft.init.Blocks;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
-import net.minecraft.world.World;
+import net.minecraft.util.StatCollector;
+import net.minecraft.world.WorldServer;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.common.util.FakePlayer;
 import net.minecraftforge.common.util.ForgeDirection;
+import net.minecraftforge.event.world.BlockEvent;
 
+import com.hfstudio.functionalstorage.api.storage.BigItemStack;
+import com.hfstudio.functionalstorage.api.storage.StorageAction;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 import com.hfstudio.functionalstorage.config.FunctionalStorageConfig;
 import com.hfstudio.functionalstorage.util.ItemUtil;
 import com.hfstudio.functionalstorage.util.UpgradeTargeting;
 
-/**
- * Breaker upgrade, merged in from More Functional Storage. Breaks the block the
- * drawer faces and stores the drops, honouring an optional item filter and an
- * optional slot selection. Drops that do not fit are released into the world so
- * a breaker never destroys items.
- */
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
+
 public class BreakerUpgradeItem extends AutomationUpgradeItem {
+
+    public record PlannedInsert(int slot, BigItemStack stack) {}
 
     public BreakerUpgradeItem() {
         super("breaker_upgrade", FunctionalStorageConfig.UPGRADES.breakerTick);
     }
 
     @Override
-    public void work(@Nonnull ControllableDrawerTile tile, @Nonnull ItemStack stack, int slot) {
-        World world = tile.getWorldObj();
-        if (world == null || world.isRemote || tile.getItemHandler() == null) {
-            return;
-        }
+    public void work(ControllableDrawerTile tile, ItemStack stack, int slot) {
+        if (!(tile.getWorldObj() instanceof WorldServer world) || tile.getItemHandler() == null) return;
+        ItemStack tool = UpgradeSettings.getStack(stack, "Tool");
+        if (tool == null) return;
         ForgeDirection facing = UpgradeTargeting.targetDirection(tile, stack);
         int x = tile.xCoord + facing.offsetX;
         int y = tile.yCoord + facing.offsetY;
         int z = tile.zCoord + facing.offsetZ;
-
         Block block = world.getBlock(x, y, z);
-        if (block == null || block == Blocks.air || block.getBlockHardness(world, x, y, z) < 0F) {
-            return;
-        }
         int metadata = world.getBlockMetadata(x, y, z);
-        if (block.hasTileEntity(metadata)) {
+        if (world.isAirBlock(x, y, z) || block.getBlockHardness(world, x, y, z) < 0F || block.hasTileEntity(metadata))
             return;
-        }
-
-        List<ItemStack> drops = block.getDrops(world, x, y, z, metadata, 0);
-        List<ItemStack> accepted = filterDrops(stack, drops);
-        if (accepted.isEmpty()) {
-            return;
-        }
-        if (storeAll(tile, stack, accepted)) {
-            world.setBlockToAir(x, y, z);
-        }
-    }
-
-    @Nonnull
-    private List<ItemStack> filterDrops(@Nonnull ItemStack upgradeStack, @Nullable List<ItemStack> drops) {
-        List<ItemStack> accepted = new ArrayList<>();
-        if (drops == null) {
-            return accepted;
-        }
-        ItemStack filter = getFilter(upgradeStack);
-        for (ItemStack drop : drops) {
-            if (drop == null || drop.getItem() == null) {
-                continue;
-            }
-            if (filter == null || ItemUtil.areItemStacksEqual(filter, drop)) {
-                accepted.add(drop);
-            }
-        }
-        return accepted;
-    }
-
-    private boolean storeAll(@Nonnull ControllableDrawerTile tile, @Nonnull ItemStack stack,
-        @Nonnull List<ItemStack> drops) {
-        List<Integer> slots = UpgradeTargeting.selectedSlots(
+        try (UpgradePlayerContext context = new UpgradePlayerContext(
+            world,
             stack,
-            tile.getItemHandler()
-                .getStorageCount());
-        boolean complete = true;
-        for (ItemStack drop : drops) {
-            long remaining = drop.stackSize;
-            for (int index : slots) {
-                if (remaining <= 0L) {
-                    break;
+            tool.copy(),
+            tile.xCoord,
+            tile.yCoord,
+            tile.zCoord,
+            facing)) {
+            FakePlayer player = context.getPlayer();
+            if (!block.canHarvestBlock(player, metadata)) return;
+            List<ItemStack> drops = EnchantmentHelper.getSilkTouchModifier(player)
+                && block.canSilkHarvest(world, player, x, y, z, metadata) ? List.of(new ItemStack(block, 1, metadata))
+                    : block.getDrops(world, x, y, z, metadata, EnchantmentHelper.getFortuneModifier(player));
+            int count = tile.getItemHandler()
+                .getStorageCount();
+            BigItemStack[] reserved = new BigItemStack[count];
+            List<PlannedInsert> plan = new ArrayList<>();
+            List<Integer> selected = UpgradeTargeting.selectedSlots(stack, count);
+            Predicate<ItemStack> filter = UpgradeSettings.itemFilter(stack);
+            for (ItemStack drop : drops) {
+                if (!filter.test(drop)) return;
+                long remaining = drop.stackSize;
+                for (int target : selected) {
+                    if (remaining == 0) break;
+                    BigItemStack reservation = reserved[target];
+                    if (reservation != null && !ItemUtil.areItemStacksEqual(reservation.getTemplate(), drop)) continue;
+                    long occupied = reservation == null ? 0 : reservation.getAmount();
+                    long available = tile.getItemHandler()
+                        .insert(target, new BigItemStack(drop, remaining + occupied), StorageAction.SIMULATE)
+                        .getProcessedAmount() - occupied;
+                    long accepted = Math.min(remaining, Math.max(0L, available));
+                    if (accepted == 0) continue;
+                    reserved[target] = new BigItemStack(drop, occupied + accepted);
+                    plan.add(new PlannedInsert(target, new BigItemStack(drop, accepted)));
+                    remaining -= accepted;
                 }
-                ItemStack probe = drop.copy();
-                probe.stackSize = (int) Math.min(remaining, drop.stackSize);
-                ItemStack leftover = tile.getItemHandler()
-                    .insertItem(index, probe, false);
-                remaining -= probe.stackSize - (leftover == null ? 0 : leftover.stackSize);
+                if (remaining != 0) return;
             }
-            if (remaining > 0L) {
-                complete = false;
-                release(tile, drop, remaining);
+            if (MinecraftForge.EVENT_BUS.post(new BlockEvent.BreakEvent(x, y, z, world, block, metadata, player))
+                || !world.setBlockToAir(x, y, z)) return;
+            for (PlannedInsert insertion : plan) {
+                long remaining = tile.getItemHandler()
+                    .insert(insertion.slot(), insertion.stack(), StorageAction.EXECUTE)
+                    .getRemainingAmount();
+                if (remaining > 0) {
+                    world.spawnEntityInWorld(
+                        new EntityItem(
+                            world,
+                            x + 0.5D,
+                            y + 0.5D,
+                            z + 0.5D,
+                            insertion.stack()
+                                .withAmount(remaining)
+                                .toItemStack()));
+                }
             }
         }
-        return complete;
     }
 
-    private void release(@Nonnull ControllableDrawerTile tile, @Nonnull ItemStack drop, long remaining) {
-        World world = tile.getWorldObj();
-        if (world == null) {
-            return;
-        }
-        ItemStack overflow = drop.copy();
-        overflow.stackSize = (int) Math.min(Integer.MAX_VALUE, remaining);
-        world.spawnEntityInWorld(
-            new EntityItem(world, tile.xCoord + 0.5D, tile.yCoord + 1.0D, tile.zCoord + 0.5D, overflow));
+    @Override
+    @SideOnly(Side.CLIENT)
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public void addInformation(ItemStack stack, EntityPlayer player, List tooltip, boolean advanced) {
+        super.addInformation(stack, player, tooltip, advanced);
+        ItemStack tool = UpgradeSettings.getStack(stack, "Tool");
+        tooltip.add(
+            tool == null ? StatCollector.translateToLocal("tooltip.morefunctionalstorage.no_tool")
+                : StatCollector.translateToLocalFormatted("tooltip.morefunctionalstorage.tool", tool.getDisplayName()));
     }
 }

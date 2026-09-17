@@ -1,5 +1,7 @@
 package com.hfstudio.functionalstorage.common.interaction;
 
+import java.util.function.Consumer;
+
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.fluids.FluidContainerRegistry;
@@ -16,14 +18,17 @@ public class FluidContainerInteraction {
     private FluidContainerInteraction() {}
 
     public static boolean activate(EntityPlayer player, IBigFluidHandler handler, int slot) {
-        ItemStack held = player.getHeldItem();
+        return activate(player.getHeldItem(), handler, slot, result -> HeldContainerExchange.complete(player, result));
+    }
+
+    public static boolean activate(ItemStack held, IBigFluidHandler handler, int slot, Consumer<ItemStack> exchange) {
         if (held == null || slot < 0 || slot >= handler.getStorageCount()) {
             return false;
         }
         ItemStack single = held.copy();
         single.stackSize = 1;
         if (single.getItem() instanceof IFluidContainerItem container) {
-            exchangeMutable(player, handler, slot, single, container);
+            exchangeMutable(handler, slot, single, container, exchange);
             return true;
         }
         FluidStack contained = FluidContainerRegistry.getFluidForFilledItem(single);
@@ -32,7 +37,7 @@ public class FluidContainerInteraction {
             if (handler.insert(slot, request, StorageAction.SIMULATE)
                 .isComplete()) {
                 handler.insert(slot, request, StorageAction.EXECUTE);
-                HeldContainerExchange.complete(player, FluidContainerRegistry.drainFluidContainer(single));
+                exchange.accept(FluidContainerRegistry.drainFluidContainer(single));
             }
             return true;
         }
@@ -47,14 +52,14 @@ public class FluidContainerInteraction {
             if (content != null && handler.extract(slot, content.amount, StorageAction.SIMULATE)
                 .isComplete()) {
                 handler.extract(slot, content.amount, StorageAction.EXECUTE);
-                HeldContainerExchange.complete(player, filled);
+                exchange.accept(filled);
             }
         }
         return true;
     }
 
-    private static void exchangeMutable(EntityPlayer player, IBigFluidHandler handler, int slot,
-        ItemStack containerStack, IFluidContainerItem container) {
+    private static void exchangeMutable(IBigFluidHandler handler, int slot, ItemStack containerStack,
+        IFluidContainerItem container, Consumer<ItemStack> exchange) {
         FluidStack contained = container.getFluid(containerStack);
         if (contained != null && contained.amount > 0) {
             int accepted = (int) handler
@@ -68,7 +73,7 @@ public class FluidContainerInteraction {
                 && drained.amount <= accepted
                 && drained.isFluidEqual(contained)) {
                 handler.insert(slot, new BigFluidStack(drained, drained.amount), StorageAction.EXECUTE);
-                HeldContainerExchange.complete(player, containerStack);
+                exchange.accept(containerStack);
             }
             return;
         }
@@ -81,7 +86,7 @@ public class FluidContainerInteraction {
         if (filled > 0 && handler.extract(slot, filled, StorageAction.SIMULATE)
             .isComplete()) {
             handler.extract(slot, filled, StorageAction.EXECUTE);
-            HeldContainerExchange.complete(player, containerStack);
+            exchange.accept(containerStack);
         }
     }
 }

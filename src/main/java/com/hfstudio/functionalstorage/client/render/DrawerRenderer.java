@@ -3,13 +3,11 @@ package com.hfstudio.functionalstorage.client.render;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import com.gtnewhorizon.gtnhlib.util.numberformatting.NumberFormatUtil;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.renderer.OpenGlHelper;
-import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.client.renderer.Tessellator;
-import net.minecraft.client.renderer.entity.RenderItem;
-import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.client.renderer.tileentity.TileEntitySpecialRenderer;
 import net.minecraft.item.ItemStack;
@@ -27,15 +25,17 @@ import com.hfstudio.functionalstorage.api.storage.BigItemStack;
 import com.hfstudio.functionalstorage.api.storage.IBigAspectHandler;
 import com.hfstudio.functionalstorage.api.storage.IBigFluidHandler;
 import com.hfstudio.functionalstorage.api.storage.IBigItemHandler;
+import com.hfstudio.functionalstorage.client.gui.DrawerTooltipData;
 import com.hfstudio.functionalstorage.common.block.DrawerAttachment;
 import com.hfstudio.functionalstorage.common.block.DrawerFaceLayout;
 import com.hfstudio.functionalstorage.common.block.base.DrawerBlock;
 import com.hfstudio.functionalstorage.common.item.ConfigurationToolItem;
 import com.hfstudio.functionalstorage.common.options.DrawerOptions;
+import com.hfstudio.functionalstorage.common.tile.EnderDrawerTile;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 import com.hfstudio.functionalstorage.config.FunctionalStorageConfig;
+import com.hfstudio.functionalstorage.misc.RegistrationHandler;
 import com.hfstudio.functionalstorage.util.HitBoxesUtil;
-import com.hfstudio.functionalstorage.util.NumberUtils;
 
 import thaumcraft.api.aspects.Aspect;
 
@@ -50,7 +50,8 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
     private static final float INDICATOR_HALF_HEIGHT = 0.02F;
     private static final float TEXT_SCALE = 0.007F;
 
-    private final RenderItem itemRenderer = new RenderItem();
+    private final DrawerContentRenderer contentRenderer = new DrawerContentRenderer();
+    private ItemStack voidBadge;
 
     @Override
     public void renderTileEntityAt(TileEntity tile, double x, double y, double z, float partialTicks) {
@@ -63,6 +64,7 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
 
         DrawerOptions options = drawer.getDrawerOptions();
         if (!options.isShowItemRender() && !options.isShowItemCount()
+            && !options.isShowUpgrades()
             && options.getAdvancedValue(ConfigurationToolItem.ConfigurationAction.INDICATOR) == 0) {
             return;
         }
@@ -94,6 +96,17 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
             } else if (aspectHandler != null) {
                 renderAspectSlots(aspectHandler, layout, options);
             }
+            if (options.isShowUpgrades()) {
+                renderUpgrades(drawer);
+            }
+            if (drawer instanceof EnderDrawerTile ender && ender.getFrequency() != null) {
+                int index = 0;
+                for (ItemStack symbol : DrawerTooltipData.frequencyDisplay(
+                    ender.getFrequency()
+                        .toString())) {
+                    contentRenderer.render(symbol, 0.3F + index++ * 0.1F, 0.12F, 0.08F, false);
+                }
+            }
 
         } finally {
             GL11.glPopMatrix();
@@ -115,10 +128,10 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
                 renderStack(snapshot.getTemplate(), centerX, centerY, iconScale(layout));
             }
             if (options.isShowItemCount()) {
-                renderText(NumberUtils.formatCompact(snapshot.getAmount()), centerX, centerY);
+                renderText(NumberFormatUtil.formatNumberCompact(snapshot.getAmount()), centerX, centerY);
             }
             if (options.getAdvancedValue(ConfigurationToolItem.ConfigurationAction.INDICATOR) != 0) {
-                renderIndicator(centerX, centerY, ratio(snapshot.getAmount(), handler.getCapacity(slot)), options);
+                renderIndicator(centerX, centerY, iconScale(layout), ratio(snapshot.getAmount(), handler.getCapacity(slot)), options);
             }
         }
     }
@@ -136,10 +149,10 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
                 renderFluid(snapshot.getTemplate(), centerX, centerY, iconScale(layout));
             }
             if (options.isShowItemCount()) {
-                renderText(NumberUtils.formatFluid(snapshot.getAmount()), centerX, centerY);
+                renderText(NumberFormatUtil.formatFluid(snapshot.getAmount()), centerX, centerY);
             }
             if (options.getAdvancedValue(ConfigurationToolItem.ConfigurationAction.INDICATOR) != 0) {
-                renderIndicator(centerX, centerY, ratio(snapshot.getAmount(), handler.getCapacity(slot)), options);
+                renderIndicator(centerX, centerY, iconScale(layout), ratio(snapshot.getAmount(), handler.getCapacity(slot)), options);
             }
         }
     }
@@ -158,17 +171,22 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
                 renderAspect(aspect, centerX, centerY, iconScale(layout));
             }
             if (options.isShowItemCount()) {
-                renderText(NumberUtils.formatAspect(snapshot.getAmount()), centerX, centerY);
+                renderText(NumberFormatUtil.formatNumberCompact(snapshot.getAmount()), centerX, centerY);
             }
             if (options.getAdvancedValue(ConfigurationToolItem.ConfigurationAction.INDICATOR) != 0) {
-                renderIndicator(centerX, centerY, ratio(snapshot.getAmount(), handler.getCapacity(slot)), options);
+                renderIndicator(centerX, centerY, iconScale(layout), ratio(snapshot.getAmount(), handler.getCapacity(slot)), options);
             }
         }
     }
 
     private void applyBrightness(TileEntity tile) {
+        ForgeDirection front = DrawerBlock.getFrontFacing(tile.getBlockMetadata());
         int light = tile.getWorldObj()
-            .getLightBrightnessForSkyBlocks(tile.xCoord, tile.yCoord, tile.zCoord, 0);
+            .getLightBrightnessForSkyBlocks(
+                tile.xCoord + front.offsetX,
+                tile.yCoord + front.offsetY,
+                tile.zCoord + front.offsetZ,
+                0);
         OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, light % 65536, light / 65536f);
     }
 
@@ -203,23 +221,21 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
     }
 
     private void renderStack(ItemStack stack, float centerX, float centerY, float scale) {
-        if (stack == null || stack.getItem() == null) {
-            return;
+        contentRenderer
+            .render(stack, centerX, centerY, scale, FunctionalStorageConfig.CLIENT.threeDimensionalBlockDisplay);
+    }
+
+    private void renderUpgrades(ControllableDrawerTile drawer) {
+        int count = drawer.getStorageUpgradeSlots() + drawer.getUtilityUpgradeSlots();
+        for (int slot = 0; slot < count; slot++) {
+            ItemStack stack = slot < drawer.getStorageUpgradeSlots() ? drawer.getStorageUpgrade(slot)
+                : drawer.getUtilityUpgrade(slot - drawer.getStorageUpgradeSlots());
+            contentRenderer.render(stack, 0.12F + slot * 0.1F, 0.91F, 0.085F, false);
         }
-        GL11.glPushMatrix();
-        GL11.glTranslatef(centerX, centerY, Z_ICON);
-        GL11.glScalef(scale / 16F, scale / 16F, 0.00001F);
-        RenderHelper.enableStandardItemLighting();
-        itemRenderer.setRenderManager(RenderManager.instance);
-        itemRenderer.renderItemAndEffectIntoGUI(
-            Minecraft.getMinecraft().fontRenderer,
-            Minecraft.getMinecraft()
-                .getTextureManager(),
-            stack,
-            -8,
-            -8);
-        RenderHelper.disableStandardItemLighting();
-        GL11.glPopMatrix();
+        if (drawer instanceof EnderDrawerTile && drawer.voidsOverflow()) {
+            if (voidBadge == null) voidBadge = new ItemStack(RegistrationHandler.voidUpgrade);
+            contentRenderer.render(voidBadge, 0.88F, 0.91F, 0.085F, false);
+        }
     }
 
     private void renderFluid(FluidStack fluid, float centerX, float centerY, float scale) {
@@ -294,11 +310,11 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
         GL11.glPopMatrix();
     }
 
-    private void renderText(String text, float centerX, float centerY) {
+    private void renderText(String text, float centerX, float centerY, float iconScale) {
         FontRenderer font = Minecraft.getMinecraft().fontRenderer;
         int width = font.getStringWidth(text);
         GL11.glPushMatrix();
-        GL11.glTranslatef(centerX, centerY + 0.16F, Z_TEXT);
+        GL11.glTranslatef(centerX, centerY + iconScale / 2F + 0.035F, Z_TEXT);
         GL11.glScalef(TEXT_SCALE, TEXT_SCALE, TEXT_SCALE);
         GL11.glDisable(GL11.GL_LIGHTING);
         font.drawStringWithShadow(text, -width / 2, 0, 0xFFFFFF);
@@ -306,20 +322,22 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
         GL11.glPopMatrix();
     }
 
-    private void renderIndicator(float centerX, float centerY, float fill, DrawerOptions options) {
+    private void renderIndicator(float centerX, float centerY, float iconScale, float fill, DrawerOptions options) {
         int mode = options.getAdvancedValue(ConfigurationToolItem.ConfigurationAction.INDICATOR);
         if (mode == 0) {
             return;
         }
         GL11.glPushMatrix();
-        GL11.glTranslatef(centerX, centerY + 0.22F, Z_INDICATOR);
+        GL11.glTranslatef(centerX, centerY + iconScale * 0.64F + 0.06F, Z_INDICATOR);
         GL11.glDisable(GL11.GL_LIGHTING);
         GL11.glDisable(GL11.GL_TEXTURE_2D);
         Tessellator tessellator = Tessellator.instance;
-        tessellator.startDrawingQuads();
-        tessellator.setColorOpaque_F(0.1F, 0.1F, 0.1F);
-        addIndicatorQuad(tessellator, INDICATOR_HALF_WIDTH);
-        tessellator.draw();
+        if (mode != 3) {
+            tessellator.startDrawingQuads();
+            tessellator.setColorOpaque_F(0.1F, 0.1F, 0.1F);
+            addIndicatorQuad(tessellator, INDICATOR_HALF_WIDTH);
+            tessellator.draw();
+        }
         if (mode == 1 || fill >= 1F) {
             tessellator.startDrawingQuads();
             tessellator.setColorOpaque_F(0.2F, 0.8F, 0.2F);

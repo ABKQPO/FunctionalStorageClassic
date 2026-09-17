@@ -11,12 +11,14 @@ import com.hfstudio.functionalstorage.api.storage.BigAspectStack;
 import com.hfstudio.functionalstorage.api.storage.IBigAspectHandler;
 import com.hfstudio.functionalstorage.api.storage.StorageAction;
 import com.hfstudio.functionalstorage.api.storage.TransferResult;
+import com.hfstudio.functionalstorage.api.upgrade.StorageFeature;
 import com.hfstudio.functionalstorage.api.upgrade.UpgradeAttribute;
 import com.hfstudio.functionalstorage.common.integration.thaumcraft.DrawerEssentiaTransport;
 import com.hfstudio.functionalstorage.common.integration.thaumcraft.EssentiaContainerRegistry;
 import com.hfstudio.functionalstorage.common.inventory.base.BigAspectHandler;
 import com.hfstudio.functionalstorage.common.storage.DrawerLayout;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
+import com.hfstudio.functionalstorage.config.FunctionalStorageConfig;
 
 import thaumcraft.api.aspects.Aspect;
 import thaumcraft.api.aspects.AspectList;
@@ -47,7 +49,10 @@ public class EssentiaDrawerTile extends ControllableDrawerTile implements IAspec
 
             @Override
             public double getMultiplier() {
-                return calculateModifier(UpgradeAttribute.ASPECT_CAPACITY, 1D) / layout.getSlotCount();
+                double multiplier = calculateModifier(UpgradeAttribute.ASPECT_CAPACITY, 1D);
+                return getUpgradeState().hasFeature(StorageFeature.IRON_DOWNGRADE)
+                    ? multiplier * 1D / Math.max(1, FunctionalStorageConfig.STORAGE.baseAspectCapacity)
+                    : multiplier / layout.getSlotCount();
             }
 
             @Override

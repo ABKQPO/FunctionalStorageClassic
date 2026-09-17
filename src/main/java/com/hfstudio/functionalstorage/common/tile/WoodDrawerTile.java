@@ -8,10 +8,12 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 
 import com.hfstudio.functionalstorage.api.storage.IBigItemHandler;
+import com.hfstudio.functionalstorage.api.upgrade.StorageFeature;
 import com.hfstudio.functionalstorage.api.upgrade.UpgradeAttribute;
 import com.hfstudio.functionalstorage.common.inventory.base.BigItemHandler;
 import com.hfstudio.functionalstorage.common.storage.DrawerLayout;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
+import com.hfstudio.functionalstorage.config.FunctionalStorageConfig;
 
 /** Exposes physical item slots directly through vanilla IInventory for hopper compatibility. */
 public class WoodDrawerTile extends ControllableDrawerTile implements IInventory {
@@ -36,7 +38,10 @@ public class WoodDrawerTile extends ControllableDrawerTile implements IInventory
 
             @Override
             public double getMultiplier() {
-                return calculateModifier(UpgradeAttribute.ITEM_CAPACITY, 1D) / layout.getSlotCount();
+                double multiplier = calculateModifier(UpgradeAttribute.ITEM_CAPACITY, 1D);
+                return getUpgradeState().hasFeature(StorageFeature.IRON_DOWNGRADE)
+                    ? multiplier * 1D / Math.max(1, FunctionalStorageConfig.STORAGE.baseItemCapacity)
+                    : multiplier / layout.getSlotCount();
             }
 
             @Override

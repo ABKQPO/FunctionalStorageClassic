@@ -6,21 +6,22 @@ import javax.annotation.Nonnull;
 
 import net.minecraft.block.Block;
 import net.minecraft.entity.item.EntityItem;
+import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
+import net.minecraftforge.fluids.FluidRegistry;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.IFluidBlock;
 
+import com.hfstudio.functionalstorage.api.storage.IBigFluidHandler;
+import com.hfstudio.functionalstorage.api.storage.IBigItemHandler;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 import com.hfstudio.functionalstorage.config.FunctionalStorageConfig;
 import com.hfstudio.functionalstorage.util.UpgradeTargeting;
 
-/**
- * Collector upgrade. Sweeps dropped items and fluid source blocks in front of
- * the drawer into it, which is how a drawer can be fed without a hopper.
- */
+/** Collects dropped items and complete fluid sources on the selected side. */
 public class CollectorUpgradeItem extends AutomationUpgradeItem {
 
     private static final double COLLECT_RADIUS = 1.5D;
@@ -62,10 +63,12 @@ public class CollectorUpgradeItem extends AutomationUpgradeItem {
             return;
         }
         int budget = FunctionalStorageConfig.UPGRADES.upgradeCollectorItems;
+        IBigItemHandler storage = UpgradeSettings.itemStorage(tile.getItemHandler(), stack);
         for (EntityItem entity : entities) {
-            if (budget <= 0 || entity.isDead) {
+            if (budget <= 0) {
                 break;
             }
+            if (entity.isDead) continue;
             ItemStack dropped = entity.getEntityItem();
             if (dropped == null || dropped.getItem() == null) {
                 continue;
@@ -73,8 +76,7 @@ public class CollectorUpgradeItem extends AutomationUpgradeItem {
             int request = Math.min(budget, dropped.stackSize);
             ItemStack probe = dropped.copy();
             probe.stackSize = request;
-            ItemStack leftover = tile.getItemHandler()
-                .insertItem(0, probe, false);
+            ItemStack leftover = storage.insertItem(0, probe, false);
             int stored = request - (leftover == null ? 0 : leftover.stackSize);
             if (stored <= 0) {
                 continue;
@@ -100,27 +102,28 @@ public class CollectorUpgradeItem extends AutomationUpgradeItem {
         int z = tile.zCoord + side.offsetZ;
 
         Block block = world.getBlock(x, y, z);
-        if (!(block instanceof IFluidBlock fluidBlock)) {
-            return;
-        }
-        if (fluidBlock.getFluid() == null) {
-            return;
-        }
         int budget = FunctionalStorageConfig.UPGRADES.upgradeCollectorFluid;
-        FluidStack drain = fluidBlock.drain(world, x, y, z, false);
-        if (drain == null || drain.amount <= 0) {
-            return;
-        }
-        drain.amount = Math.min(drain.amount, budget);
-        int accepted = tile.getFluidHandler()
-            .fill(drain, false);
-        if (accepted <= 0) {
-            return;
-        }
-        FluidStack taken = fluidBlock.drain(world, x, y, z, true);
+        IBigFluidHandler storage = UpgradeSettings.fluidStorage(tile.getFluidHandler(), stack);
+        FluidStack drain;
+        if (block instanceof IFluidBlock fluidBlock) drain = fluidBlock.drain(world, x, y, z, false);
+        else if (world.getBlockMetadata(x, y, z) == 0 && (block == Blocks.water || block == Blocks.flowing_water))
+            drain = new FluidStack(FluidRegistry.WATER, 1000);
+        else if (world.getBlockMetadata(x, y, z) == 0 && (block == Blocks.lava || block == Blocks.flowing_lava))
+            drain = new FluidStack(FluidRegistry.LAVA, 1000);
+        else return;
+        if (drain == null || drain.amount <= 0 || budget <= 0) return;
+        int credit = (int) Math
+            .min(drain.amount, (long) Math.max(0, UpgradeSettings.get(stack, "FluidCollectionCredit")) + budget);
+        UpgradeSettings.set(stack, "FluidCollectionCredit", credit);
+        // World sources are indivisible: reserve the whole drain before removing the block.
+        if (credit < drain.amount || storage.fill(drain, false) != drain.amount) return;
+        FluidStack taken;
+        if (block instanceof IFluidBlock fluidBlock) taken = fluidBlock.drain(world, x, y, z, true);
+        else if (block == Blocks.water || block == Blocks.flowing_water) taken = drain;
+        else taken = world.setBlockToAir(x, y, z) ? drain : null;
         if (taken != null && taken.amount > 0) {
-            tile.getFluidHandler()
-                .fill(taken, true);
+            storage.fill(taken, true);
+            UpgradeSettings.set(stack, "FluidCollectionCredit", 0);
         }
     }
 }

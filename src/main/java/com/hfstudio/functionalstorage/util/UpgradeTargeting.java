@@ -32,7 +32,20 @@ public class UpgradeTargeting {
         RelativeDirection relative = stack.getItem() instanceof AutomationUpgradeItem
             ? ((AutomationUpgradeItem) stack.getItem()).getDirection(stack)
             : RelativeDirection.FRONT;
-        return resolve(front, relative);
+        ForgeDirection horizontal = DrawerBlock.getHorizontalFacing(tile.getBlockMetadata());
+        ForgeDirection up = switch (DrawerBlock.getAttachment(tile.getBlockMetadata())) {
+            case FLOOR -> horizontal.getOpposite();
+            case CEILING -> horizontal;
+            case WALL -> ForgeDirection.UP;
+        };
+        return switch (relative) {
+            case FRONT -> front;
+            case BACK -> front.getOpposite();
+            case UP -> up;
+            case DOWN -> up.getOpposite();
+            case LEFT -> horizontalLeft(horizontal);
+            case RIGHT -> horizontalLeft(horizontal).getOpposite();
+        };
     }
 
     @Nonnull

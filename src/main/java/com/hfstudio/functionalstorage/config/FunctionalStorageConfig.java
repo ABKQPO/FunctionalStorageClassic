@@ -126,6 +126,11 @@ public class FunctionalStorageConfig {
 
     public static class Upgrades {
 
+        @Config.Comment("Ticks removed from each operation by an installed speed augment")
+        @Config.RangeInt(min = 0, max = 200)
+        @Config.DefaultInt(10)
+        public int speedAugmentReduction = 10;
+
         @Config.Comment("Every how many ticks drawer upgrades run")
         @Config.RangeInt(min = 1, max = 200)
         @Config.DefaultInt(4)
@@ -224,11 +229,6 @@ public class FunctionalStorageConfig {
         @Config.DefaultString("minecraft:sand")
         public String universalGenerationItem = "minecraft:sand";
 
-        @Config.Comment("Ticks between stonecutter upgrade operations")
-        @Config.RangeInt(min = 1, max = 200)
-        @Config.DefaultInt(20)
-        public int stonecuttingTick = 20;
-
         @Config.Comment("Ticks between breaker upgrade operations")
         @Config.RangeInt(min = 1, max = 200)
         @Config.DefaultInt(20)
@@ -264,6 +264,10 @@ public class FunctionalStorageConfig {
     }
 
     public static class Client {
+
+        @Config.Comment("Render block items on drawer faces in three dimensions; disable for flat icons")
+        @Config.DefaultBoolean(true)
+        public boolean threeDimensionalBlockDisplay = true;
 
         @Config.Comment("Distance in blocks at which drawer contents stop rendering")
         @Config.RangeInt(min = 1, max = 128)

@@ -1,80 +1,74 @@
 package com.hfstudio.functionalstorage.common.tile.controller;
 
 import java.util.Collections;
-import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 
-import javax.annotation.Nonnull;
-
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.tileentity.TileEntity;
 
-public class ControllerExtensionTile extends TileEntity {
+import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 
-    private static final String KEY_CONTROLLER = "ControllerPos";
+public class ControllerExtensionTile extends StorageNetworkTile {
 
-    private final Set<Long> drawers = new LinkedHashSet<>();
-    private int controllerX = Integer.MIN_VALUE;
-    private int controllerY = Integer.MIN_VALUE;
-    private int controllerZ = Integer.MIN_VALUE;
+    private DrawerControllerTile controller() {
+        int[] position = getControllerPosition();
+        if (worldObj == null || position == null || !worldObj.blockExists(position[0], position[1], position[2]))
+            return null;
+        return worldObj.getTileEntity(position[0], position[1], position[2]) instanceof DrawerControllerTile controller
+            ? controller
+            : null;
+    }
+
+    @Override
+    protected List<ControllableDrawerTile> connectedDrawers() {
+        DrawerControllerTile controller = controller();
+        return controller == null ? List.of() : controller.connectedDrawers();
+    }
+
+    @Override
+    public void setControllerPosition(int x, int y, int z) {
+        super.setControllerPosition(x, y, z);
+        invalidateNetwork();
+    }
+
+    @Override
+    public void clearControllerPosition() {
+        super.clearControllerPosition();
+        invalidateNetwork();
+    }
 
     public void addDrawer(int x, int y, int z) {
-        if (drawers.add(pack(x, y, z))) {
-            markDirty();
-        }
+        DrawerControllerTile controller = controller();
+        if (controller != null) controller.linkDrawer(x, y, z, false);
+        invalidateNetwork();
     }
 
     public void removeDrawer(int x, int y, int z) {
-        if (drawers.remove(pack(x, y, z))) {
-            markDirty();
-        }
+        DrawerControllerTile controller = controller();
+        if (controller != null) controller.linkDrawer(x, y, z, true);
+        invalidateNetwork();
     }
 
-    @Nonnull
     public Set<Long> getDrawers() {
-        return Collections.unmodifiableSet(drawers);
-    }
-
-    public int[] getControllerPosition() {
-        return controllerX == Integer.MIN_VALUE ? null : new int[] { controllerX, controllerY, controllerZ };
-    }
-
-    /**
-     * Binds this extension to a controller.
-     *
-     * @param x controller x
-     * @param y controller y
-     * @param z controller z
-     */
-    public void setControllerPosition(int x, int y, int z) {
-        this.controllerX = x;
-        this.controllerY = y;
-        this.controllerZ = z;
-        markDirty();
+        DrawerControllerTile controller = controller();
+        return controller == null ? Collections.emptySet() : controller.getDrawers();
     }
 
     @Override
-    public void writeToNBT(NBTTagCompound tag) {
-        super.writeToNBT(tag);
-        if (controllerX != Integer.MIN_VALUE) {
-            tag.setIntArray(KEY_CONTROLLER, new int[] { controllerX, controllerY, controllerZ });
-        }
+    protected void writeStorageData(NBTTagCompound tag) {}
+
+    @Override
+    protected void readStorageData(NBTTagCompound tag) {
+        invalidateNetwork();
     }
 
     @Override
-    public void readFromNBT(NBTTagCompound tag) {
-        super.readFromNBT(tag);
-        if (tag.hasKey(KEY_CONTROLLER)) {
-            int[] position = tag.getIntArray(KEY_CONTROLLER);
-            if (position.length == 3) {
-                controllerX = position[0];
-                controllerY = position[1];
-                controllerZ = position[2];
-            }
-        }
+    public int getStorageUpgradeSlots() {
+        return 0;
     }
 
-    private static long pack(int x, int y, int z) {
-        return ((long) (x & 0x3FFFFFF) << 38) | ((long) (y & 0xFFF) << 26) | (z & 0x3FFFFFF);
+    @Override
+    public int getUtilityUpgradeSlots() {
+        return 0;
     }
 }

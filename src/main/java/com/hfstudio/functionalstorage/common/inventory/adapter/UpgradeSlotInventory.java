@@ -29,6 +29,10 @@ public class UpgradeSlotInventory implements IInventory {
         return new UpgradeSlotInventory(tile, storage);
     }
 
+    public boolean canRemove(int index) {
+        return tile.canSetUpgradeSlot(storage, index, null);
+    }
+
     @Override
     public int getSizeInventory() {
         return storage ? tile.getStorageUpgradeSlots() : tile.getUtilityUpgradeSlots();
@@ -44,7 +48,7 @@ public class UpgradeSlotInventory implements IInventory {
     @Override
     public ItemStack decrStackSize(int index, int count) {
         ItemStack current = getStackInSlot(index);
-        if (current == null || count <= 0) {
+        if (current == null || count <= 0 || !tile.canSetUpgradeSlot(storage, index, null)) {
             return null;
         }
         ItemStack taken = current.splitStack(count);
@@ -101,6 +105,6 @@ public class UpgradeSlotInventory implements IInventory {
 
     @Override
     public boolean isItemValidForSlot(int index, @Nonnull ItemStack stack) {
-        return stack.getItem() != null;
+        return tile.canSetUpgradeSlot(storage, index, stack);
     }
 }

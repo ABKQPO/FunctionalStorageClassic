@@ -1,7 +1,5 @@
 package com.hfstudio.functionalstorage.api.upgrade;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 
 import lombok.Getter;
@@ -55,31 +53,19 @@ public class UpgradeModifier {
      */
     public static double calculate(Iterable<UpgradeModifier> modifiers, double defaultBase) {
         Objects.requireNonNull(modifiers, "modifiers");
-        List<UpgradeModifier> ordered = new ArrayList<>();
-        for (UpgradeModifier modifier : modifiers) {
-            ordered.add(Objects.requireNonNull(modifier, "modifier"));
-        }
         double base = defaultBase;
-
-        for (UpgradeModifier modifier : ordered) {
-            if (modifier.operation == Operation.SET_BASE) {
-                base = modifier.value;
-            }
-        }
-        for (UpgradeModifier modifier : ordered) {
-            if (modifier.operation == Operation.ADD_BASE) {
-                base += modifier.value;
-            }
-        }
-
+        double additions = 0D;
         double factor = 1.0D;
-        for (UpgradeModifier modifier : ordered) {
-            if (modifier.operation == Operation.MULTIPLY) {
-                factor *= modifier.value;
+        for (UpgradeModifier modifier : modifiers) {
+            Objects.requireNonNull(modifier, "modifier");
+            switch (modifier.operation) {
+                case SET_BASE -> base = modifier.value;
+                case ADD_BASE -> additions += modifier.value;
+                case MULTIPLY -> factor *= modifier.value;
             }
         }
 
-        double result = base * factor;
+        double result = (base + additions) * factor;
         return Double.isNaN(result) || result <= 0.0D ? 0.0D : result;
     }
 

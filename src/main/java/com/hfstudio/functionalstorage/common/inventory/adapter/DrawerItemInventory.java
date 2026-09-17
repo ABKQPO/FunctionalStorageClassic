@@ -1,5 +1,6 @@
 package com.hfstudio.functionalstorage.common.inventory.adapter;
 
+import java.util.BitSet;
 import java.util.List;
 
 import javax.annotation.Nonnull;
@@ -22,6 +23,8 @@ public class DrawerItemInventory implements ISidedInventory {
     private final Runnable changeListener;
     private final ItemStack[] exposed;
     private final ItemStack[] baseline;
+    private final BitSet observed = new BitSet();
+    private final int[] accessibleSlots;
     private boolean synchronizing;
 
     public DrawerItemInventory(@Nonnull IBigItemHandler handler, @Nonnull String name,
@@ -31,6 +34,8 @@ public class DrawerItemInventory implements ISidedInventory {
         this.changeListener = changeListener;
         exposed = new ItemStack[handler.getStorageCount()];
         baseline = new ItemStack[exposed.length];
+        accessibleSlots = new int[exposed.length];
+        for (int index = 0; index < accessibleSlots.length; index++) accessibleSlots[index] = index;
     }
 
     @Override
@@ -59,6 +64,7 @@ public class DrawerItemInventory implements ISidedInventory {
             refresh(index);
         }
         exposed[index] = stack == null ? null : stack.copy();
+        observed.set(index);
         flushChanges();
     }
 
@@ -114,7 +120,7 @@ public class DrawerItemInventory implements ISidedInventory {
         }
         synchronizing = true;
         try {
-            for (int index = 0; index < exposed.length; index++) {
+            for (int index = observed.nextSetBit(0); index >= 0; index = observed.nextSetBit(index + 1)) {
                 ItemStack before = baseline[index];
                 ItemStack after = exposed[index];
                 if (ItemStack.areItemStacksEqual(before, after)) {
@@ -168,11 +174,7 @@ public class DrawerItemInventory implements ISidedInventory {
 
     @Override
     public int[] getAccessibleSlotsFromSide(int side) {
-        int[] slots = new int[exposed.length];
-        for (int index = 0; index < slots.length; index++) {
-            slots[index] = index;
-        }
-        return slots;
+        return accessibleSlots;
     }
 
     @Override
@@ -209,6 +211,7 @@ public class DrawerItemInventory implements ISidedInventory {
         } else if (!ItemStack.areItemStacksEqual(exposed[index], baseline[index])) {
             exposed[index] = stack;
         }
+        observed.set(index, exposed[index] != null || baseline[index] != null);
     }
 
     private boolean valid(int index) {

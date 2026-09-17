@@ -2,6 +2,7 @@ package com.hfstudio.functionalstorage.common.integration.waila;
 
 import java.util.List;
 
+import com.gtnewhorizon.gtnhlib.util.numberformatting.NumberFormatUtil;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -16,7 +17,6 @@ import com.hfstudio.functionalstorage.common.block.base.DrawerBlock;
 import com.hfstudio.functionalstorage.common.tile.EssentiaDrawerTile;
 import com.hfstudio.functionalstorage.common.tile.FluidDrawerTile;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
-import com.hfstudio.functionalstorage.util.NumberUtils;
 
 import mcp.mobius.waila.api.IWailaConfigHandler;
 import mcp.mobius.waila.api.IWailaDataAccessor;
@@ -58,7 +58,7 @@ public class DrawerWailaProvider implements IWailaDataProvider {
             }
             long amount = tag.getLong("Amount" + index);
             long capacity = tag.getLong("Capacity" + index);
-            tooltip.add(name + ": " + NumberUtils.formatCompact(amount) + " / " + NumberUtils.formatCompact(capacity));
+            tooltip.add(name + ": " + NumberFormatUtil.formatNumberCompact(amount) + " / " + NumberFormatUtil.formatNumberCompact(capacity));
         }
         if (tag.getBoolean("Locked")) {
             tooltip.add(StatCollector.translateToLocal("functionalstorage.drawer.locked"));

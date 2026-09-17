@@ -34,12 +34,13 @@ import com.hfstudio.functionalstorage.common.block.base.DrawerBlock;
 import com.hfstudio.functionalstorage.common.inventory.adapter.DrawerItemInventory;
 import com.hfstudio.functionalstorage.common.inventory.base.AbstractStorageHandler;
 import com.hfstudio.functionalstorage.common.inventory.base.BigItemHandler;
+import com.hfstudio.functionalstorage.common.item.ConfigurationToolItem.ConfigurationAction;
 import com.hfstudio.functionalstorage.common.item.upgrade.AutomationUpgradeItem;
-import com.hfstudio.functionalstorage.common.item.upgrade.MaxStorageUpgradeItem;
-import com.hfstudio.functionalstorage.common.item.upgrade.StorageUpgradeItem;
-import com.hfstudio.functionalstorage.common.item.upgrade.UpgradeItem;
+import com.hfstudio.functionalstorage.common.item.upgrade.RedstoneUpgradeItem;
+import com.hfstudio.functionalstorage.common.item.upgrade.UpgradeSettings;
 import com.hfstudio.functionalstorage.common.options.DrawerOptions;
 import com.hfstudio.functionalstorage.common.storage.DrawerLayout;
+import com.hfstudio.functionalstorage.common.storage.FramedDrawerStyle;
 import com.hfstudio.functionalstorage.common.tile.controller.DrawerControllerTile;
 import com.hfstudio.functionalstorage.misc.GuiHandler;
 import com.hfstudio.functionalstorage.misc.RegistrationHandler;
@@ -110,6 +111,40 @@ public abstract class ControllableDrawerTile extends TileEntity {
         return getAspectHandler();
     }
 
+    private FramedDrawerStyle style = FramedDrawerStyle.EMPTY;
+    private int priority;
+
+    public FramedDrawerStyle getStyle() {
+        return style;
+    }
+
+    public void setStyle(FramedDrawerStyle style) {
+        if (this.style.equals(style)) return;
+        this.style = style;
+        markOptionsDirty();
+    }
+
+    public int getPriority() {
+        return priority;
+    }
+
+    public void setPriority(int priority) {
+        int updated = Math.max(0, Math.min(999999999, priority));
+        if (this.priority == updated) return;
+        this.priority = updated;
+        if (worldObj != null && controllerX != Integer.MIN_VALUE
+            && worldObj.blockExists(controllerX, controllerY, controllerZ)
+            && worldObj
+                .getTileEntity(controllerX, controllerY, controllerZ) instanceof DrawerControllerTile controller) {
+            controller.invalidateNetwork();
+        }
+        markOptionsDirty();
+    }
+
+    public boolean isLinkedTo(int x, int y, int z) {
+        return controllerX == x && controllerY == y && controllerZ == z;
+    }
+
     public int getStorageUpgradeSlots() {
         return STORAGE_UPGRADE_SLOTS;
     }
@@ -162,6 +197,30 @@ public abstract class ControllableDrawerTile extends TileEntity {
         return stackAt(utilityUpgrades, slot);
     }
 
+    public boolean canSetUpgradeSlot(boolean storage, int slot, @Nullable ItemStack stack) {
+        int limit = storage ? getStorageUpgradeSlots() : getUtilityUpgradeSlots();
+        if (slot < 0 || slot >= limit) return false;
+        if (stack != null
+            && (!(stack.getItem() instanceof IStorageUpgrade upgrade) || upgrade.isStorageUpgrade() != storage
+                || hasConflictingUpgrade(stack, storage ? slot : -1)))
+            return false;
+        if (!storage || getActiveStorage() == null) return true;
+        UpgradeState previous = getUpgradeState();
+        UpgradeState.Builder builder = UpgradeState.builder();
+        for (int index = 0; index < storageUpgrades.length; index++)
+            applyUpgrade(builder, index == slot ? stack : storageUpgrades[index]);
+        for (ItemStack installed : utilityUpgrades) applyUpgrade(builder, installed);
+        IStorageHandler<?, ?> handler = getActiveStorage();
+        cachedUpgradeState = builder.build();
+        try {
+            for (int index = 0; index < handler.getStorageCount(); index++) if (handler.getSnapshot(index)
+                .getAmount() > handler.getCapacity(index)) return false;
+            return true;
+        } finally {
+            cachedUpgradeState = previous;
+        }
+    }
+
     public void setUpgradeSlot(boolean storage, int slot, @Nullable ItemStack stack) {
         ItemStack[] target = storage ? storageUpgrades : utilityUpgrades;
         if (slot < 0 || slot >= target.length) {
@@ -202,7 +261,15 @@ public abstract class ControllableDrawerTile extends TileEntity {
     }
 
     public void toggleLocking() {
-        setLocked(!locked);
+        setLocked(!isLocked());
+    }
+
+    public void applyConfiguration(ConfigurationAction action) {
+        if (action == ConfigurationAction.LOCKING) setLocked(!isLocked());
+        else {
+            drawerOptions.cycle(action);
+            markOptionsDirty();
+        }
     }
 
     @Nullable
@@ -215,6 +282,7 @@ public abstract class ControllableDrawerTile extends TileEntity {
         this.controllerY = y;
         this.controllerZ = z;
         markDirty();
+        requestUpdatePacket();
     }
 
     public void clearControllerPosition() {
@@ -222,6 +290,7 @@ public abstract class ControllableDrawerTile extends TileEntity {
         this.controllerY = Integer.MIN_VALUE;
         this.controllerZ = Integer.MIN_VALUE;
         markDirty();
+        requestUpdatePacket();
     }
 
     public void detachFromController(@Nonnull World world) {
@@ -236,7 +305,20 @@ public abstract class ControllableDrawerTile extends TileEntity {
     }
 
     public int getRedstoneSignal(int side) {
-        return hasRedstoneUpgrade() ? calculateRedstoneSignal() : 0;
+        IStorageHandler<?, ?> storage = getActiveStorage();
+        if (storage == null) return 0;
+        int signal = 0;
+        for (ItemStack stack : utilityUpgrades) {
+            if (stack == null || !(stack.getItem() instanceof RedstoneUpgradeItem upgrade)) continue;
+            int slot = upgrade.getSlot(stack);
+            long capacity = storage.getCapacity(slot);
+            if (capacity > 0) signal = Math.max(
+                signal,
+                redstoneForRatio(
+                    storage.getSnapshot(slot)
+                        .getAmount() / (double) capacity));
+        }
+        return signal;
     }
 
     public boolean hasRedstoneUpgrade() {
@@ -266,9 +348,7 @@ public abstract class ControllableDrawerTile extends TileEntity {
         int slot) {
         ItemStack held = player.getHeldItem();
         if (held == null) {
-            // Sneaking with an empty hand opens the interface, which is the only
-            // place upgrades can be rearranged without breaking the block.
-            if (player.isSneaking() && hasUpgradeSlots()) {
+            if (player.isSneaking()) {
                 return openGui(player);
             }
             return activateItemSlot(player, slot);
@@ -279,11 +359,11 @@ public abstract class ControllableDrawerTile extends TileEntity {
         if (held.getItem() == RegistrationHandler.linkingTool) {
             return false;
         }
-        if (held.getItem() instanceof StorageUpgradeItem || held.getItem() instanceof MaxStorageUpgradeItem) {
+        if (held.getItem() instanceof IStorageUpgrade upgrade && upgrade.isStorageUpgrade()) {
             tryInstallStorageUpgrade(player, held);
             return true;
         }
-        if (held.getItem() instanceof IStorageUpgrade || held.getItem() instanceof UpgradeItem) {
+        if (held.getItem() instanceof IStorageUpgrade) {
             tryInstallUtilityUpgrade(player, held);
             return true;
         }
@@ -418,6 +498,8 @@ public abstract class ControllableDrawerTile extends TileEntity {
         tag.setTag(KEY_UTILITY_UPGRADES, writeStacks(utilityUpgrades));
         tag.setTag(KEY_OPTIONS, drawerOptions.serializeNBT());
         tag.setBoolean(KEY_LOCKED, locked);
+        tag.setInteger("Priority", priority);
+        if (style.isConfigured()) tag.setTag(FramedDrawerStyle.NBT_KEY, style.writeToNBT());
         if (controllerX != Integer.MIN_VALUE) {
             tag.setIntArray(KEY_CONTROLLER, new int[] { controllerX, controllerY, controllerZ });
         }
@@ -432,6 +514,11 @@ public abstract class ControllableDrawerTile extends TileEntity {
             drawerOptions.deserializeNBT(tag.getCompoundTag(KEY_OPTIONS));
         }
         locked = tag.getBoolean(KEY_LOCKED);
+        priority = Math.max(0, tag.getInteger("Priority"));
+        style = FramedDrawerStyle.fromNBT(tag.getCompoundTag(FramedDrawerStyle.NBT_KEY));
+        controllerX = Integer.MIN_VALUE;
+        controllerY = Integer.MIN_VALUE;
+        controllerZ = Integer.MIN_VALUE;
         if (tag.hasKey(KEY_CONTROLLER)) {
             int[] position = tag.getIntArray(KEY_CONTROLLER);
             if (position.length == 3) {
@@ -476,18 +563,38 @@ public abstract class ControllableDrawerTile extends TileEntity {
 
     /** Keeps each automation countdown in the upgrade NBT so its interval survives reloads. */
     private void tickAutomation(@Nonnull AutomationUpgradeItem upgrade, @Nonnull ItemStack stack, int slot) {
+        int mode = UpgradeSettings.get(stack, "RedstoneMode");
+        if (mode == 3) {
+            boolean powered = worldObj.isBlockIndirectlyGettingPowered(xCoord, yCoord, zCoord);
+            boolean previous = UpgradeSettings.get(stack, "LastPowered") != 0;
+            if (powered != previous) UpgradeSettings.set(stack, "LastPowered", powered ? 1 : 0);
+            if (powered && !previous) upgrade.work(this, stack, slot);
+            return;
+        }
+        if (mode != 0 && worldObj.isBlockIndirectlyGettingPowered(xCoord, yCoord, zCoord) != (mode == 1)) {
+            return;
+        }
         int remaining = upgrade.getRemainingTicks(stack) - 1;
         if (remaining > 0) {
             upgrade.setRemainingTicks(stack, remaining);
             return;
         }
-        upgrade.setRemainingTicks(stack, upgrade.getTickInterval());
+        upgrade.setRemainingTicks(stack, upgrade.getTickInterval(stack));
         upgrade.work(this, stack, slot);
     }
 
     protected final void bindStorageHandler(@Nullable IStorageHandler<?, ?> handler) {
         if (subscribedStorage == handler && !storageSubscription.isClosed()) {
             return;
+        }
+        if (inventoryView instanceof DrawerItemInventory inventory) {
+            inventory.flushChanges();
+        }
+        if (worldObj != null && controllerX != Integer.MIN_VALUE
+            && worldObj.blockExists(controllerX, controllerY, controllerZ)
+            && worldObj
+                .getTileEntity(controllerX, controllerY, controllerZ) instanceof DrawerControllerTile controller) {
+            controller.invalidateNetwork();
         }
         closeStorageSubscription();
         subscribedStorage = handler;
@@ -655,8 +762,8 @@ public abstract class ControllableDrawerTile extends TileEntity {
     protected abstract void readStorageData(@Nonnull NBTTagCompound tag);
 
     private boolean tryInstallStorageUpgrade(@Nonnull EntityPlayer player, @Nonnull ItemStack held) {
-        for (int slot = 0; slot < storageUpgrades.length; slot++) {
-            if (storageUpgrades[slot] == null && !hasConflictingUpgrade(held, slot)) {
+        for (int slot = 0; slot < getStorageUpgradeSlots(); slot++) {
+            if (storageUpgrades[slot] == null && canSetUpgradeSlot(true, slot, held)) {
                 install(player, held, storageUpgrades, slot);
                 return true;
             }
@@ -665,8 +772,8 @@ public abstract class ControllableDrawerTile extends TileEntity {
     }
 
     private boolean tryInstallUtilityUpgrade(@Nonnull EntityPlayer player, @Nonnull ItemStack held) {
-        for (int slot = 0; slot < utilityUpgrades.length; slot++) {
-            if (utilityUpgrades[slot] == null && !hasConflictingUpgrade(held, -1)) {
+        for (int slot = 0; slot < getUtilityUpgradeSlots(); slot++) {
+            if (utilityUpgrades[slot] == null && canSetUpgradeSlot(false, slot, held)) {
                 install(player, held, utilityUpgrades, slot);
                 return true;
             }
@@ -677,6 +784,9 @@ public abstract class ControllableDrawerTile extends TileEntity {
     private void install(@Nonnull EntityPlayer player, @Nonnull ItemStack held, @Nonnull ItemStack[] target, int slot) {
         ItemStack installed = held.copy();
         installed.stackSize = 1;
+        if (installed.getItem() instanceof AutomationUpgradeItem upgrade) {
+            upgrade.onInventoryTick(installed, worldObj, player);
+        }
         if (!player.capabilities.isCreativeMode) {
             held.stackSize--;
             if (held.stackSize <= 0) {

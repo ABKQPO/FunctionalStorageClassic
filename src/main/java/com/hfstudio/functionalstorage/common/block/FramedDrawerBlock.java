@@ -26,7 +26,7 @@ import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
 /** Retextures exterior, front, and divider marker quads with the selected materials. */
-public class FramedDrawerBlock extends DrawerBlock implements IBlockModelProvider {
+public class FramedDrawerBlock extends DrawerBlock implements IBlockModelProvider, FramedBlock {
 
     public static final int RECIPE_GRID_SIZE = 4;
 

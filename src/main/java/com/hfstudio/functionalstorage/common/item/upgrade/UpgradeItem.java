@@ -6,9 +6,11 @@ import net.minecraft.client.renderer.texture.IIconRegister;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.IIcon;
 import net.minecraft.util.StatCollector;
 
+import com.hfstudio.functionalstorage.api.upgrade.IStorageUpgrade;
 import com.hfstudio.functionalstorage.misc.RegistrationHandler;
 
 import cpw.mods.fml.relauncher.Side;
@@ -54,9 +56,22 @@ public class UpgradeItem extends Item {
     @SideOnly(Side.CLIENT)
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public void addInformation(ItemStack stack, EntityPlayer player, List tooltip, boolean advanced) {
+        boolean storage = this instanceof IStorageUpgrade upgrade && upgrade.isStorageUpgrade();
+        if (this instanceof IStorageUpgrade) {
+            tooltip.add(
+                EnumChatFormatting.GOLD + StatCollector.translateToLocal("upgrade.type")
+                    + EnumChatFormatting.WHITE
+                    + StatCollector.translateToLocal(storage ? "upgrade.type.storage" : "upgrade.type.utility"));
+        }
+        if (this instanceof StorageUpgradeItem || this instanceof GenerationUpgradeItem) {
+            return;
+        }
         String description = StatCollector.translateToLocal(getUnlocalizedName() + ".tooltip");
         if (description != null && !description.isEmpty() && !description.startsWith("item.")) {
-            tooltip.add(description);
+            for (String line : description.replace("\\n", "\n")
+                .split("\n", -1)) {
+                tooltip.add(EnumChatFormatting.GRAY + line);
+            }
         }
     }
 }

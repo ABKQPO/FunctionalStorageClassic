@@ -104,6 +104,10 @@ public class DrawerItemRenderer implements IItemRenderer, IResourceManagerReload
     }
 
     private void applyDisplay(BakedModel model, ItemRenderType type) {
+        if (type == ItemRenderType.EQUIPPED || type == ItemRenderType.EQUIPPED_FIRST_PERSON) {
+            // Forge's equipped-block helper already positions a unit cube.
+            return;
+        }
         Position position = switch (type) {
             case INVENTORY -> Position.GUI;
             case EQUIPPED -> Position.THIRDPERSON_RIGHTHAND;

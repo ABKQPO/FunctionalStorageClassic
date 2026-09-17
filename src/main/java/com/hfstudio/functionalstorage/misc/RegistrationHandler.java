@@ -6,8 +6,11 @@ import java.util.List;
 import javax.annotation.Nonnull;
 
 import net.minecraft.creativetab.CreativeTabs;
+import net.minecraft.init.Blocks;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraftforge.fluids.FluidRegistry;
+import net.minecraftforge.fluids.FluidStack;
 
 import com.hfstudio.functionalstorage.FunctionalStorage;
 import com.hfstudio.functionalstorage.common.block.ArmoryCabinetBlock;
@@ -16,6 +19,7 @@ import com.hfstudio.functionalstorage.common.block.EnderDrawerBlock;
 import com.hfstudio.functionalstorage.common.block.EssentiaDrawerBlock;
 import com.hfstudio.functionalstorage.common.block.FluidDrawerBlock;
 import com.hfstudio.functionalstorage.common.block.FramedDrawerBlock;
+import com.hfstudio.functionalstorage.common.block.FramedVariantBlock;
 import com.hfstudio.functionalstorage.common.block.WoodDrawerBlock;
 import com.hfstudio.functionalstorage.common.block.base.DrawerBlock;
 import com.hfstudio.functionalstorage.common.block.compact.CompactingDrawerBlock;
@@ -27,6 +31,7 @@ import com.hfstudio.functionalstorage.common.item.ConfigurationToolItem;
 import com.hfstudio.functionalstorage.common.item.LinkingToolItem;
 import com.hfstudio.functionalstorage.common.item.upgrade.BreakerUpgradeItem;
 import com.hfstudio.functionalstorage.common.item.upgrade.CollectorUpgradeItem;
+import com.hfstudio.functionalstorage.common.item.upgrade.CreativeVendingUpgradeItem;
 import com.hfstudio.functionalstorage.common.item.upgrade.GenerationUpgradeItem;
 import com.hfstudio.functionalstorage.common.item.upgrade.MaxStorageUpgradeItem;
 import com.hfstudio.functionalstorage.common.item.upgrade.OreDictionaryUpgradeItem;
@@ -35,7 +40,7 @@ import com.hfstudio.functionalstorage.common.item.upgrade.PullingUpgradeItem;
 import com.hfstudio.functionalstorage.common.item.upgrade.PushingUpgradeItem;
 import com.hfstudio.functionalstorage.common.item.upgrade.RedstoneUpgradeItem;
 import com.hfstudio.functionalstorage.common.item.upgrade.RefillUpgradeItem;
-import com.hfstudio.functionalstorage.common.item.upgrade.StonecuttingUpgradeItem;
+import com.hfstudio.functionalstorage.common.item.upgrade.ResourceGenerationUpgradeItem;
 import com.hfstudio.functionalstorage.common.item.upgrade.StorageUpgradeItem;
 import com.hfstudio.functionalstorage.common.item.upgrade.UpgradeItem;
 import com.hfstudio.functionalstorage.common.item.upgrade.VoidUpgradeItem;
@@ -105,7 +110,11 @@ public class RegistrationHandler {
     public static PlacerUpgradeItem placerUpgrade;
     public static RefillUpgradeItem refillUpgrade;
     public static RefillUpgradeItem dimensionalRefillUpgrade;
-    public static StonecuttingUpgradeItem stonecuttingUpgrade;
+    public static UpgradeItem speedUpgradeAugment;
+    public static CreativeVendingUpgradeItem creativeVendingUpgrade;
+    public static ResourceGenerationUpgradeItem drippingUpgrade;
+    public static ResourceGenerationUpgradeItem waterGeneratorUpgrade;
+    public static ResourceGenerationUpgradeItem obsidianUpgrade;
 
     public static ConfigurationToolItem configurationTool;
     public static LinkingToolItem linkingTool;
@@ -154,6 +163,15 @@ public class RegistrationHandler {
             GameRegistry.registerBlock(block, block.getDrawerId());
         }
 
+        registerFramed("compacting_framed_drawer", compactingDrawer);
+        registerFramed("framed_simple_compacting_drawer", simpleCompactingDrawer);
+        registerFramed("framed_storage_controller", storageController);
+        registerFramed("framed_controller_extension", controllerExtension);
+        for (FluidDrawerBlock block : fluidDrawers) registerFramed(
+            "framed_fluid_" + block.getDrawerLayout()
+                .getSlotCount(),
+            block);
+
         if (FunctionalStorageConfig.COMPATIBILITY.enableThaumcraftCompatibility && Loader.isModLoaded("Thaumcraft")) {
             for (DrawerLayout layout : DrawerLayout.values()) {
                 EssentiaDrawerBlock block = new EssentiaDrawerBlock(layout);
@@ -161,6 +179,12 @@ public class RegistrationHandler {
                 GameRegistry.registerBlock(block, "essentia_" + layout.getSlotCount());
             }
         }
+    }
+
+    private static void registerFramed(String id, DrawerBlock original) {
+        FramedVariantBlock block = new FramedVariantBlock(id, original);
+        GameRegistry.registerBlock(block, id);
+        specialDrawers.add(block);
     }
 
     private static List<WoodDrawerBlock> woodDrawerBlocks() {
@@ -194,6 +218,20 @@ public class RegistrationHandler {
             new StorageUpgradeItem(StorageUpgradeItem.StorageTier.NETHERITE),
             "netherite_upgrade");
         maxStorageUpgrade = registerUpgrade(new MaxStorageUpgradeItem(), "max_storage_upgrade");
+        creativeVendingUpgrade = registerUpgrade(new CreativeVendingUpgradeItem(), "creative_vending_upgrade");
+        drippingUpgrade = registerUpgrade(
+            new ResourceGenerationUpgradeItem("dripping_upgrade", 20, null, new FluidStack(FluidRegistry.LAVA, 20)),
+            "dripping_upgrade");
+        waterGeneratorUpgrade = registerUpgrade(
+            new ResourceGenerationUpgradeItem(
+                "water_generator_upgrade",
+                1,
+                null,
+                new FluidStack(FluidRegistry.WATER, 2000)),
+            "water_generator_upgrade");
+        obsidianUpgrade = registerUpgrade(
+            new ResourceGenerationUpgradeItem("obsidian_upgrade", 300, new ItemStack(Blocks.obsidian), null),
+            "obsidian_upgrade");
 
         voidUpgrade = registerUpgrade(new VoidUpgradeItem(), "void_upgrade");
         redstoneUpgrade = registerUpgrade(new RedstoneUpgradeItem(), "redstone_upgrade");
@@ -210,7 +248,8 @@ public class RegistrationHandler {
         placerUpgrade = registerUpgrade(new PlacerUpgradeItem(), "placer_upgrade");
         refillUpgrade = registerUpgrade(new RefillUpgradeItem(false), "refill_upgrade");
         dimensionalRefillUpgrade = registerUpgrade(new RefillUpgradeItem(true), "dimensional_refill_upgrade");
-        stonecuttingUpgrade = registerUpgrade(new StonecuttingUpgradeItem(), "stonecutting_upgrade");
+        speedUpgradeAugment = registerUpgrade(new UpgradeItem("speed_upgrade_augment"), "speed_upgrade_augment");
+        speedUpgradeAugment.setMaxStackSize(64);
 
         configurationTool = new ConfigurationToolItem();
         GameRegistry.registerItem(configurationTool, "configuration_tool");
@@ -232,6 +271,7 @@ public class RegistrationHandler {
                         .getSlotCount());
         }
         for (DrawerBlock block : specialDrawers) {
+            if (block instanceof FramedVariantBlock) continue;
             String name = block.getVariantNames()
                 .get(0);
             GameRegistry.registerTileEntity(block.getTileEntityClass(), FunctionalStorage.MOD_ID + "." + name);

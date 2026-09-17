@@ -17,6 +17,10 @@ import net.minecraft.item.ItemStack;
  */
 public interface IStorageUpgrade {
 
+    default boolean isStorageUpgrade() {
+        return false;
+    }
+
     void applyUpgrade(@Nonnull ItemStack stack, @Nonnull UpgradeState.Builder builder);
 
     /**

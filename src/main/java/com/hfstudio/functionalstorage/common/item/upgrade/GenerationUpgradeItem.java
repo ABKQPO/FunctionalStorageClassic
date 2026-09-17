@@ -1,12 +1,16 @@
 package com.hfstudio.functionalstorage.common.item.upgrade;
 
+import java.util.List;
 import java.util.Locale;
 
 import javax.annotation.Nonnull;
 
+import com.gtnewhorizon.gtnhlib.util.numberformatting.NumberFormatUtil;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.StatCollector;
 import net.minecraftforge.fluids.FluidRegistry;
 import net.minecraftforge.fluids.FluidStack;
 
@@ -14,6 +18,8 @@ import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 import com.hfstudio.functionalstorage.config.FunctionalStorageConfig;
 import com.hfstudio.functionalstorage.util.ItemUtil;
 
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
 import lombok.Getter;
 
 /** Produces water, cobblestone, or the configured generator item at the selected tier rate. */
@@ -69,10 +75,10 @@ public class GenerationUpgradeItem extends AutomationUpgradeItem {
         }
         switch (kind) {
             case WATER:
-                generateWater(tile);
+                generateWater(tile, stack);
                 break;
             case STONE:
-                generateStone(tile);
+                generateStone(tile, stack);
                 break;
             default:
                 generateItem(tile, stack);
@@ -80,24 +86,21 @@ public class GenerationUpgradeItem extends AutomationUpgradeItem {
         }
     }
 
-    private void generateWater(@Nonnull ControllableDrawerTile tile) {
+    private void generateWater(@Nonnull ControllableDrawerTile tile, ItemStack upgrade) {
         if (tile.getFluidHandler() == null || FluidRegistry.WATER == null) {
             return;
         }
         FluidStack water = new FluidStack(FluidRegistry.WATER, waterRate());
-        if (tile.getFluidHandler()
-            .fill(water, false) > 0) {
-            tile.getFluidHandler()
-                .fill(water, true);
-        }
+        UpgradeSettings.fluidStorage(tile.getFluidHandler(), upgrade)
+            .fill(water, true);
     }
 
-    private void generateStone(@Nonnull ControllableDrawerTile tile) {
+    private void generateStone(@Nonnull ControllableDrawerTile tile, ItemStack upgrade) {
         if (tile.getItemHandler() == null) {
             return;
         }
         int rate = Math.max(1, stoneRate());
-        insert(tile, new ItemStack(Blocks.cobblestone, Math.min(64, rate)));
+        insert(tile, upgrade, new ItemStack(Blocks.cobblestone, rate));
     }
 
     private void generateItem(@Nonnull ControllableDrawerTile tile, @Nonnull ItemStack stack) {
@@ -111,14 +114,14 @@ public class GenerationUpgradeItem extends AutomationUpgradeItem {
         }
         ItemStack batch = produced.copy();
         batch.stackSize = Math.min(produced.getMaxStackSize(), 1);
-        insert(tile, batch);
+        insert(tile, stack, batch);
     }
 
-    private void insert(@Nonnull ControllableDrawerTile tile, @Nonnull ItemStack stack) {
+    private void insert(@Nonnull ControllableDrawerTile tile, ItemStack upgrade, @Nonnull ItemStack stack) {
         if (stack.getItem() == null || stack.stackSize <= 0) {
             return;
         }
-        tile.getItemHandler()
+        UpgradeSettings.itemStorage(tile.getItemHandler(), upgrade)
             .insertItem(0, stack, false);
     }
 
@@ -150,6 +153,31 @@ public class GenerationUpgradeItem extends AutomationUpgradeItem {
             case 4 -> FunctionalStorageConfig.UPGRADES.stoneGenerationTier4;
             default -> FunctionalStorageConfig.UPGRADES.stoneGenerationTier1;
         };
+    }
+
+    @Override
+    @SideOnly(Side.CLIENT)
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    public void addInformation(ItemStack stack, EntityPlayer player, List tooltip, boolean advanced) {
+        super.addInformation(stack, player, tooltip, advanced);
+        if (kind == GenerationKind.WATER) {
+            tooltip.add(
+                StatCollector.translateToLocalFormatted(
+                    "functionalupgrade.desc.generate_fluid",
+                        NumberFormatUtil.formatFluid(waterRate()),
+                    FluidRegistry.WATER.getLocalizedName(new FluidStack(FluidRegistry.WATER, 1))));
+        } else {
+            ItemStack produced = kind == GenerationKind.STONE ? new ItemStack(Blocks.cobblestone) : getFilter(stack);
+            if (produced == null) {
+                produced = configuredUniversalItem();
+            }
+            tooltip.add(
+                produced == null ? StatCollector.translateToLocal("functionalstorage.upgrade.filter_empty")
+                    : StatCollector.translateToLocalFormatted(
+                        "functionalupgrade.desc.generate_item",
+                        kind == GenerationKind.STONE ? stoneRate() : 1,
+                        produced.getDisplayName()));
+        }
     }
 
     @Nonnull

@@ -9,19 +9,10 @@ public class HeldContainerExchange {
     private HeldContainerExchange() {}
 
     public static void complete(EntityPlayer player, ItemStack result) {
-        if (player.capabilities.isCreativeMode) {
-            return;
-        }
-        ItemStack held = player.getHeldItem();
-        if (held.stackSize == 1) {
-            player.inventory.setInventorySlotContents(player.inventory.currentItem, result);
-        } else {
-            held.stackSize--;
-            if (result != null && !player.inventory.addItemStackToInventory(result)) {
-                player.dropPlayerItemWithRandomChoice(result, false);
-            }
-        }
-        player.inventory.markDirty();
-        player.inventoryContainer.detectAndSendChanges();
+        ContainerExchange.complete(
+            player,
+            player.getHeldItem(),
+            stack -> player.inventory.setInventorySlotContents(player.inventory.currentItem, stack),
+            result);
     }
 }

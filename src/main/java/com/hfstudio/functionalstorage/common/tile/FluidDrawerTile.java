@@ -11,12 +11,14 @@ import net.minecraftforge.fluids.FluidTankInfo;
 import net.minecraftforge.fluids.IFluidHandler;
 
 import com.hfstudio.functionalstorage.api.storage.IBigFluidHandler;
+import com.hfstudio.functionalstorage.api.upgrade.StorageFeature;
 import com.hfstudio.functionalstorage.api.upgrade.UpgradeAttribute;
 import com.hfstudio.functionalstorage.common.interaction.FluidContainerInteraction;
 import com.hfstudio.functionalstorage.common.inventory.adapter.DrawerFluidHandler;
 import com.hfstudio.functionalstorage.common.inventory.base.BigFluidHandler;
 import com.hfstudio.functionalstorage.common.storage.DrawerLayout;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
+import com.hfstudio.functionalstorage.config.FunctionalStorageConfig;
 
 /** Implements Forge IFluidHandler directly for native pipe compatibility. */
 public class FluidDrawerTile extends ControllableDrawerTile implements IFluidHandler {
@@ -43,7 +45,10 @@ public class FluidDrawerTile extends ControllableDrawerTile implements IFluidHan
 
             @Override
             public double getMultiplier() {
-                return calculateModifier(UpgradeAttribute.FLUID_CAPACITY, 1D) / layout.getSlotCount();
+                double multiplier = calculateModifier(UpgradeAttribute.FLUID_CAPACITY, 1D);
+                return getUpgradeState().hasFeature(StorageFeature.IRON_DOWNGRADE)
+                    ? multiplier * 1000D / Math.max(1, FunctionalStorageConfig.STORAGE.baseFluidCapacity)
+                    : multiplier / layout.getSlotCount();
             }
 
             @Override

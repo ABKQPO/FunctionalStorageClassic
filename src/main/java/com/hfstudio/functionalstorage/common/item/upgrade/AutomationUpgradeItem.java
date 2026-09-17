@@ -6,25 +6,26 @@ import java.util.UUID;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.util.ChatComponentTranslation;
 import net.minecraft.util.StatCollector;
 import net.minecraft.world.World;
+import net.minecraftforge.common.util.ForgeDirection;
 
 import com.hfstudio.functionalstorage.api.upgrade.IStorageUpgrade;
 import com.hfstudio.functionalstorage.api.upgrade.UpgradeState;
+import com.hfstudio.functionalstorage.common.interaction.ToolFeedback;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
+import com.hfstudio.functionalstorage.config.FunctionalStorageConfig;
+import com.hfstudio.functionalstorage.util.UpgradeTargeting;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import lombok.Getter;
 
-/**
- * Base for the automation upgrades merged in from More Functional Storage.
- * Adds owner tracking, a relative working direction, a redstone mode, and a
- * configurable operation interval on top of the functional upgrade contract.
- */
 public class AutomationUpgradeItem extends UpgradeItem implements IStorageUpgrade {
 
     private static final String KEY_OWNER = "Owner";
@@ -33,9 +34,6 @@ public class AutomationUpgradeItem extends UpgradeItem implements IStorageUpgrad
     private static final String KEY_FILTER = "Filter";
     private static final String KEY_SLOTS = "SelectedSlots";
 
-    /**
-     * Side of the drawer an automation upgrade works on, relative to its face.
-     */
     @Getter
     public enum RelativeDirection {
 
@@ -78,17 +76,64 @@ public class AutomationUpgradeItem extends UpgradeItem implements IStorageUpgrad
         return true;
     }
 
-    public int getTickInterval() {
-        return baseTickInterval;
+    public boolean isWireless() {
+        return false;
     }
 
-    /**
-     * Records the installing player when the upgrade first enters an inventory.
-     *
-     * @param stack  upgrade stack
-     * @param world  world holding the player
-     * @param player owning player
-     */
+    @Override
+    public boolean onItemUseFirst(ItemStack stack, EntityPlayer player, World world, int x, int y, int z, int side,
+        float hitX, float hitY, float hitZ) {
+        if (!player.isSneaking() || !hasDirection()) return false;
+        if (world.isRemote) return false;
+        if (!isWireless()) {
+            ForgeDirection target = ForgeDirection.getOrientation(side);
+            ControllableDrawerTile drawer = world.getTileEntity(x, y, z) instanceof ControllableDrawerTile tile ? tile
+                : null;
+            for (RelativeDirection direction : RelativeDirection.values()) {
+                setDirection(stack, direction);
+                if ((drawer == null ? UpgradeTargeting.resolve(ForgeDirection.NORTH, direction)
+                    : UpgradeTargeting.targetDirection(drawer, stack)) == target) break;
+            }
+            return true;
+        }
+        NBTTagCompound tag = tagOf(stack);
+        tag.setIntArray("WirelessTarget", new int[] { x, y, z });
+        tag.setInteger("WirelessDimension", world.provider.dimensionId);
+        tag.setInteger("WirelessSide", side);
+        ToolFeedback.send(player, new ChatComponentTranslation("functionalstorage.upgrade.wireless_target", x, y, z));
+        return true;
+    }
+
+    @Override
+    public ItemStack onItemRightClick(ItemStack stack, World world, EntityPlayer player) {
+        if (!world.isRemote && hasDirection() && !isWireless())
+            setDirection(stack, RelativeDirection.byIndex((getDirection(stack).ordinal() + 1) % 6));
+        return stack;
+    }
+
+    public int getTickInterval() {
+        return Math.max(1, switch (getId()) {
+            case "breaker_upgrade" -> FunctionalStorageConfig.UPGRADES.breakerTick;
+            case "placer_upgrade" -> FunctionalStorageConfig.UPGRADES.placerTick;
+            case "refill_upgrade", "dimensional_refill_upgrade" -> FunctionalStorageConfig.UPGRADES.refillTick;
+            case "pulling_upgrade", "pushing_upgrade", "wireless_pulling_upgrade", "wireless_pushing_upgrade", "collector_upgrade" -> FunctionalStorageConfig.UPGRADES.upgradeTick;
+            default -> baseTickInterval;
+        });
+    }
+
+    public int getTickInterval(ItemStack stack) {
+        ItemStack augments = UpgradeSettings.getStack(stack, "SpeedAugments");
+        return Math.max(
+            1,
+            getTickInterval()
+                - (augments == null ? 0 : augments.stackSize) * FunctionalStorageConfig.UPGRADES.speedAugmentReduction);
+    }
+
+    @Override
+    public void onUpdate(ItemStack stack, World world, Entity entity, int slot, boolean selected) {
+        if (!world.isRemote && entity instanceof EntityPlayer player) onInventoryTick(stack, world, player);
+    }
+
     public void onInventoryTick(@Nonnull ItemStack stack, @Nonnull World world, @Nonnull EntityPlayer player) {
         if (!hasOwner()) {
             return;
@@ -113,7 +158,7 @@ public class AutomationUpgradeItem extends UpgradeItem implements IStorageUpgrad
 
     @Nonnull
     public RelativeDirection getDirection(@Nonnull ItemStack stack) {
-        return RelativeDirection.byIndex(tagOf(stack).getInteger(KEY_DIRECTION));
+        return RelativeDirection.byIndex(UpgradeSettings.get(stack, KEY_DIRECTION));
     }
 
     public void setDirection(@Nonnull ItemStack stack, @Nonnull RelativeDirection direction) {
@@ -122,7 +167,8 @@ public class AutomationUpgradeItem extends UpgradeItem implements IStorageUpgrad
 
     @Nullable
     public UUID getOwner(@Nonnull ItemStack stack) {
-        String value = tagOf(stack).getString(KEY_OWNER);
+        String value = stack.hasTagCompound() ? stack.getTagCompound()
+            .getString(KEY_OWNER) : "";
         if (value == null || value.isEmpty()) {
             return null;
         }
@@ -134,36 +180,28 @@ public class AutomationUpgradeItem extends UpgradeItem implements IStorageUpgrad
     }
 
     public boolean hasFilter(@Nonnull ItemStack stack) {
-        return tagOf(stack).hasKey(KEY_FILTER);
+        return UpgradeSettings.hasFilters(stack);
     }
 
     @Nullable
     public ItemStack getFilter(@Nonnull ItemStack stack) {
-        NBTTagCompound tag = tagOf(stack);
-        if (!tag.hasKey(KEY_FILTER)) {
-            return null;
-        }
-        return ItemStack.loadItemStackFromNBT(tag.getCompoundTag(KEY_FILTER));
+        return UpgradeSettings.getStack(stack, KEY_FILTER);
     }
 
     public void setFilter(@Nonnull ItemStack stack, @Nullable ItemStack filter) {
-        NBTTagCompound tag = tagOf(stack);
-        if (filter == null || filter.getItem() == null) {
-            tag.removeTag(KEY_FILTER);
-            return;
-        }
-        tag.setTag(KEY_FILTER, filter.writeToNBT(new NBTTagCompound()));
+        UpgradeSettings.setFilter(stack, 0, filter);
     }
 
     @Nullable
     public int[] getSelectedSlots(@Nonnull ItemStack stack) {
-        NBTTagCompound tag = tagOf(stack);
-        return tag.hasKey(KEY_SLOTS) ? tag.getIntArray(KEY_SLOTS) : null;
+        return stack.hasTagCompound() && stack.getTagCompound()
+            .hasKey(KEY_SLOTS) ? stack.getTagCompound()
+                .getIntArray(KEY_SLOTS) : null;
     }
 
     public void setSelectedSlots(@Nonnull ItemStack stack, @Nullable int[] slots) {
         NBTTagCompound tag = tagOf(stack);
-        if (slots == null || slots.length == 0) {
+        if (slots == null) {
             tag.removeTag(KEY_SLOTS);
             return;
         }
@@ -171,7 +209,7 @@ public class AutomationUpgradeItem extends UpgradeItem implements IStorageUpgrad
     }
 
     public int getRemainingTicks(@Nonnull ItemStack stack) {
-        return Math.max(0, tagOf(stack).getInteger(KEY_TIMER));
+        return Math.max(0, UpgradeSettings.get(stack, KEY_TIMER));
     }
 
     public void setRemainingTicks(@Nonnull ItemStack stack, int ticks) {
@@ -183,17 +221,52 @@ public class AutomationUpgradeItem extends UpgradeItem implements IStorageUpgrad
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public void addInformation(ItemStack stack, EntityPlayer player, List tooltip, boolean advanced) {
         super.addInformation(stack, player, tooltip, advanced);
+        tooltip.add(
+            StatCollector
+                .translateToLocalFormatted("functionalupgrade.desc.execute_every_tick", getTickInterval(stack)));
+        if (this instanceof PullingUpgradeItem || this instanceof PushingUpgradeItem) {
+            boolean pull = this instanceof PullingUpgradeItem;
+            String operation = pull ? "pull" : "push";
+            tooltip.add(
+                StatCollector.translateToLocalFormatted(
+                    "drawer_upgrade.functionalstorage." + operation + ".item",
+                    pull ? FunctionalStorageConfig.UPGRADES.upgradePullItems
+                        : FunctionalStorageConfig.UPGRADES.upgradePushItems));
+            tooltip.add(
+                StatCollector.translateToLocalFormatted(
+                    "drawer_upgrade.functionalstorage." + operation + ".fluid",
+                    (pull ? FunctionalStorageConfig.UPGRADES.upgradePullFluid
+                        : FunctionalStorageConfig.UPGRADES.upgradePushFluid) + " L"));
+            tooltip.add(
+                StatCollector.translateToLocalFormatted(
+                    "drawer_upgrade.functionalstorage." + operation + ".aspect",
+                    pull ? FunctionalStorageConfig.UPGRADES.upgradePullAspect
+                        : FunctionalStorageConfig.UPGRADES.upgradePushAspect));
+        }
         if (hasDirection()) {
             tooltip.add(
                 StatCollector.translateToLocalFormatted(
                     "functionalstorage.upgrade.direction",
                     getDirection(stack).getDisplayName()));
         }
-        if (hasFilter(stack)) {
-            tooltip.add(StatCollector.translateToLocal("functionalstorage.upgrade.filtered"));
+        ItemStack filter = getFilter(stack);
+        if (filter != null) {
+            tooltip.add(
+                StatCollector.translateToLocal("functionalstorage.upgrade.filtered") + ": " + filter.getDisplayName());
         }
         if (getSelectedSlots(stack) != null) {
             tooltip.add(StatCollector.translateToLocal("functionalstorage.upgrade.slot_selection"));
+        }
+        if (isWireless()) {
+            tooltip.add(StatCollector.translateToLocal("functionalstorage.upgrade.wireless_use"));
+            int[] target = stack.hasTagCompound() ? stack.getTagCompound()
+                .getIntArray("WirelessTarget") : new int[0];
+            if (target.length == 3) tooltip.add(
+                StatCollector.translateToLocalFormatted(
+                    "functionalstorage.upgrade.wireless_target",
+                    target[0],
+                    target[1],
+                    target[2]));
         }
     }
 

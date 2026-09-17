@@ -14,8 +14,10 @@ import com.hfstudio.functionalstorage.api.storage.IBigItemHandler;
 import com.hfstudio.functionalstorage.api.storage.ItemStorageKey;
 import com.hfstudio.functionalstorage.api.storage.StorageAction;
 import com.hfstudio.functionalstorage.api.storage.TransferResult;
+import com.hfstudio.functionalstorage.api.upgrade.StorageFeature;
 import com.hfstudio.functionalstorage.api.upgrade.UpgradeAttribute;
 import com.hfstudio.functionalstorage.common.inventory.CompactingItemHandler;
+import com.hfstudio.functionalstorage.common.inventory.adapter.DrawerInventoryAccess;
 import com.hfstudio.functionalstorage.common.storage.CompactingTier;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 import com.hfstudio.functionalstorage.util.CompactingUtil;
@@ -26,7 +28,7 @@ import lombok.Getter;
  * Compacting drawer tile. Stores one shared amount in lowest-tier units and
  * exposes one visible slot per configured compression tier.
  */
-public class CompactingDrawerTile extends ControllableDrawerTile {
+public class CompactingDrawerTile extends ControllableDrawerTile implements DrawerInventoryAccess {
 
     private static final String KEY_COMPACTING = "Compacting";
 
@@ -196,7 +198,9 @@ public class CompactingDrawerTile extends ControllableDrawerTile {
 
             @Override
             public double getMultiplier() {
-                return calculateModifier(UpgradeAttribute.ITEM_CAPACITY, 1D);
+                return calculateModifier(
+                    UpgradeAttribute.ITEM_CAPACITY,
+                    getUpgradeState().hasFeature(StorageFeature.IRON_DOWNGRADE) ? 1D : 8D);
             }
 
             @Override

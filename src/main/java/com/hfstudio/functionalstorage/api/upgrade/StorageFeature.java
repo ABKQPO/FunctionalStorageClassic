@@ -8,5 +8,6 @@ public enum StorageFeature {
     CREATIVE,
     VOID_OVERFLOW,
     EQUIVALENT_ITEMS,
-    REDSTONE_OUTPUT
+    REDSTONE_OUTPUT,
+    IRON_DOWNGRADE
 }

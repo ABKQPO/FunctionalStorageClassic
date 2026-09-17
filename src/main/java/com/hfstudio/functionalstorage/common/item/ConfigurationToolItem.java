@@ -1,81 +1,75 @@
 package com.hfstudio.functionalstorage.common.item;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.Locale;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ChatComponentTranslation;
+import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.StatCollector;
 import net.minecraft.world.World;
 
-import com.hfstudio.functionalstorage.common.options.DrawerOptions;
+import com.hfstudio.functionalstorage.common.interaction.ToolFeedback;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
-import com.hfstudio.functionalstorage.misc.RegistrationHandler;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import lombok.Getter;
 
-/** Cycles display options and toggles locks through the held configuration tool. */
-public class ConfigurationToolItem extends Item {
+public class ConfigurationToolItem extends LayeredToolItem {
 
     @Getter
     public enum ConfigurationAction {
 
-        TOGGLE_NUMBERS("numbers", 1),
-        TOGGLE_RENDER("render", 1),
-        TOGGLE_UPGRADES("upgrades", 1),
-        INDICATOR("indicator", 3);
-
-        private static final Map<String, ConfigurationAction> BY_NAME = new HashMap<>();
-
-        static {
-            for (ConfigurationAction action : values()) {
-                BY_NAME.put(action.name(), action);
-            }
-        }
+        LOCKING("locking", 1, 0x2883FA),
+        TOGGLE_NUMBERS("numbers", 1, 0xFA9128),
+        TOGGLE_RENDER("render", 1, 0x64FA28),
+        TOGGLE_UPGRADES("upgrades", 1, 0xA628FA),
+        INDICATOR("indicator", 3, 0xFF2828);
 
         private final String id;
         private final int maxValue;
+        private final int color;
 
-        ConfigurationAction(String id, int maxValue) {
+        ConfigurationAction(String id, int maxValue, int color) {
             this.id = id;
             this.maxValue = maxValue;
+            this.color = color;
         }
 
-        /**
-         * Resolves an action by its enum name, tolerating unknown values.
-         *
-         * @param name serialized action name
-         * @return the matching action, or {@code null}
-         */
         @Nullable
         public static ConfigurationAction byName(@Nullable String name) {
-            return name == null ? null : BY_NAME.get(name);
+            for (ConfigurationAction action : values()) {
+                if (action.name()
+                    .equals(name)) {
+                    return action;
+                }
+            }
+            return null;
         }
 
         public String getLocalizedName() {
-            return StatCollector.translateToLocal("functionalstorage.configuration." + id);
+            return StatCollector.translateToLocal("configurationtool.configmode." + name().toLowerCase(Locale.ROOT));
         }
     }
 
-    private static final String KEY_CYCLE = "CycleIndex";
-    private static final ConfigurationAction[] CYCLE_ORDER = { ConfigurationAction.TOGGLE_NUMBERS,
-        ConfigurationAction.TOGGLE_RENDER, ConfigurationAction.TOGGLE_UPGRADES, ConfigurationAction.INDICATOR };
+    private static final String KEY_ACTION = "ConfigurationAction";
 
     public ConfigurationToolItem() {
-        setMaxStackSize(1);
-        setCreativeTab(RegistrationHandler.CREATIVE_TAB);
-        setUnlocalizedName("functionalstorage.configuration_tool");
-        setTextureName("functionalstorage:configuration_tool");
+        super("configuration_tool", "configuration_tool_base", "configuration_tool_mode");
+    }
+
+    public static ConfigurationAction getAction(ItemStack stack) {
+        ConfigurationAction action = stack.hasTagCompound() ? ConfigurationAction.byName(
+            stack.getTagCompound()
+                .getString(KEY_ACTION))
+            : null;
+        return action == null ? ConfigurationAction.LOCKING : action;
     }
 
     @Override
@@ -88,61 +82,54 @@ public class ConfigurationToolItem extends Item {
         if (!(tile instanceof ControllableDrawerTile drawer)) {
             return false;
         }
-
-        if (player.isSneaking()) {
-            drawer.toggleLocking();
-            player.addChatMessage(
+        ConfigurationAction action = getAction(stack);
+        drawer.applyConfiguration(action);
+        if (action == ConfigurationAction.INDICATOR) {
+            ToolFeedback.send(
+                player,
                 new ChatComponentTranslation(
-                    drawer.isLocked() ? "functionalstorage.drawer.locked" : "functionalstorage.drawer.unlocked"));
-            return true;
+                    "configurationtool.configmode.indicator.mode_" + drawer.getDrawerOptions()
+                        .getAdvancedValue(action)));
         }
-
-        DrawerOptions options = drawer.getDrawerOptions();
-        ConfigurationAction action = nextAction(stack);
-        options.cycle(action);
-        drawer.markOptionsDirty();
-        player.addChatMessage(
-            new ChatComponentTranslation(
-                "functionalstorage.configuration_tool.cycled",
-                action.getLocalizedName(),
-                describe(options, action)));
         return true;
     }
 
-    @Nonnull
-    private ConfigurationAction nextAction(@Nonnull ItemStack stack) {
-        int index = getCycleIndex(stack) % CYCLE_ORDER.length;
-        setCycleIndex(stack, (index + 1) % CYCLE_ORDER.length);
-        return CYCLE_ORDER[index];
-    }
-
-    private int getCycleIndex(@Nonnull ItemStack stack) {
-        NBTTagCompound tag = stack.getTagCompound();
-        return tag == null || !tag.hasKey(KEY_CYCLE) ? 0 : Math.max(0, tag.getInteger(KEY_CYCLE));
-    }
-
-    private void setCycleIndex(@Nonnull ItemStack stack, int index) {
-        if (!stack.hasTagCompound()) {
-            stack.setTagCompound(new NBTTagCompound());
+    @Override
+    public ItemStack onItemRightClick(ItemStack stack, World world, EntityPlayer player) {
+        if (!world.isRemote && player.isSneaking()) {
+            ConfigurationAction[] actions = ConfigurationAction.values();
+            ConfigurationAction action = actions[(getAction(stack).ordinal() + 1) % actions.length];
+            if (!stack.hasTagCompound()) {
+                stack.setTagCompound(new NBTTagCompound());
+            }
+            stack.getTagCompound()
+                .setString(KEY_ACTION, action.name());
+            ToolFeedback.send(
+                player,
+                new ChatComponentTranslation("configurationtool.configmode.swapped").appendSibling(
+                    new ChatComponentTranslation(
+                        "configurationtool.configmode." + action.name()
+                            .toLowerCase(Locale.ROOT))));
+            world.playSoundAtEntity(player, "random.click", 0.5F, 1F);
         }
-        stack.getTagCompound()
-            .setInteger(KEY_CYCLE, index);
+        return stack;
     }
 
-    @Nonnull
-    private String describe(@Nonnull DrawerOptions options, @Nonnull ConfigurationAction action) {
-        if (action.getMaxValue() == 1) {
-            return StatCollector.translateToLocal(
-                options.isActive(action) ? "functionalstorage.configuration.state.on"
-                    : "functionalstorage.configuration.state.off");
-        }
-        return Integer.toString(options.getAdvancedValue(action));
+    @Override
+    @SideOnly(Side.CLIENT)
+    public int getColorFromItemStack(ItemStack stack, int pass) {
+        return pass == 1 ? getAction(stack).getColor() : 0xFFFFFF;
     }
 
     @Override
     @SideOnly(Side.CLIENT)
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public void addInformation(ItemStack stack, EntityPlayer player, List tooltip, boolean advanced) {
-        tooltip.add(StatCollector.translateToLocal("functionalstorage.configuration_tool.tooltip"));
+        tooltip.add(
+            EnumChatFormatting.YELLOW + StatCollector.translateToLocal("configurationtool.configmode")
+                + EnumChatFormatting.WHITE
+                + getAction(stack).getLocalizedName());
+        tooltip.add("");
+        tooltip.add(EnumChatFormatting.GRAY + StatCollector.translateToLocal("configurationtool.use"));
     }
 }

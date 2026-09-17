@@ -2,12 +2,14 @@ package com.hfstudio.functionalstorage.common.item.upgrade;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Predicate;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.MinecraftServer;
 
@@ -20,7 +22,6 @@ import com.hfstudio.functionalstorage.util.UpgradeTargeting;
 
 import lombok.Getter;
 
-/** Refills the owner's held stack; the dimensional variant uses the server player list. */
 @Getter
 public class RefillUpgradeItem extends AutomationUpgradeItem {
 
@@ -51,8 +52,23 @@ public class RefillUpgradeItem extends AutomationUpgradeItem {
         if (player == null) {
             return;
         }
-        int currentSlot = player.inventory.currentItem;
-        ItemStack held = player.inventory.getStackInSlot(currentSlot);
+        int target = UpgradeSettings.get(stack, "RefillTarget");
+        IInventory inventory = target == 2 ? player.getInventoryEnderChest() : player.inventory;
+        int start = target == 1 ? 9 : 0;
+        int end = target == 0 ? 9 : target == 1 ? 36 : inventory.getSizeInventory();
+        List<Integer> slots = UpgradeTargeting.selectedSlots(
+            stack,
+            tile.getItemHandler()
+                .getStorageCount());
+        Predicate<ItemStack> filter = UpgradeSettings.itemFilter(stack);
+        for (int index = start; index < end; index++) {
+            refillSlot(tile, slots, filter, inventory, index);
+        }
+    }
+
+    private void refillSlot(ControllableDrawerTile tile, List<Integer> slots, Predicate<ItemStack> filter,
+        IInventory inventory, int currentSlot) {
+        ItemStack held = inventory.getStackInSlot(currentSlot);
         if (held == null || held.getItem() == null) {
             return;
         }
@@ -61,11 +77,6 @@ public class RefillUpgradeItem extends AutomationUpgradeItem {
             return;
         }
 
-        List<Integer> slots = UpgradeTargeting.selectedSlots(
-            stack,
-            tile.getItemHandler()
-                .getStorageCount());
-        ItemStack filter = getFilter(stack);
         int needed = maxStack - held.stackSize;
         for (int index : slots) {
             if (needed <= 0) {
@@ -77,7 +88,7 @@ public class RefillUpgradeItem extends AutomationUpgradeItem {
             if (!ItemUtil.areItemStacksEqual(template, held)) {
                 continue;
             }
-            if (filter != null && !ItemUtil.areItemStacksEqual(filter, template)) {
+            if (!filter.test(template)) {
                 continue;
             }
             long extracted = tile.getItemHandler()
@@ -88,7 +99,7 @@ public class RefillUpgradeItem extends AutomationUpgradeItem {
             }
             held.stackSize += (int) Math.min(Integer.MAX_VALUE, extracted);
             needed -= (int) extracted;
-            player.inventory.markDirty();
+            inventory.markDirty();
         }
     }
 

@@ -6,7 +6,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.IRecipe;
 import net.minecraft.world.World;
 
-import com.hfstudio.functionalstorage.common.block.FramedDrawerBlock;
+import com.hfstudio.functionalstorage.common.block.FramedBlock;
 import com.hfstudio.functionalstorage.common.storage.FramedDrawerStyle;
 
 public class FramedDrawerStyleRecipe implements IRecipe {
@@ -27,7 +27,7 @@ public class FramedDrawerStyleRecipe implements IRecipe {
                 ItemStack divider = inventory.getStackInRowAndColumn(left + 1, top + 1);
                 if (!isMaterial(exterior) || !isMaterial(front)
                     || !isMaterial(drawer)
-                    || !(((ItemBlock) drawer.getItem()).field_150939_a instanceof FramedDrawerBlock)
+                    || !(((ItemBlock) drawer.getItem()).field_150939_a instanceof FramedBlock)
                     || divider != null && !isMaterial(divider)) {
                     continue;
                 }

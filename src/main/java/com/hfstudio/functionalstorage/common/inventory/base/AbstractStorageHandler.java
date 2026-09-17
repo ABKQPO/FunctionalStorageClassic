@@ -93,7 +93,7 @@ public abstract class AbstractStorageHandler<S extends StorageSnapshot<S, K>, K 
         }
 
         S incoming = resource.templateOf(request);
-        if (!resource.hasTemplate(incoming)) {
+        if (!resource.hasTemplate(incoming) || !acceptsResource(incoming)) {
             return emptyResult(requested, action);
         }
 
@@ -292,9 +292,17 @@ public abstract class AbstractStorageHandler<S extends StorageSnapshot<S, K>, K 
         return resource.accepts(template, candidate);
     }
 
+    protected boolean acceptsResource(@Nonnull S template) {
+        return true;
+    }
+
+    protected long capacityLimit() {
+        return Long.MAX_VALUE;
+    }
+
     private long capacityOf(@Nonnull S template) {
         if (hasMaxStorage() || isCreative()) {
-            return Long.MAX_VALUE;
+            return capacityLimit();
         }
         double multiplier = getMultiplier();
         if (Double.isNaN(multiplier) || multiplier <= 0D) {
@@ -302,9 +310,9 @@ public abstract class AbstractStorageHandler<S extends StorageSnapshot<S, K>, K 
         }
         double capacity = resource.capacityFor(template) * multiplier;
         if (Double.isInfinite(capacity) || capacity >= Long.MAX_VALUE) {
-            return Long.MAX_VALUE;
+            return capacityLimit();
         }
-        return capacity <= 0D ? 0L : (long) Math.floor(capacity);
+        return capacity <= 0D ? 0L : Math.min(capacityLimit(), (long) Math.floor(capacity));
     }
 
     private void setSlot(int index, @Nonnull S template, long amount) {
@@ -340,6 +348,7 @@ public abstract class AbstractStorageHandler<S extends StorageSnapshot<S, K>, K 
     }
 
     private boolean sameSnapshot(@Nonnull S left, @Nonnull S right) {
+        if (left.getAmount() != right.getAmount()) return false;
         if (!resource.hasTemplate(left) && !resource.hasTemplate(right)) {
             return true;
         }

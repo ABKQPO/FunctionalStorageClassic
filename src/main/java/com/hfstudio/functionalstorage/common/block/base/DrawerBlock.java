@@ -233,7 +233,19 @@ public abstract class DrawerBlock extends BlockContainer implements IBlockModelP
 
     @Override
     public boolean removedByPlayer(World world, EntityPlayer player, int x, int y, int z, boolean willHarvest) {
-        return willHarvest || super.removedByPlayer(world, player, x, y, z, false);
+        if (protectCreativeClick(world, player, x, y, z)) {
+            return false;
+        }
+        return willHarvest || world.setBlockToAir(x, y, z);
+    }
+
+    @Override
+    public boolean removedByPlayer(World world, EntityPlayer player, int x, int y, int z) {
+        return removedByPlayer(world, player, x, y, z, false);
+    }
+
+    private boolean protectCreativeClick(World world, EntityPlayer player, int x, int y, int z) {
+        return player.capabilities.isCreativeMode && !player.isSneaking() && getHitSlot(world, x, y, z, player) >= 0;
     }
 
     @Override
@@ -285,7 +297,8 @@ public abstract class DrawerBlock extends BlockContainer implements IBlockModelP
      */
     public int getHitSlot(World world, int x, int y, int z, EntityPlayer player) {
         int metadata = world.getBlockMetadata(x, y, z);
-        Vec3 start = Vec3.createVectorHelper(player.posX, player.posY + player.getEyeHeight(), player.posZ);
+        double eyeY = player.posY + player.getEyeHeight() - (world.isRemote ? player.getDefaultEyeHeight() : 0D);
+        Vec3 start = Vec3.createVectorHelper(player.posX, eyeY, player.posZ);
         double reach = player instanceof EntityPlayerMP serverPlayer
             ? serverPlayer.theItemInWorldManager.getBlockReachDistance()
             : 5D;

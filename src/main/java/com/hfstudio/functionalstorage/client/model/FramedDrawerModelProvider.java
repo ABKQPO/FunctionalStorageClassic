@@ -28,9 +28,9 @@ import com.gtnewhorizon.gtnhlib.client.model.baked.BakedModel;
 import com.gtnewhorizon.gtnhlib.client.model.loading.ModelDeserializer.Position;
 import com.gtnewhorizon.gtnhlib.client.renderer.cel.model.quad.ModelQuad;
 import com.gtnewhorizon.gtnhlib.client.renderer.cel.model.quad.ModelQuadView;
-import com.hfstudio.functionalstorage.common.block.FramedDrawerBlock;
+import com.hfstudio.functionalstorage.common.block.FramedBlock;
 import com.hfstudio.functionalstorage.common.storage.FramedDrawerStyle;
-import com.hfstudio.functionalstorage.common.tile.FramedDrawerTile;
+import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
@@ -98,10 +98,10 @@ public class FramedDrawerModelProvider implements IBlockModelProvider {
             return null;
         }
         Object tile = world.getTileEntity(context.getX(), context.getY(), context.getZ());
-        if (!(tile instanceof FramedDrawerTile)) {
+        if (!(tile instanceof ControllableDrawerTile)) {
             return null;
         }
-        FramedDrawerStyle style = ((FramedDrawerTile) tile).getStyle();
+        FramedDrawerStyle style = ((ControllableDrawerTile) tile).getStyle();
         return style.isConfigured()
             ? resolve(style, world.getBlockMetadata(context.getX(), context.getY(), context.getZ()))
             : null;
@@ -120,11 +120,11 @@ public class FramedDrawerModelProvider implements IBlockModelProvider {
     }
 
     private static boolean isSideMarker(@Nonnull String iconName) {
-        return iconName.startsWith(SIDE_MARKER);
+        return iconName.startsWith(SIDE_MARKER) || iconName.startsWith("functionalstorage:blocks/framed_part_side_");
     }
 
     private static boolean isFrontMarker(@Nonnull String iconName) {
-        return iconName.startsWith(FRONT_MARKER);
+        return iconName.startsWith(FRONT_MARKER) || iconName.startsWith("functionalstorage:blocks/framed_part_front_");
     }
 
     private static boolean isCenterStrip(float min, float max) {
@@ -329,12 +329,15 @@ public class FramedDrawerModelProvider implements IBlockModelProvider {
             if (side >= 6) {
                 side = ForgeDirection.NORTH.ordinal();
             }
+            if (iconName.startsWith("functionalstorage:blocks/framed_part_divider_")) {
+                return sprites.dividerFaces[side] == null ? quad : retexture(quad, marker, sprites.dividerFaces[side]);
+            }
             if (isSideMarker(iconName)) {
                 return sprites.exteriorFaces[side] == null ? quad
                     : retexture(quad, marker, sprites.exteriorFaces[side]);
             }
             if (isFrontMarker(iconName)) {
-                if (isDivider(quad, marker)) {
+                if (!iconName.startsWith("functionalstorage:blocks/framed_part_front_") && isDivider(quad, marker)) {
                     return sprites.dividerFaces[side] == null ? quad
                         : retexture(quad, marker, sprites.dividerFaces[side]);
                 }
@@ -365,6 +368,6 @@ public class FramedDrawerModelProvider implements IBlockModelProvider {
     }
 
     public static boolean isFramedDrawer(@Nullable Block block) {
-        return block instanceof FramedDrawerBlock;
+        return block instanceof FramedBlock;
     }
 }

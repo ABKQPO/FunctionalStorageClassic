@@ -2,6 +2,7 @@ package com.hfstudio.functionalstorage.common.integration.thaumcraft;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.Item;
@@ -40,7 +41,10 @@ public class EssentiaContainerRegistry {
     }
 
     public static boolean activate(EntityPlayer player, IBigAspectHandler handler, int slot) {
-        ItemStack held = player.getHeldItem();
+        return activate(player.getHeldItem(), handler, slot, result -> HeldContainerExchange.complete(player, result));
+    }
+
+    public static boolean activate(ItemStack held, IBigAspectHandler handler, int slot, Consumer<ItemStack> exchange) {
         if (held == null || slot < 0 || slot >= handler.getStorageCount()) {
             return false;
         }
@@ -59,7 +63,7 @@ public class EssentiaContainerRegistry {
                 container.setAspects(result, new AspectList());
                 result.setItemDamage(definition.emptyMetadata());
                 handler.insert(slot, request, StorageAction.EXECUTE);
-                HeldContainerExchange.complete(player, result);
+                exchange.accept(result);
             }
         } else if (content == null || content.size() == 0) {
             BigAspectStack available = handler.getSnapshot(slot);
@@ -68,7 +72,7 @@ public class EssentiaContainerRegistry {
                 result.setItemDamage(definition.filledMetadata());
                 container.setAspects(result, new AspectList().add(available.getAspect(), definition.capacity()));
                 handler.extract(slot, definition.capacity(), StorageAction.EXECUTE);
-                HeldContainerExchange.complete(player, result);
+                exchange.accept(result);
             }
         }
         return true;

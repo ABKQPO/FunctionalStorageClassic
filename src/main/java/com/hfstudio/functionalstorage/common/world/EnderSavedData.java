@@ -11,6 +11,7 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldSavedData;
 
+import com.hfstudio.functionalstorage.common.inventory.EnderItemHandler;
 import com.hfstudio.functionalstorage.common.inventory.base.BigItemHandler;
 
 /**
@@ -36,7 +37,7 @@ public class EnderSavedData extends WorldSavedData {
     public BigItemHandler handlerFor(@Nonnull UUID frequency, int slots) {
         BigItemHandler handler = frequencies.get(frequency);
         if (handler == null) {
-            handler = new BigItemHandler(Math.max(1, slots));
+            handler = new EnderItemHandler(Math.max(1, slots));
             handler.subscribe(change -> markDirty());
             frequencies.put(frequency, handler);
             markDirty();
@@ -74,7 +75,8 @@ public class EnderSavedData extends WorldSavedData {
                 continue;
             }
             NBTTagCompound entry = all.getCompoundTag(key);
-            BigItemHandler handler = new BigItemHandler(Math.max(1, entry.getInteger("Slots")));
+            BigItemHandler handler = new EnderItemHandler(Math.max(1, entry.getInteger("Slots")));
+            ((EnderItemHandler) handler).readPolicy(entry);
             handler.deserializeNBT(entry.hasKey("Storage", 10) ? entry.getCompoundTag("Storage") : null);
             handler.subscribe(change -> markDirty());
             frequencies.put(frequency, handler);
@@ -86,6 +88,7 @@ public class EnderSavedData extends WorldSavedData {
         NBTTagCompound all = new NBTTagCompound();
         for (Map.Entry<UUID, BigItemHandler> entry : frequencies.entrySet()) {
             NBTTagCompound stored = new NBTTagCompound();
+            ((EnderItemHandler) entry.getValue()).writePolicy(stored);
             stored.setInteger(
                 "Slots",
                 entry.getValue()

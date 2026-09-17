@@ -4,5 +4,16 @@ repositories {
     maven {
         url = uri("https://jitpack.io")
     }
+    exclusiveContent {
+        forRepository {
+            ivy {
+                name = "NeverEnoughCharactersReleases"
+                url = uri("https://github.com/asdflj/NeverEnoughCharacters-Rework/releases/download")
+                patternLayout { artifact("[revision]/nech-[revision](-[classifier]).[ext]") }
+                metadataSources { artifact() }
+            }
+        }
+        filter { includeModule("com.github.asdflj", "NeverEnoughCharacters-Rework") }
+    }
 }
 

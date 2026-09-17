@@ -17,15 +17,7 @@ import com.hfstudio.functionalstorage.util.UpgradeTargeting;
 
 import lombok.Getter;
 
-/**
- * Pulls items, fluids, or essentia through the selected neighbouring or wireless endpoint.
- *
- * <p>
- * The wired variant works on the block touching a chosen side of the drawer.
- * The wireless variant works on a coordinate recorded on the upgrade stack, which
- * lets a drawer pull from a container it is not touching.
- * </p>
- */
+/** Pulls configured resources from the adjacent or bound wireless endpoint. */
 @Getter
 public class PullingUpgradeItem extends AutomationUpgradeItem {
 
@@ -48,16 +40,25 @@ public class PullingUpgradeItem extends AutomationUpgradeItem {
         }
         ForgeDirection access = accessSide(tile, stack, source);
         if (tile.getItemHandler() != null) {
-            TransferUtil
-                .pullItems(tile.getItemHandler(), source, access, FunctionalStorageConfig.UPGRADES.upgradePullItems);
+            TransferUtil.pullItems(
+                UpgradeSettings.itemStorage(tile.getItemHandler(), stack),
+                source,
+                access,
+                FunctionalStorageConfig.UPGRADES.upgradePullItems);
         }
         if (tile.getFluidHandler() != null) {
-            TransferUtil
-                .pullFluid(tile.getFluidHandler(), source, access, FunctionalStorageConfig.UPGRADES.upgradePullFluid);
+            TransferUtil.pullFluid(
+                UpgradeSettings.fluidStorage(tile.getFluidHandler(), stack),
+                source,
+                access,
+                FunctionalStorageConfig.UPGRADES.upgradePullFluid);
         }
         if (tile.getAspectHandler() != null) {
-            EssentiaTransfer
-                .pull(tile.getAspectHandler(), source, access, FunctionalStorageConfig.UPGRADES.upgradePullAspect);
+            EssentiaTransfer.pull(
+                UpgradeSettings.aspectStorage(tile.getAspectHandler(), stack),
+                source,
+                access,
+                FunctionalStorageConfig.UPGRADES.upgradePullAspect);
         }
     }
 
@@ -69,7 +70,12 @@ public class PullingUpgradeItem extends AutomationUpgradeItem {
                 .getTileEntity(tile.xCoord + side.offsetX, tile.yCoord + side.offsetY, tile.zCoord + side.offsetZ);
         }
         int[] target = getWirelessTarget(stack);
-        if (target == null) {
+        if (target == null || stack.getTagCompound()
+            .hasKey("WirelessDimension")
+            && stack.getTagCompound()
+                .getInteger("WirelessDimension") != tile.getWorldObj().provider.dimensionId
+            || !tile.getWorldObj()
+                .blockExists(target[0], target[1], target[2])) {
             return null;
         }
         return tile.getWorldObj()
@@ -83,7 +89,11 @@ public class PullingUpgradeItem extends AutomationUpgradeItem {
             return UpgradeTargeting.targetDirection(tile, stack)
                 .getOpposite();
         }
-        return ForgeDirection.UNKNOWN;
+        return stack.hasTagCompound() && stack.getTagCompound()
+            .hasKey("WirelessSide") ? ForgeDirection.getOrientation(
+                stack.getTagCompound()
+                    .getInteger("WirelessSide"))
+                : ForgeDirection.UNKNOWN;
     }
 
     public void setWirelessTarget(@Nonnull ItemStack stack, int x, int y, int z) {
@@ -92,8 +102,8 @@ public class PullingUpgradeItem extends AutomationUpgradeItem {
 
     @Nullable
     public int[] getWirelessTarget(@Nonnull ItemStack stack) {
-        NBTTagCompound tag = tagOf(stack);
-        if (!tag.hasKey("WirelessTarget")) {
+        NBTTagCompound tag = stack.getTagCompound();
+        if (tag == null || !tag.hasKey("WirelessTarget")) {
             return null;
         }
         int[] target = tag.getIntArray("WirelessTarget");

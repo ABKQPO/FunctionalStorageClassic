@@ -56,7 +56,7 @@ public class ItemStorageResource implements StorageResource<BigItemStack, ItemSt
     @Override
     public long capacityFor(@Nonnull BigItemStack template) {
         ItemStack stack = template.getTemplate();
-        return stack == null ? defaultCapacity() : capacityForStack(stack);
+        return stack == null ? Math.min(Long.MAX_VALUE / 64, defaultCapacity()) * 64 : capacityForStack(stack);
     }
 
     @Override
