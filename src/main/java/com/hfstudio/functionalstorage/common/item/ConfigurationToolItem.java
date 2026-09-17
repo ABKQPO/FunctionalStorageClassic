@@ -14,6 +14,7 @@ import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.StatCollector;
 import net.minecraft.world.World;
 
+import com.hfstudio.functionalstorage.common.interaction.ToolFeedback;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 
 import cpw.mods.fml.relauncher.Side;
@@ -27,7 +28,7 @@ public class ConfigurationToolItem extends LayeredToolItem {
 
         LOCKING("locking", 1, 0x2883FA, EnumChatFormatting.BLUE),
         TOGGLE_NUMBERS("numbers", 1, 0xFA9128, EnumChatFormatting.GOLD),
-        TOGGLE_RENDER("render", 1, 0x64FA28, EnumChatFormatting.GREEN),
+        TOGGLE_RENDER("renderItem", 1, 0x64FA28, EnumChatFormatting.GREEN),
         TOGGLE_UPGRADES("upgrades", 1, 0xA628FA, EnumChatFormatting.LIGHT_PURPLE),
         INDICATOR("indicator", 3, 0xFF2828, EnumChatFormatting.RED);
 
@@ -76,22 +77,22 @@ public class ConfigurationToolItem extends LayeredToolItem {
     @Override
     public boolean onItemUseFirst(ItemStack stack, EntityPlayer player, World world, int x, int y, int z, int side,
         float hitX, float hitY, float hitZ) {
+        if (world.isRemote) {
+            return false;
+        }
         TileEntity tile = world.getTileEntity(x, y, z);
         if (!(tile instanceof ControllableDrawerTile drawer)) {
             return false;
         }
         ConfigurationAction action = getAction(stack);
-        if (world.isRemote) {
-            if (action == ConfigurationAction.INDICATOR) {
-                int nextValue = (drawer.getDrawerOptions()
-                    .getAdvancedValue(action) + 1) % (action.getMaxValue() + 1);
-                showActionBarFeedback(
-                    "configurationtool.configmode.indicator.mode_" + nextValue,
-                    action.getFeedbackColor());
-            }
-            return true;
-        }
         drawer.applyConfiguration(action);
+        if (action == ConfigurationAction.INDICATOR) {
+            ToolFeedback.send(
+                player,
+                new ChatComponentTranslation(
+                    "configurationtool.configmode.indicator.mode_" + drawer.getDrawerOptions()
+                        .getAdvancedValue(action)));
+        }
         return true;
     }
 

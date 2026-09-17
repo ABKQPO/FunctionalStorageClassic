@@ -192,12 +192,10 @@ public class LinkingToolItem extends LayeredToolItem {
                 if (player.isSneaking()) {
                     showActionBarFeedback(
                         "linkingtool.linkingmode.swapped",
-                        nextModeColor(stack),
                         new ChatComponentTranslation(nextModeKey(stack)));
                 } else {
                     showActionBarFeedback(
                         "linkingtool.linkingaction.swapped",
-                        nextActionColor(stack),
                         new ChatComponentTranslation(nextActionKey(stack)));
                 }
             }
@@ -283,16 +281,8 @@ public class LinkingToolItem extends LayeredToolItem {
         return "linkingtool.linkingmode." + (getLinkingMode(stack) == LinkingMode.SINGLE ? "multiple" : "single");
     }
 
-    private static EnumChatFormatting nextModeColor(ItemStack stack) {
-        return getLinkingMode(stack) == LinkingMode.SINGLE ? EnumChatFormatting.GREEN : EnumChatFormatting.AQUA;
-    }
-
     private static String nextActionKey(ItemStack stack) {
         return "linkingtool.linkingaction." + (getActionMode(stack) == ActionMode.ADD ? "remove" : "add");
-    }
-
-    private static EnumChatFormatting nextActionColor(ItemStack stack) {
-        return getActionMode(stack) == ActionMode.ADD ? EnumChatFormatting.GOLD : EnumChatFormatting.BLUE;
     }
 
     private NBTTagCompound tag(ItemStack stack) {

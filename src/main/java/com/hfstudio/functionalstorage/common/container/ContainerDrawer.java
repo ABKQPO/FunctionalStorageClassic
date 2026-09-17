@@ -332,7 +332,9 @@ public class ContainerDrawer extends Container implements MenuSettingsReceiver, 
         if (index < playerStart) {
             mergeItemStack(stack, playerStart, inventorySlots.size(), true);
         } else {
-            if (stack.getItem() instanceof IStorageUpgrade) mergeItemStack(stack, storageSlotCount, playerStart, false);
+            if (stack.getItem() instanceof IStorageUpgrade) {
+                moveUpgradesToSlots(stack, storageSlotCount, playerStart);
+            }
             if (stack.stackSize > 0 && tile.getItemHandler() != null) {
                 stack.stackSize -= (int) tile.getItemHandler()
                     .insertRouted(new BigItemStack(stack, stack.stackSize), StorageAction.EXECUTE)
@@ -343,6 +345,18 @@ public class ContainerDrawer extends Container implements MenuSettingsReceiver, 
         if (stack.stackSize <= 0) slot.putStack(null);
         else slot.onSlotChanged();
         return original;
+    }
+
+    private void moveUpgradesToSlots(ItemStack stack, int start, int end) {
+        for (int targetIndex = start; targetIndex < end && stack.stackSize > 0; targetIndex++) {
+            Slot target = inventorySlots.get(targetIndex);
+            if (target.getHasStack() || !target.isItemValid(stack)) {
+                continue;
+            }
+            ItemStack single = stack.splitStack(1);
+            target.putStack(single);
+            target.onSlotChanged();
+        }
     }
 
     private int visibleStorageSlots() {

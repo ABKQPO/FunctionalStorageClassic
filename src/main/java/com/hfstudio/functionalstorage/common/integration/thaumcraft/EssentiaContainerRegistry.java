@@ -41,7 +41,21 @@ public class EssentiaContainerRegistry {
     }
 
     public static boolean activate(EntityPlayer player, IBigAspectHandler handler, int slot) {
-        return activate(player.getHeldItem(), handler, slot, result -> HeldContainerExchange.complete(player, result));
+        ItemStack held = player.getHeldItem();
+        if (held == null || !CONTAINERS.containsKey(held.getItem())) {
+            return false;
+        }
+        int transfers = held.stackSize;
+        for (int index = 0; index < transfers; index++) {
+            if (!activate(
+                player.getHeldItem(),
+                handler,
+                slot,
+                result -> HeldContainerExchange.complete(player, result))) {
+                break;
+            }
+        }
+        return true;
     }
 
     public static boolean activate(ItemStack held, IBigAspectHandler handler, int slot, Consumer<ItemStack> exchange) {
@@ -52,6 +66,7 @@ public class EssentiaContainerRegistry {
         if (definition == null || !(held.getItem() instanceof IEssentiaContainerItem container)) {
             return false;
         }
+        boolean transferred = false;
         ItemStack result = held.copy();
         result.stackSize = 1;
         AspectList content = container.getAspects(result);
@@ -64,6 +79,7 @@ public class EssentiaContainerRegistry {
                 result.setItemDamage(definition.emptyMetadata());
                 handler.insert(slot, request, StorageAction.EXECUTE);
                 exchange.accept(result);
+                transferred = true;
             }
         } else if (content == null || content.size() == 0) {
             BigAspectStack available = handler.getSnapshot(slot);
@@ -73,8 +89,9 @@ public class EssentiaContainerRegistry {
                 container.setAspects(result, new AspectList().add(available.getAspect(), definition.capacity()));
                 handler.extract(slot, definition.capacity(), StorageAction.EXECUTE);
                 exchange.accept(result);
+                transferred = true;
             }
         }
-        return true;
+        return transferred;
     }
 }

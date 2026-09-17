@@ -38,13 +38,14 @@ public class UpgradeTargeting {
             case CEILING -> horizontal;
             case WALL -> ForgeDirection.UP;
         };
+        ForgeDirection right = horizontalLeft(horizontal);
         return switch (relative) {
             case FRONT -> front;
             case BACK -> front.getOpposite();
             case UP -> up;
             case DOWN -> up.getOpposite();
-            case LEFT -> horizontalLeft(horizontal);
-            case RIGHT -> horizontalLeft(horizontal).getOpposite();
+            case LEFT -> right.getOpposite();
+            case RIGHT -> right;
         };
     }
 
@@ -54,8 +55,8 @@ public class UpgradeTargeting {
             case BACK -> front.getOpposite();
             case UP -> ForgeDirection.UP;
             case DOWN -> ForgeDirection.DOWN;
-            case LEFT -> horizontalLeft(front);
-            case RIGHT -> horizontalLeft(front).getOpposite();
+            case LEFT -> horizontalLeft(front).getOpposite();
+            case RIGHT -> horizontalLeft(front);
             default -> front;
         };
     }

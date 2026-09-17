@@ -122,7 +122,23 @@ public class DrawerTooltipRenderer extends Gui {
             zLevel = 300F;
             GL11.glDisable(GL11.GL_LIGHTING);
             GL11.glDisable(GL11.GL_DEPTH_TEST);
-            drawGradientRect(x - 4, y - 4, x + width + 4, y + height + 4, event.backgroundStart, event.backgroundEnd);
+            drawGradientRect(x - 3, y - 4, x + width + 3, y - 3, event.backgroundStart, event.backgroundStart);
+            drawGradientRect(
+                x - 3,
+                y + height + 3,
+                x + width + 3,
+                y + height + 4,
+                event.backgroundEnd,
+                event.backgroundEnd);
+            drawGradientRect(x - 3, y - 3, x + width + 3, y + height + 3, event.backgroundStart, event.backgroundEnd);
+            drawGradientRect(x - 4, y - 3, x - 3, y + height + 3, event.backgroundStart, event.backgroundEnd);
+            drawGradientRect(
+                x + width + 3,
+                y - 3,
+                x + width + 4,
+                y + height + 3,
+                event.backgroundStart,
+                event.backgroundEnd);
             drawGradientRect(x - 3, y - 3, x + width + 3, y - 2, event.borderStart, event.borderStart);
             drawGradientRect(x - 3, y + height + 2, x + width + 3, y + height + 3, event.borderEnd, event.borderEnd);
             drawGradientRect(x - 3, y - 2, x - 2, y + height + 2, event.borderStart, event.borderEnd);

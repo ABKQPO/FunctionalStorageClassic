@@ -110,6 +110,8 @@ public class LinkingToolOverlay {
         GL11.glEnable(GL11.GL_DEPTH_TEST);
         GL11.glDepthFunc(GL11.GL_LEQUAL);
         GL11.glDisable(GL11.GL_CULL_FACE);
+        GL11.glEnable(GL11.GL_POLYGON_OFFSET_FILL);
+        GL11.glPolygonOffset(-1F, -1F);
         Tessellator tessellator = Tessellator.instance;
         tessellator.startDrawingQuads();
         tessellator.setColorRGBA_F(0.5F, 1F, 0.5F, 0.25F);
@@ -138,5 +140,6 @@ public class LinkingToolOverlay {
         tessellator.addVertex(area.maxX, area.maxY, area.maxZ);
         tessellator.addVertex(area.maxX, area.minY, area.maxZ);
         tessellator.draw();
+        GL11.glDisable(GL11.GL_POLYGON_OFFSET_FILL);
     }
 }
