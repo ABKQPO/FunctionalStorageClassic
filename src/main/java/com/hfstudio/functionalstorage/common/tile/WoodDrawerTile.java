@@ -40,7 +40,7 @@ public class WoodDrawerTile extends ControllableDrawerTile implements IInventory
             public double getMultiplier() {
                 double multiplier = calculateModifier(UpgradeAttribute.ITEM_CAPACITY, 1D);
                 return getUpgradeState().hasFeature(StorageFeature.IRON_DOWNGRADE)
-                    ? multiplier * 1D / Math.max(1, FunctionalStorageConfig.STORAGE.baseItemCapacity)
+                    ? multiplier / Math.max(1, FunctionalStorageConfig.STORAGE.baseItemCapacity)
                     : multiplier / layout.getSlotCount();
             }
 

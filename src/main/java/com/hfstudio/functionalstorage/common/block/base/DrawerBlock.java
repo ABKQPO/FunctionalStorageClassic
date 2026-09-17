@@ -213,7 +213,9 @@ public abstract class DrawerBlock extends BlockContainer implements IBlockModelP
             return false;
         }
         int slot = getHitSlot(world.getBlockMetadata(x, y, z), side, hitX, hitY, hitZ);
-        return drawer.onSlotActivated(player, side, hitX, hitY, hitZ, slot);
+        boolean handled = drawer.onSlotActivated(player, side, hitX, hitY, hitZ, slot);
+        drawer.sendStorageUpdate(player);
+        return handled;
     }
 
     @Override
@@ -222,12 +224,13 @@ public abstract class DrawerBlock extends BlockContainer implements IBlockModelP
             return;
         }
         TileEntity tile = world.getTileEntity(x, y, z);
-        if (!(tile instanceof ControllableDrawerTile)) {
+        if (!(tile instanceof ControllableDrawerTile drawer)) {
             return;
         }
         int slot = getHitSlot(world, x, y, z, player);
         if (slot >= 0) {
-            ((ControllableDrawerTile) tile).onSlotClicked(player, slot);
+            drawer.onSlotClicked(player, slot);
+            drawer.sendStorageUpdate(player);
         }
     }
 

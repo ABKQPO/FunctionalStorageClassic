@@ -75,8 +75,8 @@ public class EnderSavedData extends WorldSavedData {
                 continue;
             }
             NBTTagCompound entry = all.getCompoundTag(key);
-            BigItemHandler handler = new EnderItemHandler(Math.max(1, entry.getInteger("Slots")));
-            ((EnderItemHandler) handler).readPolicy(entry);
+            EnderItemHandler handler = new EnderItemHandler(Math.max(1, entry.getInteger("Slots")));
+            handler.readPolicy(entry);
             handler.deserializeNBT(entry.hasKey("Storage", 10) ? entry.getCompoundTag("Storage") : null);
             handler.subscribe(change -> markDirty());
             frequencies.put(frequency, handler);

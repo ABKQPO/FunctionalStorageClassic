@@ -8,6 +8,7 @@ import javax.annotation.Nullable;
 
 import net.minecraft.block.Block;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -111,21 +112,15 @@ public abstract class ControllableDrawerTile extends TileEntity {
         return getAspectHandler();
     }
 
+    @Getter
     private FramedDrawerStyle style = FramedDrawerStyle.EMPTY;
+    @Getter
     private int priority;
-
-    public FramedDrawerStyle getStyle() {
-        return style;
-    }
 
     public void setStyle(FramedDrawerStyle style) {
         if (this.style.equals(style)) return;
         this.style = style;
         markOptionsDirty();
-    }
-
-    public int getPriority() {
-        return priority;
     }
 
     public void setPriority(int priority) {
@@ -549,7 +544,6 @@ public abstract class ControllableDrawerTile extends TileEntity {
             layoutValidated = true;
             reconcileBlockLayout();
         }
-        flushPendingUpdatePacket();
         if (worldObj == null || worldObj.isRemote) {
             return;
         }
@@ -559,6 +553,7 @@ public abstract class ControllableDrawerTile extends TileEntity {
                 tickAutomation((AutomationUpgradeItem) stack.getItem(), stack, slot);
             }
         }
+        flushPendingUpdatePacket();
     }
 
     /** Keeps each automation countdown in the upgrade NBT so its interval survives reloads. */
@@ -645,6 +640,13 @@ public abstract class ControllableDrawerTile extends TileEntity {
         pendingUpdatePacket = false;
         if (worldObj != null && !worldObj.isRemote) {
             worldObj.markBlockForUpdate(xCoord, yCoord, zCoord);
+        }
+    }
+
+    public void sendStorageUpdate(EntityPlayer player) {
+        if (pendingUpdatePacket && player instanceof EntityPlayerMP serverPlayer
+            && serverPlayer.playerNetServerHandler != null) {
+            serverPlayer.playerNetServerHandler.sendPacket(getDescriptionPacket());
         }
     }
 

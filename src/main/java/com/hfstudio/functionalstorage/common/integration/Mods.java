@@ -11,8 +11,9 @@ public enum Mods implements IMod {
 
     // spotless:off
     AE2("appliedenergistics2"),
+    InventoryBogoSorter("bogosorter"),
+    MouseTweaks("MouseTweaks"),
     NotEnoughItems("NotEnoughItems"),
-    NeverEnoughCharacters("nech"),
     Thaumcraft("Thaumcraft"),
     Waila("Waila"),
     ;

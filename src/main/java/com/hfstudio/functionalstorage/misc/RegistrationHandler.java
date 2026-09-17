@@ -27,7 +27,6 @@ import com.hfstudio.functionalstorage.common.block.compact.SimpleCompactingDrawe
 import com.hfstudio.functionalstorage.common.block.controller.ControllerExtensionBlock;
 import com.hfstudio.functionalstorage.common.block.controller.DrawerControllerBlock;
 import com.hfstudio.functionalstorage.common.integration.Mods;
-import com.hfstudio.functionalstorage.common.integration.ae2.AE2Integration;
 import com.hfstudio.functionalstorage.common.item.ConfigurationToolItem;
 import com.hfstudio.functionalstorage.common.item.LinkingToolItem;
 import com.hfstudio.functionalstorage.common.item.upgrade.BreakerUpgradeItem;
@@ -287,10 +286,6 @@ public class RegistrationHandler {
                     + block.getDrawerLayout()
                         .getSlotCount());
         }
-    }
-
-    public static void registerCommonIntegrations() {
-        AE2Integration.register();
     }
 
     public static void registerBlockProperties() {

@@ -65,7 +65,6 @@ public class DrawerTooltipRenderer extends Gui {
 
     @SubscribeEvent
     public void onTooltip(RenderTooltipEvent event) {
-        if (event.itemStack == null) return;
         List<Section> sections = sectionsFor(event.itemStack);
         if ((!sections.isEmpty() || event.itemStack.getItem() instanceof LayeredToolItem
             || event.itemStack.getItem() instanceof UpgradeItem
@@ -248,10 +247,10 @@ public class DrawerTooltipRenderer extends Gui {
                     minecraft.getTextureManager()
                         .bindTexture(
                             entry.aspect()
-                                .getImage());
+                                .texture());
                     tint(
                         entry.aspect()
-                            .getColor());
+                            .color());
                     func_146110_a(x, y, 0, 0, 16, 16, 16, 16);
                 }
             }

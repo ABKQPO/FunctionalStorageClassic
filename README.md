@@ -194,12 +194,24 @@ shipping any Thaumcraft assets.
   limits and respect native essentia input/output ports.
 * **Hoppers and pipes** — drawers implement vanilla `IInventory` and Forge `IFluidHandler`
   directly, which is how 1.7.10 automation discovers inventories.
+* **Inventory Bogo Sorter** — item drawers and the armory cabinet support configured bulk,
+  matching-item, single-item, and empty-slot transfer shortcuts. The default bindings are
+  Space + left-click, Alt + left-click, Ctrl + left-click, and Ctrl + right-click.
+  Bulk transfers preserve pinned player slots and keep the main inventory and hotbar separate.
+* **Mouse Tweaks / NEI** — slot scrolling transfers items directly between item storage and
+  the player inventory, respecting storage capacity and normal item stack limits. Mouse Tweaks
+  direction and search-order settings apply when it owns scrolling; NEI's direction setting
+  applies when NEI owns it. In the armory, scrolling over slots transfers items, while scrolling
+  over the background changes the visible rows. Extraction follows the visible filtered slots.
 * **Comparators** — a drawer emits a comparator signal based on how full it is.
 * **The One Probe** — *not supported.* The One Probe was never released for Minecraft 1.7.10,
   so Waila is used instead.
 
-No mixins are used. Every integration goes through a public API or a documented plugin
-callback, so this mod never depends on another mod's internals.
+This mod ships no mixins. Optional integrations register only when the corresponding mod
+is installed. Inventory shortcuts use server-authoritative storage operations, so display
+icons cannot be moved as real items. Shortcut compatibility is verified with Inventory Bogo
+Sorter 1.3.50-GTNH and Mouse Tweaks 2.5.3-GTNH. Fluid containers and essentia phials use the
+drawer interface's container exchange interactions.
 
 <hr>
 
@@ -310,7 +322,7 @@ projects, all of which permit reuse under the terms below.
 
 ### Menus and previews
 
-Drawer menus use the drawer front texture and vanilla inventory slot textures. Upgrade headings appear only when the corresponding slots exist. Upgrade menus provide direct drawer-slot selection, nine ghost filters, direction controls, tool/speed attachments, and return navigation. Armory cabinets support localized tooltip search and scrolling through all slots; item IDs can be used for language-independent search. Installing NeverEnoughCharacters-Rework on the client also enables its pinyin search and configured matching rules. Priority is synchronized by the server and orders controller routing. Saved-content tooltips use compact item previews with overlaid amounts.
+Drawer menus use the drawer front texture and vanilla inventory slot textures. Upgrade headings appear only when the corresponding slots exist. Upgrade menus provide direct drawer-slot selection, nine ghost filters, direction controls, tool/speed attachments, and return navigation. Armory cabinets retain a vanilla search field and use NEI's search syntax and registered search providers when NEI is installed, including NeverEnoughCharacters-Rework's pinyin support. Without NEI, they match localized tooltip text and item IDs. Priority is synchronized by the server and orders controller routing. Saved-content tooltips use compact item previews with overlaid amounts.
 
 In drawer menus, left-click deposits the entire cursor stack or takes one normal stack. Right-click deposits one item or takes half of a normal stack, rounded up. Shift-click first merges into matching storage slots. Fluid containers and Thaumcraft phials can deposit and extract through the corresponding menu slots. Amounts use GTNHLib formatting, and fluid units follow its global L/mB setting (1,000 units per bucket). Linking and configuration feedback appears above the hotbar. Block contents default to a uniformly scaled 3D display; the client configuration also provides a flat display.
 
@@ -326,6 +338,8 @@ This mod compiles against the **Thaumcraft 4 API** but does **not** redistribute
 code or assets. Essentia storage is implemented against the public `thaumcraft.api.aspects`
 interfaces only. Thaumcraft itself must be obtained separately by the user, and all rights to it
 remain with its author.
+
+All integrations are optional. Without Thaumcraft, essentia drawers are not registered; their missing block and item mappings are ignored when opening an existing world. Removing Thaumcraft therefore removes those drawers from that world. Item and fluid drawers and controllers remain available.
 
 ### Notes on FunctionalChemical
 

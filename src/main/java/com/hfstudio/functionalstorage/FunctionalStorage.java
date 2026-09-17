@@ -6,6 +6,7 @@ import org.apache.logging.log4j.Logger;
 import com.gtnewhorizon.gtnhlib.config.ConfigException;
 import com.hfstudio.functionalstorage.common.network.ArmorySearchMessage;
 import com.hfstudio.functionalstorage.common.network.MenuSettingsMessage;
+import com.hfstudio.functionalstorage.common.network.StorageTransferMessage;
 import com.hfstudio.functionalstorage.config.FunctionalStorageConfig;
 import com.hfstudio.functionalstorage.misc.CommonProxy;
 import com.hfstudio.functionalstorage.misc.GuiHandler;
@@ -57,6 +58,7 @@ public class FunctionalStorage {
         network = NetworkRegistry.INSTANCE.newSimpleChannel(MOD_ID);
         network.registerMessage(MenuSettingsMessage.Handler.class, MenuSettingsMessage.class, 0, Side.SERVER);
         network.registerMessage(ArmorySearchMessage.Handler.class, ArmorySearchMessage.class, 1, Side.SERVER);
+        network.registerMessage(StorageTransferMessage.Handler.class, StorageTransferMessage.class, 2, Side.SERVER);
         NetworkRegistry.INSTANCE.registerGuiHandler(this, new GuiHandler());
         proxy.preInit(event);
     }

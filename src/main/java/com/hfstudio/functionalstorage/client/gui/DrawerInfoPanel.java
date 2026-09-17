@@ -12,6 +12,7 @@ import com.gtnewhorizon.gtnhlib.util.numberformatting.NumberFormatUtil;
 import com.hfstudio.functionalstorage.api.storage.BigAspectStack;
 import com.hfstudio.functionalstorage.api.storage.BigFluidStack;
 import com.hfstudio.functionalstorage.api.storage.BigItemStack;
+import com.hfstudio.functionalstorage.client.gui.DrawerTooltipData.AspectIcon;
 import com.hfstudio.functionalstorage.client.gui.DrawerTooltipData.Entry;
 import com.hfstudio.functionalstorage.common.block.DrawerFaceLayout;
 import com.hfstudio.functionalstorage.common.block.base.DrawerBlock;
@@ -135,7 +136,11 @@ public class DrawerInfoPanel extends Gui {
             BigAspectStack stored = tile.getAspectHandler()
                 .getSnapshot(slot);
             return stored.hasTemplate()
-                ? new Entry(null, null, stored.getAspect(), NumberFormatUtil.formatNumberCompact(stored.getAmount()))
+                ? new Entry(
+                    null,
+                    null,
+                    AspectIcon.of(stored.getAspect()),
+                    NumberFormatUtil.formatNumberCompact(stored.getAmount()))
                 : null;
         }
         return null;

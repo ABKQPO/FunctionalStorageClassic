@@ -78,8 +78,8 @@ public class GuiUpgrade extends GuiContainer {
     @Override
     public void updateScreen() {
         super.updateScreen();
-        for (Object object : buttonList) {
-            GuiButton button = (GuiButton) object;
+        for (GuiButton object : buttonList) {
+            GuiButton button = object;
             if (button.id == 6)
                 button.displayString = switch (UpgradeSettings.get(container.getUpgradeStack(), "RedstoneMode")) {
                 case 1 -> "-";

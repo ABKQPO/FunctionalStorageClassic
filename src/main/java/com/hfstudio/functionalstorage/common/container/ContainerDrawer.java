@@ -10,6 +10,7 @@ import net.minecraft.inventory.IInventory;
 import net.minecraft.inventory.InventoryBasic;
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
+import net.minecraft.network.Packet;
 
 import com.hfstudio.functionalstorage.FunctionalStorage;
 import com.hfstudio.functionalstorage.api.storage.BigItemStack;
@@ -28,20 +29,24 @@ import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 import com.hfstudio.functionalstorage.common.tile.controller.StorageNetworkTile;
 import com.hfstudio.functionalstorage.misc.GuiHandler;
 
+import lombok.Getter;
+
 /** Physical storage and upgrade slots backed by the owning drawer. */
-public class ContainerDrawer extends Container implements MenuSettingsReceiver {
+public class ContainerDrawer extends Container implements MenuSettingsReceiver, StorageTransferMenu {
 
     private static final int PLAYER_ROWS = 3;
     private static final int PLAYER_COLUMNS = 9;
     private static final int MAX_VISIBLE_STORAGE_SLOTS = 36;
 
     private final ControllableDrawerTile tile;
+    @Getter
     private final DrawerGuiLayout layout;
     private final IInventory openedInventory;
     private final int storageSlotCount;
     private final InventoryBasic display;
     private final StorageSubscription subscription;
     private boolean displayDirty = true;
+    private boolean stateDirty = true;
 
     public ContainerDrawer(@Nonnull ControllableDrawerTile tile, @Nonnull EntityPlayer player) {
         this.tile = tile;
@@ -53,9 +58,12 @@ public class ContainerDrawer extends Container implements MenuSettingsReceiver {
                     .getStorageCount(),
                 MAX_VISIBLE_STORAGE_SLOTS);
         this.display = new InventoryBasic("Drawer", false, storageSlotCount);
-        this.subscription = tile.getItemHandler() == null || tile.getWorldObj().isRemote ? StorageSubscription.CLOSED
-            : tile.getItemHandler()
-                .subscribe(change -> displayDirty = true);
+        this.subscription = storageSlotCount == 0 || tile.getWorldObj().isRemote ? StorageSubscription.CLOSED
+            : tile.getActiveStorage()
+                .subscribe(change -> {
+                    displayDirty = true;
+                    stateDirty = true;
+                });
         int storageSlots = visibleStorageSlots();
         this.layout = new DrawerGuiLayout(storageSlots, ((DrawerBlock) tile.getBlockType()).getFaceLayout());
         IInventory storage = display;
@@ -91,12 +99,23 @@ public class ContainerDrawer extends Container implements MenuSettingsReceiver {
         return tile;
     }
 
-    public DrawerGuiLayout getLayout() {
-        return layout;
-    }
-
     public int getVisibleStorageSlots() {
         return visibleStorageSlots();
+    }
+
+    @Override
+    public IBigItemHandler getTransferStorage() {
+        return tile.getItemHandler();
+    }
+
+    @Override
+    public int getTransferSlotCount() {
+        return storageSlotCount;
+    }
+
+    @Override
+    public int getTransferSlot(int menuSlot) {
+        return menuSlot >= 0 && menuSlot < storageSlotCount ? menuSlot : -1;
     }
 
     @Override
@@ -138,6 +157,15 @@ public class ContainerDrawer extends Container implements MenuSettingsReceiver {
 
     @Override
     public void detectAndSendChanges() {
+        if (stateDirty && storageSlotCount > 0 && !tile.getWorldObj().isRemote && !crafters.isEmpty()) {
+            stateDirty = false;
+            Packet update = tile.getDescriptionPacket();
+            for (Object crafter : crafters) {
+                if (crafter instanceof EntityPlayerMP player && player.playerNetServerHandler != null) {
+                    player.playerNetServerHandler.sendPacket(update);
+                }
+            }
+        }
         refreshDisplay();
         super.detectAndSendChanges();
     }

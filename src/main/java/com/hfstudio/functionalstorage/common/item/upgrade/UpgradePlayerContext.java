@@ -10,12 +10,15 @@ import net.minecraftforge.common.util.ForgeDirection;
 
 import com.mojang.authlib.GameProfile;
 
+import lombok.Getter;
+
 public class UpgradePlayerContext implements AutoCloseable {
 
     private static final GameProfile DEFAULT_PROFILE = new GameProfile(
         UUID.fromString("e54c991c-6040-46a0-9bc2-cb8da0508781"),
         "[FunctionalStorage]");
 
+    @Getter
     private final FakePlayer player;
     private final ItemStack previousItem;
     private final double previousX;
@@ -42,10 +45,6 @@ public class UpgradePlayerContext implements AutoCloseable {
             z + 0.5D,
             (float) Math.toDegrees(Math.atan2(-direction.offsetX, direction.offsetZ)),
             -direction.offsetY * 90F);
-    }
-
-    public FakePlayer getPlayer() {
-        return player;
     }
 
     @Override

@@ -20,12 +20,16 @@ import com.hfstudio.functionalstorage.common.storage.DrawerLayout;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 import com.hfstudio.functionalstorage.config.FunctionalStorageConfig;
 
+import cpw.mods.fml.common.Optional;
 import thaumcraft.api.aspects.Aspect;
 import thaumcraft.api.aspects.AspectList;
 import thaumcraft.api.aspects.IAspectContainer;
 import thaumcraft.api.aspects.IEssentiaTransport;
 
 /** Adapts long-capacity essentia storage to Thaumcraft containers and tubes. */
+@Optional.InterfaceList({
+    @Optional.Interface(iface = "thaumcraft.api.aspects.IAspectContainer", modid = "Thaumcraft", striprefs = true),
+    @Optional.Interface(iface = "thaumcraft.api.aspects.IEssentiaTransport", modid = "Thaumcraft", striprefs = true) })
 public class EssentiaDrawerTile extends ControllableDrawerTile implements IAspectContainer, IEssentiaTransport {
 
     private static final String KEY_ASPECTS = "Aspects";
@@ -51,7 +55,7 @@ public class EssentiaDrawerTile extends ControllableDrawerTile implements IAspec
             public double getMultiplier() {
                 double multiplier = calculateModifier(UpgradeAttribute.ASPECT_CAPACITY, 1D);
                 return getUpgradeState().hasFeature(StorageFeature.IRON_DOWNGRADE)
-                    ? multiplier * 1D / Math.max(1, FunctionalStorageConfig.STORAGE.baseAspectCapacity)
+                    ? multiplier / Math.max(1, FunctionalStorageConfig.STORAGE.baseAspectCapacity)
                     : multiplier / layout.getSlotCount();
             }
 
@@ -141,6 +145,7 @@ public class EssentiaDrawerTile extends ControllableDrawerTile implements IAspec
     }
 
     @Override
+    @Optional.Method(modid = "Thaumcraft")
     public AspectList getAspects() {
         AspectList list = new AspectList();
         for (int index = 0; index < handler.getStorageCount(); index++) {
@@ -154,6 +159,7 @@ public class EssentiaDrawerTile extends ControllableDrawerTile implements IAspec
     }
 
     @Override
+    @Optional.Method(modid = "Thaumcraft")
     public void setAspects(AspectList aspects) {
         for (int index = 0; index < handler.getStorageCount(); index++) {
             handler.extract(index, Long.MAX_VALUE, StorageAction.EXECUTE);
@@ -169,6 +175,7 @@ public class EssentiaDrawerTile extends ControllableDrawerTile implements IAspec
     }
 
     @Override
+    @Optional.Method(modid = "Thaumcraft")
     public boolean doesContainerAccept(Aspect aspect) {
         if (aspect == null) {
             return false;
@@ -186,6 +193,7 @@ public class EssentiaDrawerTile extends ControllableDrawerTile implements IAspec
     }
 
     @Override
+    @Optional.Method(modid = "Thaumcraft")
     public int addToContainer(Aspect aspect, int amount) {
         if (aspect == null || amount <= 0) {
             return amount;
@@ -196,6 +204,7 @@ public class EssentiaDrawerTile extends ControllableDrawerTile implements IAspec
     }
 
     @Override
+    @Optional.Method(modid = "Thaumcraft")
     public boolean takeFromContainer(Aspect aspect, int amount) {
         if (aspect == null || amount <= 0) {
             return false;
@@ -210,11 +219,13 @@ public class EssentiaDrawerTile extends ControllableDrawerTile implements IAspec
     }
 
     @Override
+    @Optional.Method(modid = "Thaumcraft")
     public boolean doesContainerContainAmount(Aspect aspect, int amount) {
         return aspect != null && amount > 0 && containerContains(aspect) >= amount;
     }
 
     @Override
+    @Optional.Method(modid = "Thaumcraft")
     public int containerContains(Aspect aspect) {
         if (aspect == null) {
             return 0;
@@ -230,6 +241,7 @@ public class EssentiaDrawerTile extends ControllableDrawerTile implements IAspec
     }
 
     @Override
+    @Optional.Method(modid = "Thaumcraft")
     public boolean takeFromContainer(AspectList aspects) {
         if (aspects == null) {
             return false;
@@ -246,6 +258,7 @@ public class EssentiaDrawerTile extends ControllableDrawerTile implements IAspec
     }
 
     @Override
+    @Optional.Method(modid = "Thaumcraft")
     public boolean doesContainerContain(AspectList aspects) {
         if (aspects == null) {
             return false;
@@ -280,11 +293,13 @@ public class EssentiaDrawerTile extends ControllableDrawerTile implements IAspec
     }
 
     @Override
+    @Optional.Method(modid = "Thaumcraft")
     public void setSuction(Aspect aspect, int amount) {
         transport.setSuction(aspect, amount);
     }
 
     @Override
+    @Optional.Method(modid = "Thaumcraft")
     public Aspect getSuctionType(ForgeDirection side) {
         return transport.getSuctionType(side);
     }
@@ -295,16 +310,19 @@ public class EssentiaDrawerTile extends ControllableDrawerTile implements IAspec
     }
 
     @Override
+    @Optional.Method(modid = "Thaumcraft")
     public int takeEssentia(Aspect aspect, int amount, ForgeDirection side) {
         return transport.takeEssentia(aspect, amount, side);
     }
 
     @Override
+    @Optional.Method(modid = "Thaumcraft")
     public int addEssentia(Aspect aspect, int amount, ForgeDirection side) {
         return transport.addEssentia(aspect, amount, side);
     }
 
     @Override
+    @Optional.Method(modid = "Thaumcraft")
     public Aspect getEssentiaType(ForgeDirection side) {
         return transport.getEssentiaType(side);
     }

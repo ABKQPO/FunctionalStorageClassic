@@ -54,8 +54,7 @@ public class UpgradeItem extends Item {
 
     @Override
     @SideOnly(Side.CLIENT)
-    @SuppressWarnings({ "unchecked", "rawtypes" })
-    public void addInformation(ItemStack stack, EntityPlayer player, List tooltip, boolean advanced) {
+    public void addInformation(ItemStack stack, EntityPlayer player, List<String> tooltip, boolean advanced) {
         boolean storage = this instanceof IStorageUpgrade upgrade && upgrade.isStorageUpgrade();
         if (this instanceof IStorageUpgrade) {
             tooltip.add(

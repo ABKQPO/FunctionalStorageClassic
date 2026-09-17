@@ -2,6 +2,7 @@ package com.hfstudio.functionalstorage.client.gui;
 
 import java.util.Arrays;
 import java.util.Locale;
+import java.util.function.Predicate;
 
 import net.minecraft.client.gui.GuiTextField;
 import net.minecraft.client.gui.inventory.GuiContainer;
@@ -17,13 +18,16 @@ import org.lwjgl.opengl.GL11;
 
 import com.hfstudio.functionalstorage.FunctionalStorage;
 import com.hfstudio.functionalstorage.api.storage.BigItemStack;
-import com.hfstudio.functionalstorage.client.integration.DrawerSearch;
+import com.hfstudio.functionalstorage.client.integration.NEIGuiIntegration;
+import com.hfstudio.functionalstorage.client.integration.StorageShortcutInput;
+import com.hfstudio.functionalstorage.client.integration.StorageShortcutScreen;
 import com.hfstudio.functionalstorage.common.container.ContainerArmory;
+import com.hfstudio.functionalstorage.common.integration.Mods;
 import com.hfstudio.functionalstorage.common.network.ArmorySearchMessage;
 import com.hfstudio.functionalstorage.common.network.MenuSettingsMessage;
 import com.hfstudio.functionalstorage.common.tile.ArmoryCabinetTile;
 
-public class GuiArmory extends GuiContainer {
+public class GuiArmory extends GuiContainer implements StorageShortcutScreen {
 
     private static final ResourceLocation SCROLL = new ResourceLocation(
         "minecraft",
@@ -38,6 +42,7 @@ public class GuiArmory extends GuiContainer {
     private int searchRevision;
     private String lastQuery = "";
     private int[] matchedSlots = new int[0];
+    private Predicate<ItemStack> searchFilter;
 
     public GuiArmory(EntityPlayer player, ArmoryCabinetTile tile) {
         super(new ContainerArmory(tile, player));
@@ -72,6 +77,10 @@ public class GuiArmory extends GuiContainer {
             return;
         }
         if (!query.equals(lastQuery) || searchRevision != container.getSearchRevision()) {
+            if (!query.equals(lastQuery) || searchFilter == null) {
+                searchFilter = Mods.NotEnoughItems.isModLoaded() ? NEIGuiIntegration.search(query)
+                    : item -> matches(item, query);
+            }
             int[] matches = new int[container.getTile()
                 .getItemHandler()
                 .getStorageCount()];
@@ -80,7 +89,7 @@ public class GuiArmory extends GuiContainer {
                 BigItemStack stored = container.getTile()
                     .getItemHandler()
                     .getSnapshot(slot);
-                if (stored.hasTemplate() && matches(stored.getTemplate(), query)) matches[count++] = slot;
+                if (stored.hasTemplate() && searchFilter.test(stored.getTemplate())) matches[count++] = slot;
             }
             matchedSlots = Arrays.copyOf(matches, count);
             lastQuery = query;
@@ -95,7 +104,8 @@ public class GuiArmory extends GuiContainer {
             .toLowerCase(Locale.ROOT)
             .contains(query)) return true;
         for (String line : item.getTooltip(mc.thePlayer, false)) {
-            if (DrawerSearch.contains(line.toLowerCase(Locale.ROOT), query)) return true;
+            if (line.toLowerCase(Locale.ROOT)
+                .contains(query)) return true;
         }
         return false;
     }
@@ -129,7 +139,22 @@ public class GuiArmory extends GuiContainer {
     public void handleMouseInput() {
         super.handleMouseInput();
         int wheel = Mouse.getEventDWheel();
-        if (wheel != 0) update(container.getScrollRow() + (wheel > 0 ? -1 : 1));
+        if (wheel != 0 && !StorageShortcutInput.handlesWheel(this)) {
+            update(container.getScrollRow() + (wheel > 0 ? -1 : 1));
+        }
+    }
+
+    @Override
+    public boolean isTextInputFocused() {
+        return search != null && search.isFocused();
+    }
+
+    @Override
+    public Slot getSlotAt(int mouseX, int mouseY) {
+        for (Slot slot : inventorySlots.inventorySlots) {
+            if (func_146978_c(slot.xDisplayPosition, slot.yDisplayPosition, 16, 16, mouseX, mouseY)) return slot;
+        }
+        return null;
     }
 
     @Override

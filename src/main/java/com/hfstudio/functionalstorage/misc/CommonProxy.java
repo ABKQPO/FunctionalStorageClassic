@@ -3,6 +3,8 @@ package com.hfstudio.functionalstorage.misc;
 import net.minecraftforge.common.MinecraftForge;
 
 import com.hfstudio.functionalstorage.common.integration.Mods;
+import com.hfstudio.functionalstorage.common.integration.ae2.AE2Integration;
+import com.hfstudio.functionalstorage.common.integration.bogosorter.BogoSorterIntegration;
 import com.hfstudio.functionalstorage.common.integration.thaumcraft.ThaumcraftIntegration;
 import com.hfstudio.functionalstorage.common.integration.waila.WailaIntegration;
 import com.hfstudio.functionalstorage.common.interaction.DrawerClickHandler;
@@ -20,20 +22,24 @@ import cpw.mods.fml.common.registry.GameRegistry.Type;
 public class CommonProxy {
 
     public void preInit(FMLPreInitializationEvent event) {
-        registerContent();
+        RegistrationHandler.registerBlocks();
+        RegistrationHandler.registerItems();
+        RegistrationHandler.registerTileEntities();
+        RegistrationHandler.registerBlockProperties();
     }
 
     public void init(FMLInitializationEvent event) {
         MinecraftForge.EVENT_BUS.register(new DrawerClickHandler());
-        registerRecipes();
-        registerIntegrations();
-        if (Mods.Waila.isModLoaded()) {
-            WailaIntegration.register();
-        }
+        FunctionalStorageRecipes.registerEarlyRecipes();
     }
 
     public void postInit(FMLPostInitializationEvent event) {
         FunctionalStorageRecipes.registerLateRecipes();
+        if (Mods.Waila.isModLoaded()) WailaIntegration.register();
+        if (Mods.InventoryBogoSorter.isModLoaded()) BogoSorterIntegration.register();
+        if (FunctionalStorageConfig.COMPATIBILITY.enableAE2Compatibility && Mods.AE2.isModLoaded()) {
+            AE2Integration.register();
+        }
         if (FunctionalStorageConfig.COMPATIBILITY.enableThaumcraftCompatibility && Mods.Thaumcraft.isModLoaded()) {
             ThaumcraftIntegration.register();
         }
@@ -45,24 +51,15 @@ public class CommonProxy {
 
     public void onMissingMappings(FMLMissingMappingsEvent event) {
         for (MissingMapping mapping : event.get()) {
-            if (mapping.type == Type.ITEM && "functionalstorage:stonecutting_upgrade".equals(mapping.name)) {
+            boolean missingEssentia = (!Mods.Thaumcraft.isModLoaded()
+                || !FunctionalStorageConfig.COMPATIBILITY.enableThaumcraftCompatibility)
+                && ("functionalstorage:essentia_1".equals(mapping.name)
+                    || "functionalstorage:essentia_2".equals(mapping.name)
+                    || "functionalstorage:essentia_4".equals(mapping.name));
+            if (missingEssentia
+                || mapping.type == Type.ITEM && "functionalstorage:stonecutting_upgrade".equals(mapping.name)) {
                 mapping.ignore();
             }
         }
-    }
-
-    protected void registerContent() {
-        RegistrationHandler.registerBlocks();
-        RegistrationHandler.registerItems();
-        RegistrationHandler.registerTileEntities();
-        RegistrationHandler.registerBlockProperties();
-    }
-
-    protected void registerRecipes() {
-        FunctionalStorageRecipes.registerEarlyRecipes();
-    }
-
-    protected void registerIntegrations() {
-        RegistrationHandler.registerCommonIntegrations();
     }
 }

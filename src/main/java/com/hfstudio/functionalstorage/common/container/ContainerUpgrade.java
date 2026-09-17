@@ -15,8 +15,11 @@ import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 import com.hfstudio.functionalstorage.misc.GuiHandler;
 import com.hfstudio.functionalstorage.misc.RegistrationHandler;
 
+import lombok.Getter;
+
 public class ContainerUpgrade extends Container {
 
+    @Getter
     private final ControllableDrawerTile tile;
     private final int upgradeSlot;
     private final ItemStack upgradeStack;
@@ -46,10 +49,6 @@ public class ContainerUpgrade extends Container {
     public ItemStack getUpgradeStack() {
         ItemStack current = tile.getUtilityUpgrade(upgradeSlot);
         return current == null ? upgradeStack : current;
-    }
-
-    public ControllableDrawerTile getTile() {
-        return tile;
     }
 
     @Override

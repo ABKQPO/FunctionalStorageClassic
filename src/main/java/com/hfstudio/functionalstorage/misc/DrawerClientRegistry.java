@@ -8,6 +8,7 @@ import com.hfstudio.functionalstorage.FunctionalStorage;
 import com.hfstudio.functionalstorage.client.model.DrawerModelProvider;
 import com.hfstudio.functionalstorage.client.render.DrawerItemRenderer;
 import com.hfstudio.functionalstorage.client.render.DrawerRenderer;
+import com.hfstudio.functionalstorage.common.integration.Mods;
 import com.hfstudio.functionalstorage.common.tile.EnderDrawerTile;
 import com.hfstudio.functionalstorage.common.tile.EssentiaDrawerTile;
 import com.hfstudio.functionalstorage.common.tile.FluidDrawerTile;
@@ -16,6 +17,7 @@ import com.hfstudio.functionalstorage.common.tile.WoodDrawerTile;
 import com.hfstudio.functionalstorage.common.tile.compact.CompactingDrawerTile;
 
 import cpw.mods.fml.client.registry.ClientRegistry;
+import cpw.mods.fml.common.Optional;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
@@ -37,9 +39,14 @@ public class DrawerClientRegistry {
         ClientRegistry.bindTileEntitySpecialRenderer(WoodDrawerTile.class, renderer);
         ClientRegistry.bindTileEntitySpecialRenderer(FramedDrawerTile.class, renderer);
         ClientRegistry.bindTileEntitySpecialRenderer(FluidDrawerTile.class, renderer);
-        ClientRegistry.bindTileEntitySpecialRenderer(EssentiaDrawerTile.class, renderer);
+        if (Mods.Thaumcraft.isModLoaded()) registerEssentiaRenderer(renderer);
         ClientRegistry.bindTileEntitySpecialRenderer(CompactingDrawerTile.class, renderer);
         ClientRegistry.bindTileEntitySpecialRenderer(EnderDrawerTile.class, renderer);
+    }
+
+    @Optional.Method(modid = "Thaumcraft")
+    private static void registerEssentiaRenderer(DrawerRenderer renderer) {
+        ClientRegistry.bindTileEntitySpecialRenderer(EssentiaDrawerTile.class, renderer);
     }
 
     /** Registers blockstate and model resources with the GTNHLib client pipeline. */

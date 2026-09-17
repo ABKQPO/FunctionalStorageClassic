@@ -19,7 +19,9 @@ import com.hfstudio.functionalstorage.FunctionalStorage;
 import com.hfstudio.functionalstorage.api.storage.BigAspectStack;
 import com.hfstudio.functionalstorage.api.storage.BigFluidStack;
 import com.hfstudio.functionalstorage.api.storage.BigItemStack;
+import com.hfstudio.functionalstorage.client.gui.DrawerTooltipData.AspectIcon;
 import com.hfstudio.functionalstorage.client.gui.DrawerTooltipData.Entry;
+import com.hfstudio.functionalstorage.client.integration.StorageShortcutScreen;
 import com.hfstudio.functionalstorage.common.block.base.DrawerBlock;
 import com.hfstudio.functionalstorage.common.container.ContainerDrawer;
 import com.hfstudio.functionalstorage.common.container.DrawerGuiLayout;
@@ -30,7 +32,7 @@ import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 import com.hfstudio.functionalstorage.common.tile.controller.StorageNetworkTile;
 import com.hfstudio.functionalstorage.misc.GuiHandler;
 
-public class GuiDrawer extends GuiContainer {
+public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
 
     private static final int WINDOW_WIDTH = 176;
     private static final int LABEL_COLOUR = 0x404040;
@@ -65,6 +67,19 @@ public class GuiDrawer extends GuiContainer {
         super.updateScreen();
         priority.updateCursorCounter();
         if (!priority.isFocused()) priority.setText(Integer.toString(tile.getPriority()));
+    }
+
+    @Override
+    public boolean isTextInputFocused() {
+        return priority != null && priority.isFocused();
+    }
+
+    @Override
+    public Slot getSlotAt(int mouseX, int mouseY) {
+        for (Slot slot : inventorySlots.inventorySlots) {
+            if (func_146978_c(slot.xDisplayPosition, slot.yDisplayPosition, 16, 16, mouseX, mouseY)) return slot;
+        }
+        return null;
     }
 
     @Override
@@ -273,7 +288,11 @@ public class GuiDrawer extends GuiContainer {
             BigAspectStack stored = tile.getAspectHandler()
                 .getSnapshot(slot);
             return stored.hasTemplate()
-                ? new Entry(null, null, stored.getAspect(), NumberFormatUtil.formatNumberCompact(stored.getAmount()))
+                ? new Entry(
+                    null,
+                    null,
+                    AspectIcon.of(stored.getAspect()),
+                    NumberFormatUtil.formatNumberCompact(stored.getAmount()))
                 : null;
         }
         return null;

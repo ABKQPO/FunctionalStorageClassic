@@ -9,17 +9,20 @@ import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
+import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fluids.FluidStack;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.gtnewhorizon.gtnhlib.util.numberformatting.NumberFormatUtil;
 import com.hfstudio.functionalstorage.common.block.base.DrawerBlock;
+import com.hfstudio.functionalstorage.common.integration.Mods;
 import com.hfstudio.functionalstorage.common.item.LinkingToolItem;
 import com.hfstudio.functionalstorage.common.item.upgrade.AutomationUpgradeItem;
 import com.hfstudio.functionalstorage.common.item.upgrade.UpgradeSettings;
 import com.hfstudio.functionalstorage.util.ItemUtil;
 
+import cpw.mods.fml.common.Optional;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import thaumcraft.api.aspects.Aspect;
@@ -27,10 +30,18 @@ import thaumcraft.api.aspects.Aspect;
 @SideOnly(Side.CLIENT)
 public class DrawerTooltipData {
 
-    public record Entry(ItemStack item, FluidStack fluid, Aspect aspect, String amount) {
+    public record AspectIcon(ResourceLocation texture, int color, String name) {
+
+        @Optional.Method(modid = "Thaumcraft")
+        public static AspectIcon of(Aspect aspect) {
+            return new AspectIcon(aspect.getImage(), aspect.getColor(), aspect.getName());
+        }
+    }
+
+    public record Entry(ItemStack item, FluidStack fluid, AspectIcon aspect, String amount) {
 
         public String name() {
-            return item != null ? item.getDisplayName() : fluid != null ? fluid.getLocalizedName() : aspect.getName();
+            return item != null ? item.getDisplayName() : fluid != null ? fluid.getLocalizedName() : aspect.name();
         }
     }
 
@@ -129,13 +140,17 @@ public class DrawerTooltipData {
                 if (fluid != null) {
                     entries.add(new Entry(null, fluid, null, NumberFormatUtil.formatFluid(count)));
                 }
-            } else {
-                Aspect aspect = Aspect.getAspect(template.getString("Aspect"));
-                if (aspect != null) {
-                    entries.add(new Entry(null, null, aspect, NumberFormatUtil.formatNumberCompact(count)));
-                }
+            } else if (Mods.Thaumcraft.isModLoaded()) {
+                readAspectEntry(entries, template, count);
             }
         }
+    }
+
+    @Optional.Method(modid = "Thaumcraft")
+    private static void readAspectEntry(List<Entry> entries, NBTTagCompound template, long count) {
+        Aspect aspect = Aspect.getAspect(template.getString("Aspect"));
+        if (aspect != null)
+            entries.add(new Entry(null, null, AspectIcon.of(aspect), NumberFormatUtil.formatNumberCompact(count)));
     }
 
     public static List<ItemStack> frequencyDisplay(String frequency) {
@@ -150,7 +165,7 @@ public class DrawerTooltipData {
                     frequencyItems.add(item);
                 }
             }
-            frequencyItems.sort(Comparator.comparing(item -> Item.itemRegistry.getNameForObject(item)));
+            frequencyItems.sort(Comparator.comparing(Item.itemRegistry::getNameForObject));
         }
         List<ItemStack> result = new ArrayList<>();
         if (!frequencyItems.isEmpty() && !frequency.isEmpty()) {

@@ -6,10 +6,14 @@ import net.minecraftforge.common.MinecraftForge;
 
 import com.hfstudio.functionalstorage.client.gui.DrawerGuiTextures;
 import com.hfstudio.functionalstorage.client.gui.DrawerTooltipRenderer;
+import com.hfstudio.functionalstorage.client.integration.BogoSorterShortcuts;
+import com.hfstudio.functionalstorage.client.integration.MouseTweaksShortcuts;
 import com.hfstudio.functionalstorage.client.integration.NEIGuiIntegration;
+import com.hfstudio.functionalstorage.client.integration.NEIStorageShortcuts;
 import com.hfstudio.functionalstorage.client.render.LinkingToolOverlay;
 import com.hfstudio.functionalstorage.common.integration.Mods;
 
+import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.event.FMLLoadCompleteEvent;
 import cpw.mods.fml.common.event.FMLPostInitializationEvent;
@@ -31,7 +35,14 @@ public class ClientProxy extends CommonProxy {
         super.init(event);
         MinecraftForge.EVENT_BUS.register(new DrawerTooltipRenderer());
         MinecraftForge.EVENT_BUS.register(new LinkingToolOverlay());
-        if (Mods.NotEnoughItems.isModLoaded()) NEIGuiIntegration.register();
+        if (Mods.NotEnoughItems.isModLoaded()) {
+            NEIGuiIntegration.register();
+            NEIStorageShortcuts.register();
+        }
+        if (Mods.InventoryBogoSorter.isModLoaded()) MinecraftForge.EVENT_BUS.register(new BogoSorterShortcuts());
+        if (Mods.MouseTweaks.isModLoaded()) FMLCommonHandler.instance()
+            .bus()
+            .register(new MouseTweaksShortcuts());
         DrawerClientRegistry.registerBlockColors();
     }
 

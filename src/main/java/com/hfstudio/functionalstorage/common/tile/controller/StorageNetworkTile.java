@@ -12,6 +12,7 @@ import com.hfstudio.functionalstorage.api.storage.IBigAspectHandler;
 import com.hfstudio.functionalstorage.api.storage.IBigFluidHandler;
 import com.hfstudio.functionalstorage.api.storage.IBigItemHandler;
 import com.hfstudio.functionalstorage.api.upgrade.IStorageUpgrade;
+import com.hfstudio.functionalstorage.common.integration.Mods;
 import com.hfstudio.functionalstorage.common.integration.thaumcraft.DrawerEssentiaTransport;
 import com.hfstudio.functionalstorage.common.integration.thaumcraft.DrawerTransportAccess;
 import com.hfstudio.functionalstorage.common.inventory.AggregatedStorage;
@@ -23,16 +24,21 @@ import com.hfstudio.functionalstorage.common.item.ConfigurationToolItem.Configur
 import com.hfstudio.functionalstorage.common.item.LayeredToolItem;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 
+import cpw.mods.fml.common.Optional;
 import thaumcraft.api.aspects.IEssentiaTransport;
 
+@Optional.Interface(
+    iface = "com.hfstudio.functionalstorage.common.integration.thaumcraft.DrawerTransportAccess",
+    modid = "Thaumcraft")
 public abstract class StorageNetworkTile extends ControllableDrawerTile
     implements DrawerInventoryAccess, DrawerFluidAccess, DrawerTransportAccess {
 
     private final AggregatedStorage.Items items = new AggregatedStorage.Items();
     private final AggregatedStorage.Fluids fluids = new AggregatedStorage.Fluids();
-    private final AggregatedStorage.Aspects aspects = new AggregatedStorage.Aspects();
+    private final AggregatedStorage.Aspects aspects = Mods.Thaumcraft.isModLoaded() ? new AggregatedStorage.Aspects()
+        : null;
     private final DrawerFluidHandler fluidPort = new DrawerFluidHandler(fluids);
-    private final DrawerEssentiaTransport aspectPort = new DrawerEssentiaTransport(this, this::getAspectHandler);
+    private DrawerEssentiaTransport aspectPort;
     private final List<IBigItemHandler> itemHandlers = new ArrayList<>();
     private final List<IBigFluidHandler> fluidHandlers = new ArrayList<>();
     private final List<IBigAspectHandler> aspectHandlers = new ArrayList<>();
@@ -61,7 +67,7 @@ public abstract class StorageNetworkTile extends ControllableDrawerTile
         }
         if (items.rebuild(itemHandlers)) inventory = null;
         fluids.rebuild(fluidHandlers);
-        aspects.rebuild(aspectHandlers);
+        if (aspects != null) aspects.rebuild(aspectHandlers);
     }
 
     @Override
@@ -97,8 +103,10 @@ public abstract class StorageNetworkTile extends ControllableDrawerTile
     }
 
     @Override
+    @Optional.Method(modid = "Thaumcraft")
     public IEssentiaTransport getEssentiaTransport() {
         refreshNetwork();
+        if (aspectPort == null) aspectPort = new DrawerEssentiaTransport(this, this::getAspectHandler);
         return aspectPort;
     }
 
@@ -127,7 +135,7 @@ public abstract class StorageNetworkTile extends ControllableDrawerTile
         if (inventory instanceof DrawerItemInventory view) view.flushChanges();
         items.rebuild(List.of());
         fluids.rebuild(List.of());
-        aspects.rebuild(List.of());
+        if (aspects != null) aspects.rebuild(List.of());
         itemHandlers.clear();
         fluidHandlers.clear();
         aspectHandlers.clear();

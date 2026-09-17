@@ -44,8 +44,7 @@ public class AggregatedStorage<S extends StorageSnapshot<S, K>, K extends Storag
         List<IStorageHandler<S, K>> unique = scratch;
         unique.clear();
         identities.clear();
-        for (int candidate = 0; candidate < candidates.size(); candidate++) {
-            IStorageHandler<S, K> child = candidates.get(candidate);
+        for (IStorageHandler<S, K> child : candidates) {
             if (child != null && child != this && identities.add(child.getStorageIdentity())) unique.add(child);
         }
         boolean changed = !unique.equals(children);

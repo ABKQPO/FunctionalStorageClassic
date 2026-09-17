@@ -5,12 +5,14 @@ import com.hfstudio.functionalstorage.common.block.base.DrawerBlock;
 import com.hfstudio.functionalstorage.common.integration.Mods;
 import com.hfstudio.functionalstorage.config.FunctionalStorageConfig;
 
+import cpw.mods.fml.common.Optional;
 import cpw.mods.fml.common.event.FMLInterModComms;
 import mcp.mobius.waila.api.IWailaDataProvider;
 import mcp.mobius.waila.api.IWailaRegistrar;
 
 public class WailaIntegration {
 
+    @Optional.Method(modid = "Waila")
     public static void callbackRegister(IWailaRegistrar registrar) {
         if (!FunctionalStorageConfig.COMPATIBILITY.enableWailaCompatibility) {
             FunctionalStorage.LOG.info("Waila integration disabled by configuration");

@@ -34,7 +34,7 @@ public class RedstoneUpgradeItem extends UpgradeItem implements IStorageUpgrade 
     }
 
     @Override
-    public void addInformation(ItemStack stack, EntityPlayer player, List tooltip, boolean advanced) {
+    public void addInformation(ItemStack stack, EntityPlayer player, List<String> tooltip, boolean advanced) {
         super.addInformation(stack, player, tooltip, advanced);
         tooltip.add(StatCollector.translateToLocal("item.utility.slot") + getSlot(stack));
         tooltip.add(StatCollector.translateToLocal("item.utility.direction.desc"));

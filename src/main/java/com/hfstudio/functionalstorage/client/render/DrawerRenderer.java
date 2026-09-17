@@ -37,6 +37,7 @@ import com.hfstudio.functionalstorage.config.FunctionalStorageConfig;
 import com.hfstudio.functionalstorage.misc.RegistrationHandler;
 import com.hfstudio.functionalstorage.util.HitBoxesUtil;
 
+import cpw.mods.fml.common.Optional;
 import thaumcraft.api.aspects.Aspect;
 
 /** Renders contents in the same face coordinates used by placement and interaction. */
@@ -171,6 +172,7 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
         }
     }
 
+    @Optional.Method(modid = "Thaumcraft")
     private void renderAspectSlots(@Nonnull IBigAspectHandler handler, @Nonnull DrawerFaceLayout layout,
         @Nonnull DrawerOptions options) {
         for (int slot = 0; slot < Math.min(layout.getSlotCount(), handler.getStorageCount()); slot++) {
@@ -304,6 +306,7 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
      * @param centerY local y of the slot centre
      * @param scale   icon scale relative to one block
      */
+    @Optional.Method(modid = "Thaumcraft")
     private void renderAspect(Aspect aspect, float centerX, float centerY, float scale) {
         ResourceLocation image = aspect.getImage();
         if (image == null) {

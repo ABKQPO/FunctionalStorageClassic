@@ -14,18 +14,22 @@ import com.hfstudio.functionalstorage.api.storage.BigAspectStack;
 import com.hfstudio.functionalstorage.api.storage.BigFluidStack;
 import com.hfstudio.functionalstorage.api.storage.BigItemStack;
 import com.hfstudio.functionalstorage.common.block.base.DrawerBlock;
+import com.hfstudio.functionalstorage.common.integration.Mods;
 import com.hfstudio.functionalstorage.common.tile.EssentiaDrawerTile;
 import com.hfstudio.functionalstorage.common.tile.FluidDrawerTile;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 
+import cpw.mods.fml.common.Optional;
 import mcp.mobius.waila.api.IWailaConfigHandler;
 import mcp.mobius.waila.api.IWailaDataAccessor;
 import mcp.mobius.waila.api.IWailaDataProvider;
 import mcp.mobius.waila.api.IWailaRegistrar;
 
 /** Reports drawer contents, capacity, and lock state through Waila. */
+@Optional.Interface(iface = "mcp.mobius.waila.api.IWailaDataProvider", modid = "Waila", striprefs = true)
 public class DrawerWailaProvider implements IWailaDataProvider {
 
+    @Optional.Method(modid = "Waila")
     public static void register(IWailaRegistrar registrar) {
         DrawerWailaProvider provider = new DrawerWailaProvider();
         registrar.registerBodyProvider(provider, DrawerBlock.class);
@@ -33,17 +37,20 @@ public class DrawerWailaProvider implements IWailaDataProvider {
     }
 
     @Override
+    @Optional.Method(modid = "Waila")
     public ItemStack getWailaStack(IWailaDataAccessor accessor, IWailaConfigHandler config) {
         return null;
     }
 
     @Override
+    @Optional.Method(modid = "Waila")
     public List<String> getWailaHead(ItemStack itemStack, List<String> tooltip, IWailaDataAccessor accessor,
         IWailaConfigHandler config) {
         return tooltip;
     }
 
     @Override
+    @Optional.Method(modid = "Waila")
     public List<String> getWailaBody(ItemStack itemStack, List<String> tooltip, IWailaDataAccessor accessor,
         IWailaConfigHandler config) {
         NBTTagCompound tag = accessor.getNBTData();
@@ -77,12 +84,14 @@ public class DrawerWailaProvider implements IWailaDataProvider {
     }
 
     @Override
+    @Optional.Method(modid = "Waila")
     public List<String> getWailaTail(ItemStack itemStack, List<String> tooltip, IWailaDataAccessor accessor,
         IWailaConfigHandler config) {
         return tooltip;
     }
 
     @Override
+    @Optional.Method(modid = "Waila")
     public NBTTagCompound getNBTData(EntityPlayerMP player, TileEntity tile, NBTTagCompound tag, World world, int x,
         int y, int z) {
         if (!(tile instanceof ControllableDrawerTile drawer)) {
@@ -105,7 +114,7 @@ public class DrawerWailaProvider implements IWailaDataProvider {
 
         if (tile instanceof FluidDrawerTile) {
             writeFluidTanks((FluidDrawerTile) tile, tag);
-        } else if (tile instanceof EssentiaDrawerTile) {
+        } else if (Mods.Thaumcraft.isModLoaded() && tile instanceof EssentiaDrawerTile) {
             writeAspectSlots((EssentiaDrawerTile) tile, tag);
         } else {
             writeItemSlots(drawer, tag);
@@ -158,6 +167,7 @@ public class DrawerWailaProvider implements IWailaDataProvider {
         }
     }
 
+    @Optional.Method(modid = "Thaumcraft")
     private void writeAspectSlots(EssentiaDrawerTile tile, NBTTagCompound tag) {
         int count = tile.getAspectHandler()
             .getStorageCount();

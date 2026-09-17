@@ -14,13 +14,17 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 
 import com.hfstudio.functionalstorage.api.storage.BigItemStack;
+import com.hfstudio.functionalstorage.api.storage.IBigItemHandler;
 import com.hfstudio.functionalstorage.api.storage.StorageSubscription;
 import com.hfstudio.functionalstorage.common.tile.ArmoryCabinetTile;
 
-public class ContainerArmory extends Container implements MenuSettingsReceiver {
+import lombok.Getter;
+
+public class ContainerArmory extends Container implements MenuSettingsReceiver, StorageTransferMenu {
 
     public static final int COLUMNS = 8;
     public static final int VISIBLE_SLOTS = 32;
+    @Getter
     private final ArmoryCabinetTile tile;
     private final InventoryBasic display = new InventoryBasic("Armory", false, VISIBLE_SLOTS);
     private final List<Integer> filtered = new ArrayList<>();
@@ -32,6 +36,7 @@ public class ContainerArmory extends Container implements MenuSettingsReceiver {
     private int lastMaxRow = -1;
     private boolean dirty = true;
     private BitSet searchMatches;
+    @Getter
     private int searchRevision;
 
     @Override
@@ -64,12 +69,27 @@ public class ContainerArmory extends Container implements MenuSettingsReceiver {
         return maxRow;
     }
 
-    public int getSearchRevision() {
-        return searchRevision;
+    @Override
+    public IBigItemHandler getTransferStorage() {
+        return tile.getItemHandler();
     }
 
-    public ArmoryCabinetTile getTile() {
-        return tile;
+    @Override
+    public int getTransferSlotCount() {
+        if (dirty) rebuild();
+        return VISIBLE_SLOTS;
+    }
+
+    @Override
+    public int getTransferSlot(int menuSlot) {
+        return menuSlot >= 0 && menuSlot < VISIBLE_SLOTS ? physicalSlot(menuSlot) : -1;
+    }
+
+    private int physicalSlot(int visible) {
+        int index = row * COLUMNS + visible;
+        if (query.isEmpty()) return index < tile.getItemHandler()
+            .getStorageCount() ? index : -1;
+        return index < filtered.size() ? filtered.get(index) : -1;
     }
 
     public void applySearch(int requestedRow, String text, int[] matches) {
@@ -89,30 +109,28 @@ public class ContainerArmory extends Container implements MenuSettingsReceiver {
     }
 
     private void rebuild() {
+        dirty = false;
         if (tile.getWorldObj().isRemote) return;
         filtered.clear();
-        for (int index = 0; index < tile.getItemHandler()
+        if (!query.isEmpty()) for (int index = 0; index < tile.getItemHandler()
             .getStorageCount(); index++) {
-            if (query.isEmpty()) {
-                filtered.add(index);
-                continue;
-            }
-            BigItemStack stored = tile.getItemHandler()
-                .getSnapshot(index);
-            if (stored.hasTemplate()) {
-                if (searchMatches != null) {
-                    if (searchMatches.get(index)) filtered.add(index);
-                    continue;
+                BigItemStack stored = tile.getItemHandler()
+                    .getSnapshot(index);
+                if (stored.hasTemplate()) {
+                    if (searchMatches != null) {
+                        if (searchMatches.get(index)) filtered.add(index);
+                        continue;
+                    }
+                    ItemStack item = stored.getTemplate();
+                    String name = item.getDisplayName() + " " + Item.itemRegistry.getNameForObject(item.getItem());
+                    if (name.toLowerCase(Locale.ROOT)
+                        .contains(query)) filtered.add(index);
                 }
-                ItemStack item = stored.getTemplate();
-                String name = item.getDisplayName() + " " + Item.itemRegistry.getNameForObject(item.getItem());
-                if (name.toLowerCase(Locale.ROOT)
-                    .contains(query)) filtered.add(index);
             }
-        }
-        maxRow = Math.max(0, (filtered.size() + COLUMNS - 1) / COLUMNS - 4);
+        int count = query.isEmpty() ? tile.getItemHandler()
+            .getStorageCount() : filtered.size();
+        maxRow = Math.max(0, (count + COLUMNS - 1) / COLUMNS - 4);
         row = Math.min(row, maxRow);
-        dirty = false;
     }
 
     @Override
@@ -136,8 +154,8 @@ public class ContainerArmory extends Container implements MenuSettingsReceiver {
         if (dirty) rebuild();
         super.detectAndSendChanges();
         if (row == lastRow && maxRow == lastMaxRow) return;
-        for (Object object : crafters) {
-            ICrafting crafter = (ICrafting) object;
+        for (ICrafting object : crafters) {
+            ICrafting crafter = object;
             crafter.sendProgressBarUpdate(this, 0, row);
             crafter.sendProgressBarUpdate(this, 1, maxRow);
         }
@@ -195,8 +213,7 @@ public class ContainerArmory extends Container implements MenuSettingsReceiver {
         }
 
         private int index() {
-            int index = row * COLUMNS + visible;
-            return index < filtered.size() ? filtered.get(index) : -1;
+            return physicalSlot(visible);
         }
 
         @Override

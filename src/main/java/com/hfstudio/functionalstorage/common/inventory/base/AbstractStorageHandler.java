@@ -220,9 +220,7 @@ public abstract class AbstractStorageHandler<S extends StorageSnapshot<S, K>, K 
     }
 
     public final void deserializeNBT(@Nullable NBTTagCompound tag) {
-        S[] previousTemplates = copyTemplates();
-        long[] previousAmounts = amounts.clone();
-        S[] restoredTemplates = copyTemplates();
+        S[] restoredTemplates = templates.clone();
         Arrays.fill(restoredTemplates, resource.empty());
         long[] restoredAmounts = new long[amounts.length];
 
@@ -246,11 +244,7 @@ public abstract class AbstractStorageHandler<S extends StorageSnapshot<S, K>, K 
 
         boolean changed = false;
         for (int index = 0; index < templates.length; index++) {
-            if (!sameSlot(
-                previousTemplates[index],
-                previousAmounts[index],
-                restoredTemplates[index],
-                restoredAmounts[index])) {
+            if (!sameSlot(templates[index], amounts[index], restoredTemplates[index], restoredAmounts[index])) {
                 changed = true;
             }
             templates[index] = restoredTemplates[index];
@@ -333,10 +327,6 @@ public abstract class AbstractStorageHandler<S extends StorageSnapshot<S, K>, K 
 
     private boolean configuredAt(int index) {
         return resource.hasTemplate(templates[index]);
-    }
-
-    private S[] copyTemplates() {
-        return templates.clone();
     }
 
     private boolean isValidIndex(int index) {

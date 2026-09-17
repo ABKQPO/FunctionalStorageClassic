@@ -20,6 +20,7 @@ import appeng.api.storage.IMEInventoryHandler;
 import appeng.api.storage.StorageChannel;
 import appeng.api.storage.data.IAEItemStack;
 import appeng.api.storage.data.IItemList;
+import cpw.mods.fml.common.Optional;
 import lombok.Getter;
 
 /**
@@ -28,6 +29,7 @@ import lombok.Getter;
  * physical slots is presented and injection and extraction are routed back
  * through the generic handler.
  */
+@Optional.Interface(iface = "appeng.api.storage.IMEInventoryHandler", modid = "appliedenergistics2", striprefs = true)
 public class DrawerMEInventoryHandler implements IMEInventoryHandler<IAEItemStack> {
 
     @Getter
@@ -43,11 +45,13 @@ public class DrawerMEInventoryHandler implements IMEInventoryHandler<IAEItemStac
         this.priority = priority;
     }
 
+    @Optional.Method(modid = "appliedenergistics2")
     public static StorageAction actionOf(Actionable type) {
         return type == Actionable.SIMULATE ? StorageAction.SIMULATE : StorageAction.EXECUTE;
     }
 
     @Override
+    @Optional.Method(modid = "appliedenergistics2")
     public IAEItemStack injectItems(IAEItemStack input, Actionable type, BaseActionSource src) {
         if (input == null || input.getStackSize() <= 0 || input.getItemStack() == null) {
             return null;
@@ -64,6 +68,7 @@ public class DrawerMEInventoryHandler implements IMEInventoryHandler<IAEItemStac
     }
 
     @Override
+    @Optional.Method(modid = "appliedenergistics2")
     public IAEItemStack extractItems(IAEItemStack request, Actionable mode, BaseActionSource src) {
         if (request == null || request.getStackSize() <= 0 || request.getItemStack() == null) {
             return null;
@@ -80,6 +85,7 @@ public class DrawerMEInventoryHandler implements IMEInventoryHandler<IAEItemStac
     }
 
     @Override
+    @Optional.Method(modid = "appliedenergistics2")
     public IItemList<IAEItemStack> getAvailableItems(IItemList<IAEItemStack> out) {
         for (ItemStorageView view : ItemStorageView.storages(handler)) {
             ItemStack template = view.getSnapshot()
@@ -102,21 +108,25 @@ public class DrawerMEInventoryHandler implements IMEInventoryHandler<IAEItemStac
     }
 
     @Override
+    @Optional.Method(modid = "appliedenergistics2")
     public StorageChannel getChannel() {
         return StorageChannel.ITEMS;
     }
 
     @Override
+    @Optional.Method(modid = "appliedenergistics2")
     public AccessRestriction getAccess() {
         return AccessRestriction.READ_WRITE;
     }
 
     @Override
+    @Optional.Method(modid = "appliedenergistics2")
     public boolean isPrioritized(IAEItemStack input) {
         return false;
     }
 
     @Override
+    @Optional.Method(modid = "appliedenergistics2")
     public boolean canAccept(IAEItemStack input) {
         if (input == null || input.getItemStack() == null) {
             return false;
@@ -140,6 +150,7 @@ public class DrawerMEInventoryHandler implements IMEInventoryHandler<IAEItemStac
         return true;
     }
 
+    @Optional.Method(modid = "appliedenergistics2")
     public IMEInventory<IAEItemStack> asInventory() {
         return this;
     }
