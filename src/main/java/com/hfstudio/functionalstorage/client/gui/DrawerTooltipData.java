@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-import com.gtnewhorizon.gtnhlib.util.numberformatting.NumberFormatUtil;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
@@ -14,6 +13,7 @@ import net.minecraftforge.fluids.FluidStack;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.gtnewhorizon.gtnhlib.util.numberformatting.NumberFormatUtil;
 import com.hfstudio.functionalstorage.common.block.base.DrawerBlock;
 import com.hfstudio.functionalstorage.common.item.LinkingToolItem;
 import com.hfstudio.functionalstorage.common.item.upgrade.AutomationUpgradeItem;
@@ -122,7 +122,7 @@ public class DrawerTooltipData {
             if (kind == 0) {
                 ItemStack item = ItemUtil.readStack(template);
                 if (item != null) {
-                    entries.add(new Entry(item, null, null,NumberFormatUtil.formatNumberCompact(count)));
+                    entries.add(new Entry(item, null, null, NumberFormatUtil.formatNumberCompact(count)));
                 }
             } else if (kind == 1) {
                 FluidStack fluid = FluidStack.loadFluidStackFromNBT(template);

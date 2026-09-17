@@ -26,6 +26,7 @@ import com.hfstudio.functionalstorage.common.block.compact.CompactingDrawerBlock
 import com.hfstudio.functionalstorage.common.block.compact.SimpleCompactingDrawerBlock;
 import com.hfstudio.functionalstorage.common.block.controller.ControllerExtensionBlock;
 import com.hfstudio.functionalstorage.common.block.controller.DrawerControllerBlock;
+import com.hfstudio.functionalstorage.common.integration.Mods;
 import com.hfstudio.functionalstorage.common.integration.ae2.AE2Integration;
 import com.hfstudio.functionalstorage.common.item.ConfigurationToolItem;
 import com.hfstudio.functionalstorage.common.item.LinkingToolItem;
@@ -48,7 +49,6 @@ import com.hfstudio.functionalstorage.common.storage.DrawerLayout;
 import com.hfstudio.functionalstorage.common.storage.DrawerWoodType;
 import com.hfstudio.functionalstorage.config.FunctionalStorageConfig;
 
-import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.registry.GameRegistry;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
@@ -172,7 +172,7 @@ public class RegistrationHandler {
                 .getSlotCount(),
             block);
 
-        if (FunctionalStorageConfig.COMPATIBILITY.enableThaumcraftCompatibility && Loader.isModLoaded("Thaumcraft")) {
+        if (FunctionalStorageConfig.COMPATIBILITY.enableThaumcraftCompatibility && Mods.Thaumcraft.isModLoaded()) {
             for (DrawerLayout layout : DrawerLayout.values()) {
                 EssentiaDrawerBlock block = new EssentiaDrawerBlock(layout);
                 essentiaDrawers.add(block);

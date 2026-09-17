@@ -3,12 +3,12 @@ package com.hfstudio.functionalstorage.client.integration;
 import java.util.function.BiPredicate;
 
 import com.asdflj.nech.API;
-
-import cpw.mods.fml.common.Loader;
+import com.hfstudio.functionalstorage.common.integration.Mods;
 
 public class DrawerSearch {
 
-    private static final BiPredicate<String, String> MATCHER = Loader.isModLoaded("nech") ? new PinyinMatcher()
+    private static final BiPredicate<String, String> MATCHER = Mods.NeverEnoughCharacters.isModLoaded()
+        ? new PinyinMatcher()
         : String::contains;
 
     public static boolean contains(String text, String query) {

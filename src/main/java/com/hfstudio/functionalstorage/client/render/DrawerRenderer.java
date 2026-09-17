@@ -3,7 +3,6 @@ package com.hfstudio.functionalstorage.client.render;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import com.gtnewhorizon.gtnhlib.util.numberformatting.NumberFormatUtil;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.renderer.OpenGlHelper;
@@ -19,6 +18,7 @@ import net.minecraftforge.fluids.FluidStack;
 
 import org.lwjgl.opengl.GL11;
 
+import com.gtnewhorizon.gtnhlib.util.numberformatting.NumberFormatUtil;
 import com.hfstudio.functionalstorage.api.storage.BigAspectStack;
 import com.hfstudio.functionalstorage.api.storage.BigFluidStack;
 import com.hfstudio.functionalstorage.api.storage.BigItemStack;
@@ -128,10 +128,19 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
                 renderStack(snapshot.getTemplate(), centerX, centerY, iconScale(layout));
             }
             if (options.isShowItemCount()) {
-                renderText(NumberFormatUtil.formatNumberCompact(snapshot.getAmount()), centerX, centerY);
+                renderText(
+                    NumberFormatUtil.formatNumberCompact(snapshot.getAmount()),
+                    centerX,
+                    centerY,
+                    iconScale(layout));
             }
             if (options.getAdvancedValue(ConfigurationToolItem.ConfigurationAction.INDICATOR) != 0) {
-                renderIndicator(centerX, centerY, iconScale(layout), ratio(snapshot.getAmount(), handler.getCapacity(slot)), options);
+                renderIndicator(
+                    centerX,
+                    centerY,
+                    iconScale(layout),
+                    ratio(snapshot.getAmount(), handler.getCapacity(slot)),
+                    options);
             }
         }
     }
@@ -149,10 +158,15 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
                 renderFluid(snapshot.getTemplate(), centerX, centerY, iconScale(layout));
             }
             if (options.isShowItemCount()) {
-                renderText(NumberFormatUtil.formatFluid(snapshot.getAmount()), centerX, centerY);
+                renderText(NumberFormatUtil.formatFluid(snapshot.getAmount()), centerX, centerY, iconScale(layout));
             }
             if (options.getAdvancedValue(ConfigurationToolItem.ConfigurationAction.INDICATOR) != 0) {
-                renderIndicator(centerX, centerY, iconScale(layout), ratio(snapshot.getAmount(), handler.getCapacity(slot)), options);
+                renderIndicator(
+                    centerX,
+                    centerY,
+                    iconScale(layout),
+                    ratio(snapshot.getAmount(), handler.getCapacity(slot)),
+                    options);
             }
         }
     }
@@ -171,10 +185,19 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
                 renderAspect(aspect, centerX, centerY, iconScale(layout));
             }
             if (options.isShowItemCount()) {
-                renderText(NumberFormatUtil.formatNumberCompact(snapshot.getAmount()), centerX, centerY);
+                renderText(
+                    NumberFormatUtil.formatNumberCompact(snapshot.getAmount()),
+                    centerX,
+                    centerY,
+                    iconScale(layout));
             }
             if (options.getAdvancedValue(ConfigurationToolItem.ConfigurationAction.INDICATOR) != 0) {
-                renderIndicator(centerX, centerY, iconScale(layout), ratio(snapshot.getAmount(), handler.getCapacity(slot)), options);
+                renderIndicator(
+                    centerX,
+                    centerY,
+                    iconScale(layout),
+                    ratio(snapshot.getAmount(), handler.getCapacity(slot)),
+                    options);
             }
         }
     }
@@ -314,7 +337,7 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
         FontRenderer font = Minecraft.getMinecraft().fontRenderer;
         int width = font.getStringWidth(text);
         GL11.glPushMatrix();
-        GL11.glTranslatef(centerX, centerY + iconScale / 2F + 0.035F, Z_TEXT);
+        GL11.glTranslatef(centerX, centerY + (iconScale > 0.25F ? 0.34F : 0.16F), Z_TEXT);
         GL11.glScalef(TEXT_SCALE, TEXT_SCALE, TEXT_SCALE);
         GL11.glDisable(GL11.GL_LIGHTING);
         font.drawStringWithShadow(text, -width / 2, 0, 0xFFFFFF);
@@ -328,7 +351,7 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
             return;
         }
         GL11.glPushMatrix();
-        GL11.glTranslatef(centerX, centerY + iconScale * 0.64F + 0.06F, Z_INDICATOR);
+        GL11.glTranslatef(centerX, centerY + (iconScale > 0.25F ? 0.425F : 0.22F), Z_INDICATOR);
         GL11.glDisable(GL11.GL_LIGHTING);
         GL11.glDisable(GL11.GL_TEXTURE_2D);
         Tessellator tessellator = Tessellator.instance;

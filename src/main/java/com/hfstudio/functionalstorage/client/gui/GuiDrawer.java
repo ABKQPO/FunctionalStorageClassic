@@ -196,7 +196,7 @@ public class GuiDrawer extends GuiContainer {
                     + NumberFormatUtil.formatNumber(
                         tile.getActiveStorage()
                             .getCapacity(slot))
-                    + (tile.getFluidHandler() == null ? "" : " L");
+                    + (tile.getFluidHandler() == null ? "" : " " + NumberFormatUtil.getFluidUnit());
                 drawHoveringText(
                     List.of(
                         name,
@@ -250,7 +250,8 @@ public class GuiDrawer extends GuiContainer {
     }
 
     private String formatAmount(long amount) {
-        return tile.getFluidHandler() == null ? NumberFormatUtil.formatNumberCompact(amount) : NumberFormatUtil.formatFluid(amount);
+        return tile.getFluidHandler() == null ? NumberFormatUtil.formatNumberCompact(amount)
+            : NumberFormatUtil.formatFluid(amount);
     }
 
     private Entry entry(int slot) {

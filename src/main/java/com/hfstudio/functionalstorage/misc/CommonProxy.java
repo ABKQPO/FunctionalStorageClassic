@@ -2,11 +2,12 @@ package com.hfstudio.functionalstorage.misc;
 
 import net.minecraftforge.common.MinecraftForge;
 
+import com.hfstudio.functionalstorage.common.integration.Mods;
 import com.hfstudio.functionalstorage.common.integration.thaumcraft.ThaumcraftIntegration;
+import com.hfstudio.functionalstorage.common.integration.waila.WailaIntegration;
 import com.hfstudio.functionalstorage.common.interaction.DrawerClickHandler;
 import com.hfstudio.functionalstorage.config.FunctionalStorageConfig;
 
-import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.event.FMLLoadCompleteEvent;
 import cpw.mods.fml.common.event.FMLMissingMappingsEvent;
@@ -16,7 +17,6 @@ import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.common.event.FMLServerStartingEvent;
 import cpw.mods.fml.common.registry.GameRegistry.Type;
 
-/** Common registration lifecycle for both physical sides. */
 public class CommonProxy {
 
     public void preInit(FMLPreInitializationEvent event) {
@@ -27,11 +27,14 @@ public class CommonProxy {
         MinecraftForge.EVENT_BUS.register(new DrawerClickHandler());
         registerRecipes();
         registerIntegrations();
+        if (Mods.Waila.isModLoaded()) {
+            WailaIntegration.register();
+        }
     }
 
     public void postInit(FMLPostInitializationEvent event) {
         FunctionalStorageRecipes.registerLateRecipes();
-        if (FunctionalStorageConfig.COMPATIBILITY.enableThaumcraftCompatibility && Loader.isModLoaded("Thaumcraft")) {
+        if (FunctionalStorageConfig.COMPATIBILITY.enableThaumcraftCompatibility && Mods.Thaumcraft.isModLoaded()) {
             ThaumcraftIntegration.register();
         }
     }

@@ -5,7 +5,6 @@ import java.util.Locale;
 
 import javax.annotation.Nonnull;
 
-import com.gtnewhorizon.gtnhlib.util.numberformatting.NumberFormatUtil;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
 import net.minecraft.item.Item;
@@ -14,6 +13,7 @@ import net.minecraft.util.StatCollector;
 import net.minecraftforge.fluids.FluidRegistry;
 import net.minecraftforge.fluids.FluidStack;
 
+import com.gtnewhorizon.gtnhlib.util.numberformatting.NumberFormatUtil;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 import com.hfstudio.functionalstorage.config.FunctionalStorageConfig;
 import com.hfstudio.functionalstorage.util.ItemUtil;
@@ -164,7 +164,7 @@ public class GenerationUpgradeItem extends AutomationUpgradeItem {
             tooltip.add(
                 StatCollector.translateToLocalFormatted(
                     "functionalupgrade.desc.generate_fluid",
-                        NumberFormatUtil.formatFluid(waterRate()),
+                    NumberFormatUtil.formatFluid(waterRate()),
                     FluidRegistry.WATER.getLocalizedName(new FluidStack(FluidRegistry.WATER, 1))));
         } else {
             ItemStack produced = kind == GenerationKind.STONE ? new ItemStack(Blocks.cobblestone) : getFilter(stack);

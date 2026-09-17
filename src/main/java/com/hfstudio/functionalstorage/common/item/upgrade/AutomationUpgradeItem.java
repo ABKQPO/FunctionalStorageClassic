@@ -15,6 +15,7 @@ import net.minecraft.util.StatCollector;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
+import com.gtnewhorizon.gtnhlib.util.numberformatting.NumberFormatUtil;
 import com.hfstudio.functionalstorage.api.upgrade.IStorageUpgrade;
 import com.hfstudio.functionalstorage.api.upgrade.UpgradeState;
 import com.hfstudio.functionalstorage.common.interaction.ToolFeedback;
@@ -235,8 +236,9 @@ public class AutomationUpgradeItem extends UpgradeItem implements IStorageUpgrad
             tooltip.add(
                 StatCollector.translateToLocalFormatted(
                     "drawer_upgrade.functionalstorage." + operation + ".fluid",
-                    (pull ? FunctionalStorageConfig.UPGRADES.upgradePullFluid
-                        : FunctionalStorageConfig.UPGRADES.upgradePushFluid) + " L"));
+                    NumberFormatUtil.formatFluid(
+                        pull ? FunctionalStorageConfig.UPGRADES.upgradePullFluid
+                            : FunctionalStorageConfig.UPGRADES.upgradePushFluid)));
             tooltip.add(
                 StatCollector.translateToLocalFormatted(
                     "drawer_upgrade.functionalstorage." + operation + ".aspect",

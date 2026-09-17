@@ -139,8 +139,8 @@ Universal Item Generation items share the configured generation interval and pro
 | Water Generation | fills a fluid drawer with water |
 | Stone Generation | produces cobblestone in a drawer |
 | Universal Item Generation | produces the configured item, or the upgrade's own filter |
-| Water Generator Upgrade | generates 2,000 L of water per tick |
-| Dripping Upgrade | generates 20 L of lava every 20 ticks |
+| Water Generator Upgrade | generates two buckets of water per tick |
+| Dripping Upgrade | generates 1/50 bucket of lava every 20 ticks |
 | Obsidian Upgrade | generates one obsidian every 300 ticks |
 
 The dripping recipe uses netherrack in place of pointed dripstone, which does not exist in 1.7.10.
@@ -311,6 +311,8 @@ projects, all of which permit reuse under the terms below.
 ### Menus and previews
 
 Drawer menus use the drawer front texture and vanilla inventory slot textures. Upgrade headings appear only when the corresponding slots exist. Upgrade menus provide direct drawer-slot selection, nine ghost filters, direction controls, tool/speed attachments, and return navigation. Armory cabinets support localized tooltip search and scrolling through all slots; item IDs can be used for language-independent search. Installing NeverEnoughCharacters-Rework on the client also enables its pinyin search and configured matching rules. Priority is synchronized by the server and orders controller routing. Saved-content tooltips use compact item previews with overlaid amounts.
+
+In drawer menus, left-click deposits the entire cursor stack or takes one normal stack. Right-click deposits one item or takes half of a normal stack, rounded up. Shift-click first merges into matching storage slots. Fluid containers and Thaumcraft phials can deposit and extract through the corresponding menu slots. Amounts use GTNHLib formatting, and fluid units follow its global L/mB setting (1,000 units per bucket). Linking and configuration feedback appears above the hotbar. Block contents default to a uniformly scaled 3D display; the client configuration also provides a flat display.
 
 The seven framed compacting, fluid and controller variants use the modern upstream model parts and retain their chosen materials across placement, rotation and saves. Ender frequencies share lock and void policies; storage upgrades cannot be newly installed in Ender drawers.
 

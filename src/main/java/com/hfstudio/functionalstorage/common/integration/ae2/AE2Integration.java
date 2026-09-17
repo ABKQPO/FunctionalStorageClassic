@@ -1,11 +1,11 @@
 package com.hfstudio.functionalstorage.common.integration.ae2;
 
 import com.hfstudio.functionalstorage.FunctionalStorage;
+import com.hfstudio.functionalstorage.common.integration.Mods;
 import com.hfstudio.functionalstorage.config.FunctionalStorageConfig;
 
 import appeng.api.AEApi;
 import appeng.api.storage.IExternalStorageRegistry;
-import cpw.mods.fml.common.Loader;
 
 /** Optional AE2 external storage registration. */
 public class AE2Integration {
@@ -17,7 +17,7 @@ public class AE2Integration {
             FunctionalStorage.LOG.info("Applied Energistics 2 integration disabled by configuration");
             return;
         }
-        if (!Loader.isModLoaded("appliedenergistics2")) {
+        if (!Mods.AE2.isModLoaded()) {
             FunctionalStorage.LOG.info("Applied Energistics 2 is not installed; skipping the storage bridge");
             return;
         }

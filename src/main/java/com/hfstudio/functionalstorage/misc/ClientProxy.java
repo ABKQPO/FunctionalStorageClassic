@@ -8,14 +8,13 @@ import com.hfstudio.functionalstorage.client.gui.DrawerGuiTextures;
 import com.hfstudio.functionalstorage.client.gui.DrawerTooltipRenderer;
 import com.hfstudio.functionalstorage.client.integration.NEIGuiIntegration;
 import com.hfstudio.functionalstorage.client.render.LinkingToolOverlay;
+import com.hfstudio.functionalstorage.common.integration.Mods;
 
-import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.event.FMLLoadCompleteEvent;
 import cpw.mods.fml.common.event.FMLPostInitializationEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 
-/** Registers client rendering after common content initialization. */
 public class ClientProxy extends CommonProxy {
 
     @Override
@@ -32,7 +31,7 @@ public class ClientProxy extends CommonProxy {
         super.init(event);
         MinecraftForge.EVENT_BUS.register(new DrawerTooltipRenderer());
         MinecraftForge.EVENT_BUS.register(new LinkingToolOverlay());
-        if (Loader.isModLoaded("NotEnoughItems")) NEIGuiIntegration.register();
+        if (Mods.NotEnoughItems.isModLoaded()) NEIGuiIntegration.register();
         DrawerClientRegistry.registerBlockColors();
     }
 

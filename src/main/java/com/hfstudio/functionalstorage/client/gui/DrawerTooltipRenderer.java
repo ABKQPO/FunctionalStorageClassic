@@ -28,6 +28,7 @@ import com.hfstudio.functionalstorage.common.block.base.DrawerBlock;
 import com.hfstudio.functionalstorage.common.item.LayeredToolItem;
 import com.hfstudio.functionalstorage.common.item.upgrade.UpgradeItem;
 
+import cpw.mods.fml.common.eventhandler.EventPriority;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
@@ -40,30 +41,32 @@ public class DrawerTooltipRenderer extends Gui {
     private List<Section> cachedSections = List.of();
     private final RenderItem itemRenderer = new RenderItem();
 
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
     public void onItemTooltip(ItemTooltipEvent event) {
-        if (!(event.itemStack.getItem() instanceof ItemBlock item) || !(item.field_150939_a instanceof DrawerBlock))
-            return;
-        event.toolTip.add(EnumChatFormatting.GRAY + StatCollector.translateToLocal("gui.functionalstorage.open_gui"));
-        if (item.field_150939_a instanceof FramedBlock) {
-            for (String line : StatCollector.translateToLocal("frameddrawer.use")
-                .replace("\\n", "\n")
-                .split("\n")) {
-                event.toolTip.add(EnumChatFormatting.GRAY + line);
+        if (event.itemStack.getItem() instanceof ItemBlock item && item.field_150939_a instanceof DrawerBlock) {
+            event.toolTip
+                .add(EnumChatFormatting.GRAY + StatCollector.translateToLocal("gui.functionalstorage.open_gui"));
+            if (item.field_150939_a instanceof FramedBlock) {
+                for (String line : StatCollector.translateToLocal("frameddrawer.use")
+                    .replace("\\n", "\n")
+                    .split("\n")) {
+                    event.toolTip.add(EnumChatFormatting.GRAY + line);
+                }
             }
+        }
+        List<Section> sections = sectionsFor(event.itemStack);
+        if (!sections.isEmpty()) {
+            event.toolTip.add(
+                EnumChatFormatting.GOLD + StatCollector.translateToLocal(
+                    sections.get(0)
+                        .title()));
         }
     }
 
     @SubscribeEvent
     public void onTooltip(RenderTooltipEvent event) {
         if (event.itemStack == null) return;
-        if (cachedStack != event.itemStack || !Objects.equals(cachedTag, event.itemStack.getTagCompound())) {
-            cachedStack = event.itemStack;
-            cachedTag = cachedStack.hasTagCompound() ? (NBTTagCompound) cachedStack.getTagCompound()
-                .copy() : null;
-            cachedSections = DrawerTooltipData.read(cachedStack);
-        }
-        List<Section> sections = cachedSections;
+        List<Section> sections = sectionsFor(event.itemStack);
         if ((!sections.isEmpty() || event.itemStack.getItem() instanceof LayeredToolItem
             || event.itemStack.getItem() instanceof UpgradeItem
             || event.itemStack.getItem() instanceof ItemBlock item && item.field_150939_a instanceof DrawerBlock)
@@ -72,16 +75,42 @@ public class DrawerTooltipRenderer extends Gui {
         }
     }
 
+    private List<Section> sectionsFor(ItemStack stack) {
+        if (!(stack.getItem() instanceof LayeredToolItem) && !(stack.getItem() instanceof UpgradeItem)
+            && !(stack.getItem() instanceof ItemBlock item && item.field_150939_a instanceof DrawerBlock)) {
+            return List.of();
+        }
+        if (cachedStack != stack || !Objects.equals(cachedTag, stack.getTagCompound())) {
+            cachedStack = stack;
+            cachedTag = cachedStack.hasTagCompound() ? (NBTTagCompound) cachedStack.getTagCompound()
+                .copy() : null;
+            cachedSections = DrawerTooltipData.read(cachedStack);
+        }
+        return cachedSections;
+    }
+
     public void draw(RenderTooltipEvent event, List<String> original, List<Section> sections) {
         List<String> lines = new ArrayList<>();
         int maxWidth = Math.max(80, Math.min(300, event.gui.width - 20));
         int width = 0;
+        String previewTitle = sections.isEmpty() ? null
+            : StatCollector.translateToLocal(
+                sections.get(0)
+                    .title());
+        int previewIndex = -1;
         for (String line : original) {
+            if (previewIndex < 0 && previewTitle != null
+                && !lines.isEmpty()
+                && previewTitle.equals(EnumChatFormatting.getTextWithoutFormattingCodes(line))) {
+                previewIndex = lines.size();
+                continue;
+            }
             for (String wrapped : event.font.listFormattedStringToWidth(line, maxWidth)) {
                 lines.add(wrapped);
                 width = Math.max(width, event.font.getStringWidth(wrapped));
             }
         }
+        if (previewIndex < 0) previewIndex = sections.isEmpty() ? lines.size() : Math.min(1, lines.size());
         int columns = Math.max(1, Math.min(9, maxWidth / 20));
         int remaining = Math.max(0, event.gui.height - 16 - lines.size() * 10 - sections.size() * 13 - 12);
         List<Section> visible = new ArrayList<>(sections.size());
@@ -141,8 +170,8 @@ public class DrawerTooltipRenderer extends Gui {
             drawGradientRect(x - 3, y - 2, x - 2, y + height + 2, event.borderStart, event.borderEnd);
             drawGradientRect(x + width + 2, y - 2, x + width + 3, y + height + 2, event.borderStart, event.borderEnd);
             GL11.glTranslatef(0F, 0F, 310F);
-            for (String line : lines) {
-                event.font.drawStringWithShadow(line, x, y, 0xFFFFFF);
+            for (int index = 0; index < previewIndex; index++) {
+                event.font.drawStringWithShadow(lines.get(index), x, y, 0xFFFFFF);
                 y += 10;
             }
             y += 2;
@@ -162,7 +191,14 @@ public class DrawerTooltipRenderer extends Gui {
                     .size() + columns
                     - 1) / columns) * 20;
             }
-            if (hidden > 0) event.font.drawStringWithShadow(overflow, x, y + 2, 0xAAAAAA);
+            if (hidden > 0) {
+                event.font.drawStringWithShadow(overflow, x, y + 2, 0xAAAAAA);
+                y += 12;
+            }
+            for (int index = previewIndex; index < lines.size(); index++) {
+                event.font.drawStringWithShadow(lines.get(index), x, y, 0xFFFFFF);
+                y += 10;
+            }
         } finally {
             itemRenderer.zLevel = oldZ;
             zLevel = 0F;
@@ -225,14 +261,11 @@ public class DrawerTooltipRenderer extends Gui {
             if (!entry.amount()
                 .isEmpty()) {
                 GL11.glTranslatef(0, 0, 250);
-                float scale = Math.min(1F, 18F / Math.max(1, minecraft.fontRenderer.getStringWidth(entry.amount())));
+                int textWidth = minecraft.fontRenderer.getStringWidth(entry.amount());
+                float scale = Math.min(1F, 18F / Math.max(1, textWidth));
                 GL11.glTranslatef(x + 17, y + 17 - 8 * scale, 0);
                 GL11.glScalef(scale, scale, 1);
-                minecraft.fontRenderer.drawStringWithShadow(
-                    entry.amount(),
-                    -minecraft.fontRenderer.getStringWidth(entry.amount()),
-                    0,
-                    0xFFFFFF);
+                minecraft.fontRenderer.drawStringWithShadow(entry.amount(), -textWidth, 0, 0xFFFFFF);
             }
         } finally {
             itemRenderer.zLevel = oldZ;

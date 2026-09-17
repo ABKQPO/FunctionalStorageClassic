@@ -54,7 +54,8 @@ public class ContainerDrawer extends Container implements MenuSettingsReceiver {
                 MAX_VISIBLE_STORAGE_SLOTS);
         this.display = new InventoryBasic("Drawer", false, storageSlotCount);
         this.subscription = tile.getItemHandler() == null || tile.getWorldObj().isRemote ? StorageSubscription.CLOSED
-            : tile.getItemHandler().subscribe(change -> displayDirty = true);
+            : tile.getItemHandler()
+                .subscribe(change -> displayDirty = true);
         int storageSlots = visibleStorageSlots();
         this.layout = new DrawerGuiLayout(storageSlots, ((DrawerBlock) tile.getBlockType()).getFaceLayout());
         IInventory storage = display;
@@ -161,7 +162,7 @@ public class ContainerDrawer extends Container implements MenuSettingsReceiver {
         boolean storage = index >= 0 && index < storageSlotCount;
         if (mode == 5) return super.slotClick(index, button, mode, player);
         if (!storage && mode != 1 && mode != 6) return super.slotClick(index, button, mode, player);
-        if (tile.getWorldObj().isRemote || !canInteractWith(player)) return null;
+        if (tile.getWorldObj().isRemote) return null;
         func_94533_d();
         if (mode == 1 && (button == 0 || button == 1)) {
             transferStackInSlot(player, index);
@@ -259,7 +260,7 @@ public class ContainerDrawer extends Container implements MenuSettingsReceiver {
         detectAndSendChanges();
         // Vanilla suppresses cursor updates after accepting a click transaction.
         if (player instanceof EntityPlayerMP serverPlayer && serverPlayer.playerNetServerHandler != null) {
-            serverPlayer.sendContainerAndContentsToPlayer(this, getInventory());
+            serverPlayer.updateHeldItem();
         }
     }
 

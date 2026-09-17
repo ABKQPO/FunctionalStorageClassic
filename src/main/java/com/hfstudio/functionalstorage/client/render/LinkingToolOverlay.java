@@ -2,6 +2,7 @@ package com.hfstudio.functionalstorage.client.render;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.RenderGlobal;
+import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
@@ -83,15 +84,16 @@ public class LinkingToolOverlay {
                     0xFF00FFAA);
             }
             int range = controller.getLinkingRange();
-            RenderGlobal.drawOutlinedBoundingBox(
-                AxisAlignedBB.getBoundingBox(
-                    target[0] - range - 0.002D,
-                    Math.max(0, target[1] - range) - 0.002D,
-                    target[2] - range - 0.002D,
-                    target[0] + range + 1.002D,
-                    Math.min(256, target[1] + range + 1) + 0.002D,
-                    target[2] + range + 1.002D),
-                0x80FF80);
+            AxisAlignedBB area = AxisAlignedBB.getBoundingBox(
+                target[0] - range - 0.002D,
+                Math.max(0, target[1] - range) - 0.002D,
+                target[2] - range - 0.002D,
+                target[0] + range + 1.002D,
+                Math.min(256, target[1] + range + 1) + 0.002D,
+                target[2] + range + 1.002D);
+            fill(area);
+            GL11.glDisable(GL11.GL_DEPTH_TEST);
+            RenderGlobal.drawOutlinedBoundingBox(area, 0x80FF80);
         } finally {
             GL11.glPopMatrix();
             GL11.glPopAttrib();
@@ -102,5 +104,39 @@ public class LinkingToolOverlay {
         RenderGlobal.drawOutlinedBoundingBox(
             AxisAlignedBB.getBoundingBox(x - 0.002D, y - 0.002D, z - 0.002D, x + 1.002D, y + 1.002D, z + 1.002D),
             color);
+    }
+
+    private void fill(AxisAlignedBB area) {
+        GL11.glEnable(GL11.GL_DEPTH_TEST);
+        GL11.glDepthFunc(GL11.GL_LEQUAL);
+        GL11.glDisable(GL11.GL_CULL_FACE);
+        Tessellator tessellator = Tessellator.instance;
+        tessellator.startDrawingQuads();
+        tessellator.setColorRGBA_F(0.5F, 1F, 0.5F, 0.25F);
+        tessellator.addVertex(area.minX, area.minY, area.minZ);
+        tessellator.addVertex(area.minX, area.maxY, area.minZ);
+        tessellator.addVertex(area.maxX, area.maxY, area.minZ);
+        tessellator.addVertex(area.maxX, area.minY, area.minZ);
+        tessellator.addVertex(area.minX, area.minY, area.maxZ);
+        tessellator.addVertex(area.maxX, area.minY, area.maxZ);
+        tessellator.addVertex(area.maxX, area.maxY, area.maxZ);
+        tessellator.addVertex(area.minX, area.maxY, area.maxZ);
+        tessellator.addVertex(area.minX, area.minY, area.minZ);
+        tessellator.addVertex(area.maxX, area.minY, area.minZ);
+        tessellator.addVertex(area.maxX, area.minY, area.maxZ);
+        tessellator.addVertex(area.minX, area.minY, area.maxZ);
+        tessellator.addVertex(area.minX, area.maxY, area.minZ);
+        tessellator.addVertex(area.minX, area.maxY, area.maxZ);
+        tessellator.addVertex(area.maxX, area.maxY, area.maxZ);
+        tessellator.addVertex(area.maxX, area.maxY, area.minZ);
+        tessellator.addVertex(area.minX, area.minY, area.minZ);
+        tessellator.addVertex(area.minX, area.minY, area.maxZ);
+        tessellator.addVertex(area.minX, area.maxY, area.maxZ);
+        tessellator.addVertex(area.minX, area.maxY, area.minZ);
+        tessellator.addVertex(area.maxX, area.minY, area.minZ);
+        tessellator.addVertex(area.maxX, area.maxY, area.minZ);
+        tessellator.addVertex(area.maxX, area.maxY, area.maxZ);
+        tessellator.addVertex(area.maxX, area.minY, area.maxZ);
+        tessellator.draw();
     }
 }
