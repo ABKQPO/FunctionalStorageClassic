@@ -1,6 +1,8 @@
 package com.hfstudio.functionalstorage.client.render;
 
 import java.nio.FloatBuffer;
+import java.util.Map;
+import java.util.WeakHashMap;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -63,6 +65,11 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
     private static final float Z_TEXT = -0.02F;
     private static final float Z_INDICATOR = 0.004F;
     private static final float ICON_HALF_EXTENT = 0.5F;
+    private static final float FLUID_FRONT_DEPTH = -1F / 16F;
+    private static final float FLUID_BACK_DEPTH = -14F / 16F;
+    private static final float FLUID_MINIMUM_HEIGHT = 1F / 64F;
+    private static final float FLUID_INTERPOLATION_RATE = 8F;
+    private static final float MAX_FLUID_INTERPOLATION_SECONDS = 0.25F;
     private static final float INDICATOR_HALF_WIDTH = 0.18F;
     private static final float INDICATOR_HALF_HEIGHT = 0.02F;
     private static final float TEXT_SCALE = 0.01F;
@@ -70,6 +77,7 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
 
     private final FloatBuffer modelView = BufferUtils.createFloatBuffer(16);
     private final RenderBlocks inventoryBlocks = new RenderBlocks();
+    private final Map<ControllableDrawerTile, FluidRenderState> fluidRenderStates = new WeakHashMap<>();
     private final RenderItem renderer = new RenderItem() {
 
         private final RenderBlocks guiBlocks = new RenderBlocks();
@@ -192,7 +200,7 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
             if (itemHandler != null) {
                 renderItemSlots(itemHandler, layout, options);
             } else if (fluidHandler != null) {
-                renderFluidSlots(fluidHandler, layout, options);
+                renderFluidSlots(drawer, fluidHandler, layout, options);
             } else if (aspectHandler != null) {
                 renderAspectSlots(aspectHandler, layout, options);
             }
@@ -245,22 +253,39 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
         }
     }
 
-    private void renderFluidSlots(@Nonnull IBigFluidHandler handler, @Nonnull DrawerFaceLayout layout,
-        @Nonnull DrawerOptions options) {
-        for (int slot = 0; slot < Math.min(layout.getSlotCount(), handler.getStorageCount()); slot++) {
+    private void renderFluidSlots(@Nonnull ControllableDrawerTile drawer, @Nonnull IBigFluidHandler handler,
+        @Nonnull DrawerFaceLayout layout, @Nonnull DrawerOptions options) {
+        int slotCount = Math.min(layout.getSlotCount(), handler.getStorageCount());
+        FluidRenderState state = fluidRenderStates.computeIfAbsent(drawer, ignored -> new FluidRenderState());
+        state.beginFrame(slotCount);
+        for (int slot = 0; slot < slotCount; slot++) {
             BigFluidStack snapshot = handler.getSnapshot(slot);
-            if (!snapshot.hasTemplate()) {
+            boolean hasTemplate = snapshot.hasTemplate();
+            if (hasTemplate) {
+                state.setTemplate(slot, snapshot.getTemplate());
+            }
+            float fill = state.interpolate(slot, hasTemplate ? ratio(snapshot.getAmount(), handler.getCapacity(slot)) : 0F);
+            FluidStack fluid = state.getTemplate(slot);
+            if (fluid == null) continue;
+            if (!hasTemplate && fill == 0F) {
+                state.clearTemplate(slot);
                 continue;
             }
             float centerX = layout.getSlotX(slot);
             float centerY = layout.getSlotY(slot);
             if (options.isShowItemRender()) {
-                renderFluid(snapshot.getTemplate(), centerX, centerY, layout);
+                renderFluidVolume(
+                    fluid,
+                    centerX,
+                    centerY,
+                    fluidWidth(layout, slot),
+                    fluidHeight(layout),
+                    fill);
             }
-            if (options.isShowItemCount()) {
+            if (hasTemplate && options.isShowItemCount()) {
                 renderText(NumberFormatUtil.formatFluid(snapshot.getAmount()), centerX, centerY, iconScale(layout));
             }
-            if (options.getAdvancedValue(ConfigurationToolItem.ConfigurationAction.INDICATOR) != 0) {
+            if (hasTemplate && options.getAdvancedValue(ConfigurationToolItem.ConfigurationAction.INDICATOR) != 0) {
                 renderIndicator(
                     centerX,
                     centerY,
@@ -432,7 +457,68 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
         }
     }
 
-    private void renderFluid(FluidStack fluid, float centerX, float centerY, DrawerFaceLayout layout) {
+    private float fluidWidth(DrawerFaceLayout layout, int slot) {
+        return layout == DrawerFaceLayout.X_1 || layout == DrawerFaceLayout.X_2
+            || layout == DrawerFaceLayout.X_3 && slot == 0 ? 14F / 16F : 7F / 16F;
+    }
+
+    private float fluidHeight(DrawerFaceLayout layout) {
+        return layout == DrawerFaceLayout.X_1 ? 12.5F / 16F : 5.5F / 16F;
+    }
+
+    private static class FluidRenderState {
+
+        private long lastFrameNanos;
+        private float interpolationFactor = 1F;
+        private float[] fills = new float[0];
+        private boolean[] initialized = new boolean[0];
+        private FluidStack[] templates = new FluidStack[0];
+
+        private void beginFrame(int slotCount) {
+            if (fills.length != slotCount) {
+                fills = new float[slotCount];
+                initialized = new boolean[slotCount];
+                templates = new FluidStack[slotCount];
+                lastFrameNanos = 0L;
+            }
+            long now = System.nanoTime();
+            if (lastFrameNanos == 0L) {
+                interpolationFactor = 1F;
+            } else {
+                float elapsed = Math.min(MAX_FLUID_INTERPOLATION_SECONDS, (now - lastFrameNanos) / 1_000_000_000F);
+                interpolationFactor = 1F - (float) Math.exp(-FLUID_INTERPOLATION_RATE * elapsed);
+            }
+            lastFrameNanos = now;
+        }
+
+        private float interpolate(int slot, float target) {
+            if (!initialized[slot]) {
+                fills[slot] = target;
+                initialized[slot] = true;
+            } else {
+                fills[slot] += (target - fills[slot]) * interpolationFactor;
+                if (Math.abs(target - fills[slot]) < 0.0001F) {
+                    fills[slot] = target;
+                }
+            }
+            return fills[slot];
+        }
+
+        private void setTemplate(int slot, FluidStack template) {
+            templates[slot] = template;
+        }
+
+        private FluidStack getTemplate(int slot) {
+            return templates[slot];
+        }
+
+        private void clearTemplate(int slot) {
+            templates[slot] = null;
+        }
+    }
+
+    private void renderFluidVolume(FluidStack fluid, float centerX, float centerY, float width, float height,
+        float fill) {
         if (fluid == null || fluid.getFluid() == null) {
             return;
         }
@@ -441,29 +527,93 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
         if (icon == null) {
             return;
         }
-        float scale = iconScale(layout);
         int color = fluid.getFluid()
             .getColor(fluid);
-        GL11.glPushMatrix();
-        GL11.glTranslatef(centerX, centerY, Z_ICON);
-        GL11.glScalef(layout == DrawerFaceLayout.X_2 ? scale * 3 : scale, scale, 1F);
+        float left = centerX - width / 2F;
+        float right = centerX + width / 2F;
+        float bottom = centerY + height / 2F;
+        float top = bottom - Math.max(FLUID_MINIMUM_HEIGHT, height * fill);
         GL11.glDisable(GL11.GL_LIGHTING);
         GL11.glEnable(GL11.GL_BLEND);
+        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
         Minecraft.getMinecraft()
             .getTextureManager()
             .bindTexture(TextureMap.locationBlocksTexture);
-        GL11.glColor4f(((color >> 16) & 0xFF) / 255F, ((color >> 8) & 0xFF) / 255F, (color & 0xFF) / 255F, 1F);
         Tessellator tessellator = Tessellator.instance;
         tessellator.startDrawingQuads();
-        tessellator.addVertexWithUV(-ICON_HALF_EXTENT, ICON_HALF_EXTENT, 0D, icon.getMinU(), icon.getMaxV());
-        tessellator.addVertexWithUV(ICON_HALF_EXTENT, ICON_HALF_EXTENT, 0D, icon.getMaxU(), icon.getMaxV());
-        tessellator.addVertexWithUV(ICON_HALF_EXTENT, -ICON_HALF_EXTENT, 0D, icon.getMaxU(), icon.getMinV());
-        tessellator.addVertexWithUV(-ICON_HALF_EXTENT, -ICON_HALF_EXTENT, 0D, icon.getMinU(), icon.getMinV());
+        addFluidVolume(tessellator, icon, left, right, top, bottom, FLUID_FRONT_DEPTH, FLUID_BACK_DEPTH, color);
         tessellator.draw();
         GL11.glColor4f(1F, 1F, 1F, 1F);
         GL11.glDisable(GL11.GL_BLEND);
         GL11.glEnable(GL11.GL_LIGHTING);
-        GL11.glPopMatrix();
+    }
+
+    private void addFluidVolume(Tessellator tessellator, IIcon icon, float left, float right, float top, float bottom,
+        float front, float back, int color) {
+        float uLeft = icon.getInterpolatedU(0D);
+        float uRight = icon.getInterpolatedU((right - left) * 16F);
+        float vTop = icon.getInterpolatedV(0D);
+        float vBottom = icon.getInterpolatedV((bottom - top) * 16F);
+        float alpha = 1F;
+        addFluidFace(tessellator, left, right, top, bottom, front, uLeft, uRight, vTop, vBottom, color, alpha);
+        addFluidFace(tessellator, right, left, top, bottom, back, uLeft, uRight, vTop, vBottom, color, alpha * 0.8F);
+        addFluidTop(tessellator, left, right, top, front, back, uLeft, uRight, vTop, vBottom, color, alpha);
+        addFluidSide(tessellator, left, top, bottom, front, back, uLeft, uRight, vTop, vBottom, color, alpha * 0.7F);
+        addFluidSide(tessellator, right, bottom, top, front, back, uLeft, uRight, vTop, vBottom, color, alpha * 0.7F);
+        addFluidBottom(
+            tessellator,
+            left,
+            right,
+            bottom,
+            front,
+            back,
+            uLeft,
+            uRight,
+            vTop,
+            vBottom,
+            color,
+            alpha * 0.6F);
+    }
+
+    private void addFluidFace(Tessellator tessellator, float left, float right, float top, float bottom, float depth,
+        float uLeft, float uRight, float vTop, float vBottom, int color, float alpha) {
+        tintFluid(tessellator, color, alpha);
+        tessellator.addVertexWithUV(left, bottom, depth, uLeft, vBottom);
+        tessellator.addVertexWithUV(right, bottom, depth, uRight, vBottom);
+        tessellator.addVertexWithUV(right, top, depth, uRight, vTop);
+        tessellator.addVertexWithUV(left, top, depth, uLeft, vTop);
+    }
+
+    private void addFluidTop(Tessellator tessellator, float left, float right, float top, float front, float back,
+        float uLeft, float uRight, float vTop, float vBottom, int color, float alpha) {
+        tintFluid(tessellator, color, alpha);
+        tessellator.addVertexWithUV(left, top, back, uLeft, vBottom);
+        tessellator.addVertexWithUV(right, top, back, uRight, vBottom);
+        tessellator.addVertexWithUV(right, top, front, uRight, vTop);
+        tessellator.addVertexWithUV(left, top, front, uLeft, vTop);
+    }
+
+    private void addFluidSide(Tessellator tessellator, float side, float top, float bottom, float front, float back,
+        float uLeft, float uRight, float vTop, float vBottom, int color, float alpha) {
+        tintFluid(tessellator, color, alpha);
+        tessellator.addVertexWithUV(side, bottom, back, uLeft, vBottom);
+        tessellator.addVertexWithUV(side, bottom, front, uRight, vBottom);
+        tessellator.addVertexWithUV(side, top, front, uRight, vTop);
+        tessellator.addVertexWithUV(side, top, back, uLeft, vTop);
+    }
+
+    private void addFluidBottom(Tessellator tessellator, float left, float right, float bottom, float front, float back,
+        float uLeft, float uRight, float vTop, float vBottom, int color, float alpha) {
+        tintFluid(tessellator, color, alpha);
+        tessellator.addVertexWithUV(left, bottom, front, uLeft, vTop);
+        tessellator.addVertexWithUV(right, bottom, front, uRight, vTop);
+        tessellator.addVertexWithUV(right, bottom, back, uRight, vBottom);
+        tessellator.addVertexWithUV(left, bottom, back, uLeft, vBottom);
+    }
+
+    private void tintFluid(Tessellator tessellator, int color, float alpha) {
+        tessellator
+            .setColorRGBA_F((color >> 16 & 0xFF) / 255F, (color >> 8 & 0xFF) / 255F, (color & 0xFF) / 255F, alpha);
     }
 
     @Optional.Method(modid = "Thaumcraft")

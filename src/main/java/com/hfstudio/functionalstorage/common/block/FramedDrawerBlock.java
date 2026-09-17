@@ -115,7 +115,7 @@ public class FramedDrawerBlock extends DrawerBlock implements IBlockModelProvide
             return null;
         }
         for (ItemStack cell : grid) {
-            if (cell == null || cell.getItem() == null || !(cell.getItem() instanceof ItemBlock)) {
+            if (!isStyleMaterial(cell)) {
                 return null;
             }
         }
@@ -130,5 +130,10 @@ public class FramedDrawerBlock extends DrawerBlock implements IBlockModelProvide
         result.stackSize = 1;
         style.applyDrawerStyle(result);
         return result;
+    }
+
+    private static boolean isStyleMaterial(@Nullable ItemStack stack) {
+        return stack != null && stack.getItem() instanceof ItemBlock item
+            && !(item.field_150939_a instanceof DrawerBlock);
     }
 }

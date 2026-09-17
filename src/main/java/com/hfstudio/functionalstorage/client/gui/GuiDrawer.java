@@ -29,6 +29,7 @@ import com.hfstudio.functionalstorage.common.item.upgrade.AutomationUpgradeItem;
 import com.hfstudio.functionalstorage.common.item.upgrade.RedstoneUpgradeItem;
 import com.hfstudio.functionalstorage.common.network.MenuSettingsMessage;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
+import com.hfstudio.functionalstorage.common.tile.controller.DrawerControllerTile;
 import com.hfstudio.functionalstorage.common.tile.controller.StorageNetworkTile;
 import com.hfstudio.functionalstorage.misc.GuiHandler;
 
@@ -139,7 +140,12 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
             LABEL_COLOUR);
         if (priority.getVisible()) fontRendererObj
             .drawString(StatCollector.translateToLocal("gui.functionalstorage.priority"), 114, 20, LABEL_COLOUR);
-        if (tile.getStorageUpgradeSlots() > 0) fontRendererObj.drawString(
+        if (tile instanceof DrawerControllerTile) fontRendererObj.drawString(
+            StatCollector.translateToLocal("gui.functionalstorage.storage_range"),
+            10,
+            layout.upgradeY() - 11,
+            LABEL_COLOUR);
+        else if (tile.getStorageUpgradeSlots() > 0) fontRendererObj.drawString(
             StatCollector.translateToLocal("key.categories.storage"),
             10,
             layout.upgradeY() - 11,
@@ -178,8 +184,8 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
                         .getCapacity(slot));
             GL11.glPushMatrix();
             GL11.glTranslatef(0F, 0F, 200F);
-            float scale = Math.min(0.5F, 23F / Math.max(1, fontRendererObj.getStringWidth(amount)));
-            GL11.glTranslatef(x + 8, y + 13, 0);
+            float scale = Math.min(0.72F, 33.12F / Math.max(1, fontRendererObj.getStringWidth(amount)));
+            GL11.glTranslatef(x + 8, y + 16, 0);
             GL11.glScalef(scale, scale, 1F);
             fontRendererObj.drawStringWithShadow(amount, -fontRendererObj.getStringWidth(amount) / 2, 0, 0xFFFFFF);
             GL11.glPopMatrix();

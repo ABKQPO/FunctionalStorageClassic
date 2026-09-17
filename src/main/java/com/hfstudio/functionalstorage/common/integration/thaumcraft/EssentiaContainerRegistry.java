@@ -40,9 +40,13 @@ public class EssentiaContainerRegistry {
         CONTAINERS.put(item, definition);
     }
 
+    public static boolean isEssentiaContainer(ItemStack stack) {
+        return stack != null && CONTAINERS.containsKey(stack.getItem());
+    }
+
     public static boolean activate(EntityPlayer player, IBigAspectHandler handler, int slot) {
         ItemStack held = player.getHeldItem();
-        if (held == null || !CONTAINERS.containsKey(held.getItem())) {
+        if (!isEssentiaContainer(held)) {
             return false;
         }
         int transfers = held.stackSize;

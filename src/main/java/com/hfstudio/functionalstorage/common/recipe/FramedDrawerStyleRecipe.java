@@ -7,6 +7,7 @@ import net.minecraft.item.crafting.IRecipe;
 import net.minecraft.world.World;
 
 import com.hfstudio.functionalstorage.common.block.FramedBlock;
+import com.hfstudio.functionalstorage.common.block.base.DrawerBlock;
 import com.hfstudio.functionalstorage.common.storage.FramedDrawerStyle;
 
 public class FramedDrawerStyleRecipe implements IRecipe {
@@ -26,8 +27,7 @@ public class FramedDrawerStyleRecipe implements IRecipe {
                 ItemStack drawer = inventory.getStackInRowAndColumn(left, top + 1);
                 ItemStack divider = inventory.getStackInRowAndColumn(left + 1, top + 1);
                 if (!isMaterial(exterior) || !isMaterial(front)
-                    || !isMaterial(drawer)
-                    || !(((ItemBlock) drawer.getItem()).field_150939_a instanceof FramedBlock)
+                    || !isFramedDrawer(drawer)
                     || divider != null && !isMaterial(divider)) {
                     continue;
                 }
@@ -62,6 +62,11 @@ public class FramedDrawerStyleRecipe implements IRecipe {
     }
 
     private static boolean isMaterial(ItemStack stack) {
-        return stack != null && stack.getItem() instanceof ItemBlock;
+        return stack != null && stack.getItem() instanceof ItemBlock item
+            && !(item.field_150939_a instanceof DrawerBlock);
+    }
+
+    private static boolean isFramedDrawer(ItemStack stack) {
+        return stack != null && stack.getItem() instanceof ItemBlock item && item.field_150939_a instanceof FramedBlock;
     }
 }

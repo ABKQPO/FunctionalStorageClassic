@@ -9,6 +9,9 @@ public class HeldContainerExchange {
     private HeldContainerExchange() {}
 
     public static void complete(EntityPlayer player, ItemStack result) {
+        if (player.capabilities.isCreativeMode) {
+            return;
+        }
         ContainerExchange.complete(
             player,
             player.getHeldItem(),

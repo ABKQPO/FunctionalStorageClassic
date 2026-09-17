@@ -1,6 +1,10 @@
 package com.hfstudio.functionalstorage.common.integration.ae2;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import net.minecraft.item.ItemStack;
 
@@ -14,9 +18,12 @@ import com.hfstudio.functionalstorage.api.storage.TransferResult;
 import appeng.api.AEApi;
 import appeng.api.config.AccessRestriction;
 import appeng.api.config.Actionable;
+import appeng.api.config.StorageFilter;
 import appeng.api.networking.security.BaseActionSource;
+import appeng.api.networking.ticking.TickRateModulation;
 import appeng.api.storage.IMEInventory;
-import appeng.api.storage.IMEInventoryHandler;
+import appeng.api.storage.IMEMonitorHandlerReceiver;
+import appeng.api.storage.IStorageBusMonitor;
 import appeng.api.storage.StorageChannel;
 import appeng.api.storage.data.IAEItemStack;
 import appeng.api.storage.data.IItemList;
@@ -29,12 +36,15 @@ import lombok.Getter;
  * physical slots is presented and injection and extraction are routed back
  * through the generic handler.
  */
-@Optional.Interface(iface = "appeng.api.storage.IMEInventoryHandler", modid = "appliedenergistics2", striprefs = true)
-public class DrawerMEInventoryHandler implements IMEInventoryHandler<IAEItemStack> {
+@Optional.Interface(iface = "appeng.api.storage.IStorageBusMonitor", modid = "appliedenergistics2", striprefs = true)
+public class DrawerMEInventoryHandler implements IStorageBusMonitor<IAEItemStack> {
 
     @Getter
     private final IBigItemHandler handler;
     private final int priority;
+    private final Map<IMEMonitorHandlerReceiver, Object> listeners = new HashMap<>();
+    private IItemList<IAEItemStack> snapshot;
+    private BaseActionSource actionSource;
 
     public DrawerMEInventoryHandler(IBigItemHandler handler) {
         this(handler, 0);
@@ -86,7 +96,8 @@ public class DrawerMEInventoryHandler implements IMEInventoryHandler<IAEItemStac
 
     @Override
     @Optional.Method(modid = "appliedenergistics2")
-    public IItemList<IAEItemStack> getAvailableItems(IItemList<IAEItemStack> out) {
+    @SuppressWarnings("unchecked")
+    public IItemList<IAEItemStack> getAvailableItems(IItemList out, int iteration) {
         for (ItemStorageView view : ItemStorageView.storages(handler)) {
             ItemStack template = view.getSnapshot()
                 .getTemplate();
@@ -157,5 +168,100 @@ public class DrawerMEInventoryHandler implements IMEInventoryHandler<IAEItemStac
 
     public List<ItemStorageView> getViews() {
         return ItemStorageView.storages(handler);
+    }
+
+    @Override
+    @Optional.Method(modid = "appliedenergistics2")
+    public void addListener(IMEMonitorHandlerReceiver listener, Object verificationToken) {
+        listeners.put(listener, verificationToken);
+    }
+
+    @Override
+    @Optional.Method(modid = "appliedenergistics2")
+    public void removeListener(IMEMonitorHandlerReceiver listener) {
+        listeners.remove(listener);
+    }
+
+    @Override
+    @Optional.Method(modid = "appliedenergistics2")
+    public TickRateModulation onTick() {
+        IItemList<IAEItemStack> current = availableItems();
+        if (snapshot == null) {
+            snapshot = current;
+            return TickRateModulation.SLOWER;
+        }
+        List<IAEItemStack> changes = changesBetween(snapshot, current);
+        snapshot = current;
+        if (changes.isEmpty()) {
+            return TickRateModulation.SLOWER;
+        }
+        postChanges(changes);
+        return TickRateModulation.URGENT;
+    }
+
+    @Override
+    @Optional.Method(modid = "appliedenergistics2")
+    public void setMode(StorageFilter mode) {}
+
+    @Override
+    @Optional.Method(modid = "appliedenergistics2")
+    public void setActionSource(BaseActionSource source) {
+        actionSource = source;
+    }
+
+    @Override
+    @Optional.Method(modid = "appliedenergistics2")
+    public IItemList<IAEItemStack> getStorageList() {
+        if (snapshot == null) {
+            snapshot = availableItems();
+        }
+        return snapshot;
+    }
+
+    @Optional.Method(modid = "appliedenergistics2")
+    private IItemList<IAEItemStack> availableItems() {
+        return getAvailableItems(
+            AEApi.instance()
+                .storage()
+                .createItemList());
+    }
+
+    @Optional.Method(modid = "appliedenergistics2")
+    private List<IAEItemStack> changesBetween(IItemList<IAEItemStack> previous, IItemList<IAEItemStack> current) {
+        IItemList<IAEItemStack> difference = AEApi.instance()
+            .storage()
+            .createItemList();
+        for (IAEItemStack stack : previous) {
+            IAEItemStack removed = stack.copy();
+            removed.setStackSize(-removed.getStackSize());
+            difference.add(removed);
+        }
+        for (IAEItemStack stack : current) {
+            difference.add(stack.copy());
+        }
+        List<IAEItemStack> changes = new ArrayList<>();
+        for (IAEItemStack stack : difference) {
+            if (stack.getStackSize() != 0L) {
+                changes.add(stack);
+            }
+        }
+        return changes;
+    }
+
+    @Optional.Method(modid = "appliedenergistics2")
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    private void postChanges(List<IAEItemStack> changes) {
+        Iterator<Map.Entry<IMEMonitorHandlerReceiver, Object>> iterator = listeners.entrySet()
+            .iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<IMEMonitorHandlerReceiver, Object> entry = iterator.next();
+            if (entry.getKey()
+                .isValid(entry.getValue())) {
+                entry.getKey()
+                    .postChange(this, changes, actionSource);
+            } else {
+                iterator.remove();
+            }
+        }
     }
 }

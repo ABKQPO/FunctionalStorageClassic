@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.nbt.NBTTagCompound;
 
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
@@ -70,5 +71,10 @@ public class ControllerExtensionTile extends StorageNetworkTile {
     @Override
     public int getUtilityUpgradeSlots() {
         return 0;
+    }
+
+    @Override
+    public boolean openGui(EntityPlayer player) {
+        return false;
     }
 }

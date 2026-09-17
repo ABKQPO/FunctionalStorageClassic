@@ -14,7 +14,7 @@ public class ContainerExchange {
     }
 
     public static void complete(EntityPlayer player, ItemStack source, Consumer<ItemStack> replace, ItemStack result) {
-        if (player.capabilities.isCreativeMode || source == null) return;
+        if (source == null) return;
         if (source.stackSize == 1) {
             replace.accept(result);
         } else {

@@ -73,7 +73,7 @@ public class FluidContainerInteraction {
         return false;
     }
 
-    private static boolean isFluidContainer(ItemStack stack) {
+    public static boolean isFluidContainer(ItemStack stack) {
         return stack != null && (stack.getItem() instanceof IFluidContainerItem
             || FluidContainerRegistry.getFluidForFilledItem(stack) != null
             || FluidContainerRegistry.isEmptyContainer(stack));
