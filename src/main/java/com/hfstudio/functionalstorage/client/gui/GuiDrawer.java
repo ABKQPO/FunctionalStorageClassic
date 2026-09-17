@@ -194,7 +194,6 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
 
     @Override
     public void drawScreen(int mouseX, int mouseY, float partialTicks) {
-        drawDefaultBackground();
         super.drawScreen(mouseX, mouseY, partialTicks);
         if (tile instanceof StorageNetworkTile || tile.getActiveStorage() == null) {
             return;

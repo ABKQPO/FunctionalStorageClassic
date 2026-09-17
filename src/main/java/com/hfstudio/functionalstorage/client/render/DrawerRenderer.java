@@ -264,7 +264,8 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
             if (hasTemplate) {
                 state.setTemplate(slot, snapshot.getTemplate());
             }
-            float fill = state.interpolate(slot, hasTemplate ? ratio(snapshot.getAmount(), handler.getCapacity(slot)) : 0F);
+            float fill = state
+                .interpolate(slot, hasTemplate ? ratio(snapshot.getAmount(), handler.getCapacity(slot)) : 0F);
             FluidStack fluid = state.getTemplate(slot);
             if (fluid == null) continue;
             if (!hasTemplate && fill == 0F) {
@@ -274,13 +275,7 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
             float centerX = layout.getSlotX(slot);
             float centerY = layout.getSlotY(slot);
             if (options.isShowItemRender()) {
-                renderFluidVolume(
-                    fluid,
-                    centerX,
-                    centerY,
-                    fluidWidth(layout, slot),
-                    fluidHeight(layout),
-                    fill);
+                renderFluidVolume(fluid, centerX, centerY, fluidWidth(layout, slot), fluidHeight(layout), fill);
             }
             if (hasTemplate && options.isShowItemCount()) {
                 renderText(NumberFormatUtil.formatFluid(snapshot.getAmount()), centerX, centerY, iconScale(layout));

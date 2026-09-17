@@ -55,7 +55,7 @@ public class DrawerGuiTextures extends Gui implements IResourceManagerReloadList
 
     public void panel(int x, int y, int width, int height) {
         bind(BACKGROUND);
-        region(x, y, width, height, 4, 4, 168, 72);
+        region(x + 4, y + 4, width - 8, height - 8, 4, 4, 168, 72);
         region(x, y, width, 4, 0, 0, 176, 4);
         region(x, y + height - 4, width, 4, 0, 162, 176, 4);
         region(x, y + 4, 4, height - 8, 0, 4, 4, 72);

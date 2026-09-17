@@ -83,6 +83,7 @@ public abstract class ControllableDrawerTile extends TileEntity {
     private UUID lastInteractionPlayer;
     private long lastInteractionTick = Long.MIN_VALUE;
     private int lastInteractionSlot = -1;
+    private int lastRedstoneSignal = -1;
 
     @Nullable
     public IBigItemHandler getItemHandler() {
@@ -631,6 +632,21 @@ public abstract class ControllableDrawerTile extends TileEntity {
             inventory.flushChanges();
         }
         super.markDirty();
+        notifyRedstoneSignalChange();
+    }
+
+    private void notifyRedstoneSignalChange() {
+        if (worldObj == null || worldObj.isRemote) {
+            return;
+        }
+        int signal = getRedstoneSignal(0);
+        if (signal == lastRedstoneSignal) {
+            return;
+        }
+        lastRedstoneSignal = signal;
+        Block block = getBlockType();
+        worldObj.notifyBlocksOfNeighborChange(xCoord, yCoord, zCoord, block);
+        worldObj.func_147453_f(xCoord, yCoord, zCoord, block);
     }
 
     /**
