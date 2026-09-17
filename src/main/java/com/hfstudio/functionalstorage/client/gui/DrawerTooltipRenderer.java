@@ -12,10 +12,8 @@ import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.IIcon;
 import net.minecraft.util.StatCollector;
-import net.minecraftforge.event.entity.player.ItemTooltipEvent;
 
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL12;
@@ -23,12 +21,9 @@ import org.lwjgl.opengl.GL12;
 import com.gtnewhorizon.gtnhlib.client.event.RenderTooltipEvent;
 import com.hfstudio.functionalstorage.client.gui.DrawerTooltipData.Entry;
 import com.hfstudio.functionalstorage.client.gui.DrawerTooltipData.Section;
-import com.hfstudio.functionalstorage.common.block.FramedBlock;
 import com.hfstudio.functionalstorage.common.block.base.DrawerBlock;
-import com.hfstudio.functionalstorage.common.item.LayeredToolItem;
-import com.hfstudio.functionalstorage.common.item.upgrade.UpgradeItem;
+import com.hfstudio.functionalstorage.common.item.upgrade.AutomationUpgradeItem;
 
-import cpw.mods.fml.common.eventhandler.EventPriority;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
@@ -41,41 +36,16 @@ public class DrawerTooltipRenderer extends Gui {
     private List<Section> cachedSections = List.of();
     private final RenderItem itemRenderer = new RenderItem();
 
-    @SubscribeEvent(priority = EventPriority.HIGHEST)
-    public void onItemTooltip(ItemTooltipEvent event) {
-        if (event.itemStack.getItem() instanceof ItemBlock item && item.field_150939_a instanceof DrawerBlock) {
-            event.toolTip
-                .add(EnumChatFormatting.GRAY + StatCollector.translateToLocal("gui.functionalstorage.open_gui"));
-            if (item.field_150939_a instanceof FramedBlock) {
-                for (String line : StatCollector.translateToLocal("frameddrawer.use")
-                    .replace("\\n", "\n")
-                    .split("\n")) {
-                    event.toolTip.add(EnumChatFormatting.GRAY + line);
-                }
-            }
-        }
-        List<Section> sections = sectionsFor(event.itemStack);
-        if (!sections.isEmpty()) {
-            event.toolTip.add(
-                EnumChatFormatting.GOLD + StatCollector.translateToLocal(
-                    sections.get(0)
-                        .title()));
-        }
-    }
-
     @SubscribeEvent
     public void onTooltip(RenderTooltipEvent event) {
         List<Section> sections = sectionsFor(event.itemStack);
-        if ((!sections.isEmpty() || event.itemStack.getItem() instanceof LayeredToolItem
-            || event.itemStack.getItem() instanceof UpgradeItem
-            || event.itemStack.getItem() instanceof ItemBlock item && item.field_150939_a instanceof DrawerBlock)
-            && event.alternativeRenderer == null) {
+        if (!sections.isEmpty() && event.alternativeRenderer == null) {
             event.alternativeRenderer = lines -> draw(event, lines, sections);
         }
     }
 
     private List<Section> sectionsFor(ItemStack stack) {
-        if (!(stack.getItem() instanceof LayeredToolItem) && !(stack.getItem() instanceof UpgradeItem)
+        if (!(stack.getItem() instanceof AutomationUpgradeItem)
             && !(stack.getItem() instanceof ItemBlock item && item.field_150939_a instanceof DrawerBlock)) {
             return List.of();
         }
@@ -90,26 +60,15 @@ public class DrawerTooltipRenderer extends Gui {
 
     public void draw(RenderTooltipEvent event, List<String> original, List<Section> sections) {
         List<String> lines = new ArrayList<>();
-        int maxWidth = Math.max(80, Math.min(300, event.gui.width - 20));
+        int maxWidth = Math.clamp(event.gui.width - 20, 80, 300);
         int width = 0;
-        String previewTitle = sections.isEmpty() ? null
-            : StatCollector.translateToLocal(
-                sections.get(0)
-                    .title());
-        int previewIndex = -1;
         for (String line : original) {
-            if (previewIndex < 0 && previewTitle != null
-                && !lines.isEmpty()
-                && previewTitle.equals(EnumChatFormatting.getTextWithoutFormattingCodes(line))) {
-                previewIndex = lines.size();
-                continue;
-            }
             for (String wrapped : event.font.listFormattedStringToWidth(line, maxWidth)) {
                 lines.add(wrapped);
                 width = Math.max(width, event.font.getStringWidth(wrapped));
             }
         }
-        if (previewIndex < 0) previewIndex = sections.isEmpty() ? lines.size() : Math.min(1, lines.size());
+        int previewIndex = lines.size();
         int columns = Math.max(1, Math.min(9, maxWidth / 20));
         int remaining = Math.max(0, event.gui.height - 16 - lines.size() * 10 - sections.size() * 13 - 12);
         List<Section> visible = new ArrayList<>(sections.size());

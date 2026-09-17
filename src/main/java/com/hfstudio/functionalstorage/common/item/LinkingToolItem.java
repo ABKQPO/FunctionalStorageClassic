@@ -246,11 +246,13 @@ public class LinkingToolItem extends LayeredToolItem {
                 + (target.length == 4 ? target[0] + ", " + target[1] + ", " + target[2] : "???"));
         tooltip.add("");
         tooltip.add(EnumChatFormatting.GRAY + StatCollector.translateToLocal(modeKey(stack) + ".desc"));
-        for (String line : StatCollector.translateToLocal("linkingtool.use")
-            .replace("\\n", "\n")
-            .split("\n", -1)) {
-            tooltip.add(EnumChatFormatting.GRAY + line);
-        }
+        tooltip.add(EnumChatFormatting.GRAY + StatCollector.translateToLocal("linkingtool.use.0"));
+        tooltip.add(EnumChatFormatting.GRAY + StatCollector.translateToLocal("linkingtool.use.1"));
+        tooltip.add(EnumChatFormatting.GRAY + StatCollector.translateToLocal("linkingtool.use.2"));
+        tooltip.add("");
+        tooltip.add(EnumChatFormatting.GRAY + StatCollector.translateToLocal("linkingtool.use.3"));
+        tooltip.add("");
+        tooltip.add(EnumChatFormatting.GRAY + StatCollector.translateToLocal("linkingtool.use.4"));
     }
 
     private static String modeKey(ItemStack stack) {

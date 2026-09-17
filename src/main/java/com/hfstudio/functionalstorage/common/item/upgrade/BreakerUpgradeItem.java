@@ -9,6 +9,7 @@ import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.StatCollector;
 import net.minecraft.world.WorldServer;
 import net.minecraftforge.common.MinecraftForge;
@@ -32,6 +33,16 @@ public class BreakerUpgradeItem extends AutomationUpgradeItem {
 
     public BreakerUpgradeItem() {
         super("breaker_upgrade", FunctionalStorageConfig.UPGRADES.breakerTick);
+    }
+
+    @Override
+    public void addDescription(List<String> tooltip) {
+        tooltip.add(
+            EnumChatFormatting.GRAY
+                + StatCollector.translateToLocal("item.functionalstorage.breaker_upgrade.tooltip.0"));
+        tooltip.add(
+            EnumChatFormatting.GRAY
+                + StatCollector.translateToLocal("item.functionalstorage.breaker_upgrade.tooltip.1"));
     }
 
     @Override

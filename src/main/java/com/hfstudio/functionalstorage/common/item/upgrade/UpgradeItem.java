@@ -66,12 +66,10 @@ public class UpgradeItem extends Item {
         if (this instanceof StorageUpgradeItem || this instanceof GenerationUpgradeItem) {
             return;
         }
-        String description = StatCollector.translateToLocal(getUnlocalizedName() + ".tooltip");
-        if (description != null && !description.isEmpty() && !description.startsWith("item.")) {
-            for (String line : description.replace("\\n", "\n")
-                .split("\n", -1)) {
-                tooltip.add(EnumChatFormatting.GRAY + line);
-            }
-        }
+        addDescription(tooltip);
+    }
+
+    public void addDescription(List<String> tooltip) {
+        tooltip.add(EnumChatFormatting.GRAY + StatCollector.translateToLocal(getUnlocalizedName() + ".tooltip"));
     }
 }

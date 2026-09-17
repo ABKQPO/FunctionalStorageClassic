@@ -15,6 +15,7 @@ import net.minecraftforge.fluids.FluidStack;
 import com.hfstudio.functionalstorage.FunctionalStorage;
 import com.hfstudio.functionalstorage.api.storage.IWoodType;
 import com.hfstudio.functionalstorage.api.storage.WoodTypeRegistry;
+import com.hfstudio.functionalstorage.common.FSItemList;
 import com.hfstudio.functionalstorage.common.block.ArmoryCabinetBlock;
 import com.hfstudio.functionalstorage.common.block.DrawerBlockProperties;
 import com.hfstudio.functionalstorage.common.block.EnderDrawerBlock;
@@ -30,6 +31,8 @@ import com.hfstudio.functionalstorage.common.block.controller.ControllerExtensio
 import com.hfstudio.functionalstorage.common.block.controller.DrawerControllerBlock;
 import com.hfstudio.functionalstorage.common.integration.Mods;
 import com.hfstudio.functionalstorage.common.item.ConfigurationToolItem;
+import com.hfstudio.functionalstorage.common.item.EnderDrawerBlockItem;
+import com.hfstudio.functionalstorage.common.item.FramedDrawerBlockItem;
 import com.hfstudio.functionalstorage.common.item.LinkingToolItem;
 import com.hfstudio.functionalstorage.common.item.upgrade.BreakerUpgradeItem;
 import com.hfstudio.functionalstorage.common.item.upgrade.CollectorUpgradeItem;
@@ -123,82 +126,112 @@ public class RegistrationHandler {
         for (WoodDrawerBlock block : woodDrawerBlocks()) {
             woodDrawers.add(block);
             GameRegistry.registerBlock(block, block.getDrawerId());
+            registerFsItemList(block.getDrawerId(), block);
         }
         for (FluidDrawerBlock block : fluidDrawerBlocks()) {
             fluidDrawers.add(block);
-            GameRegistry.registerBlock(
-                block,
-                "fluid_" + block.getDrawerLayout()
-                    .getSlotCount());
+            String name = "fluid_" + block.getDrawerLayout()
+                .getSlotCount();
+            GameRegistry.registerBlock(block, name);
+            registerFsItemList(name, block);
         }
 
         compactingDrawer = new CompactingDrawerBlock();
         GameRegistry.registerBlock(compactingDrawer, "compacting_drawer");
         specialDrawers.add(compactingDrawer);
+        FSItemList.CompactingDrawer.set(compactingDrawer);
 
         simpleCompactingDrawer = new SimpleCompactingDrawerBlock();
         GameRegistry.registerBlock(simpleCompactingDrawer, "simple_compacting_drawer");
         specialDrawers.add(simpleCompactingDrawer);
+        FSItemList.SimpleCompactingDrawer.set(simpleCompactingDrawer);
 
         enderDrawer = new EnderDrawerBlock();
-        GameRegistry.registerBlock(enderDrawer, "ender_drawer");
+        GameRegistry.registerBlock(enderDrawer, EnderDrawerBlockItem.class, "ender_drawer");
         specialDrawers.add(enderDrawer);
+        FSItemList.EnderDrawer.set(enderDrawer);
 
         armoryCabinet = new ArmoryCabinetBlock();
         GameRegistry.registerBlock(armoryCabinet, "armory_cabinet");
         specialDrawers.add(armoryCabinet);
+        FSItemList.ArmoryCabinet.set(armoryCabinet);
 
         storageController = new DrawerControllerBlock();
         GameRegistry.registerBlock(storageController, "storage_controller");
         specialDrawers.add(storageController);
+        FSItemList.StorageController.set(storageController);
 
         controllerExtension = new ControllerExtensionBlock();
         GameRegistry.registerBlock(controllerExtension, "controller_extension");
         specialDrawers.add(controllerExtension);
+        FSItemList.ControllerExtension.set(controllerExtension);
 
         for (DrawerLayout layout : DrawerLayout.values()) {
             FramedDrawerBlock block = new FramedDrawerBlock(layout);
             framedDrawers.add(block);
-            GameRegistry.registerBlock(block, block.getDrawerId());
+            GameRegistry.registerBlock(block, FramedDrawerBlockItem.class, block.getDrawerId());
+            registerFsItemList(block.getDrawerId(), block);
         }
 
         registerFramed(
             "compacting_framed_drawer",
+            FSItemList.CompactingFramedDrawer,
             compactingDrawer,
             FunctionalStorage.MOD_ID + ":framed_front_compacting");
         registerFramed(
             "framed_simple_compacting_drawer",
+            FSItemList.FramedSimpleCompactingDrawer,
             simpleCompactingDrawer,
             FunctionalStorage.MOD_ID + ":framed_side");
         registerFramed(
             "framed_storage_controller",
+            FSItemList.FramedStorageController,
             storageController,
             FunctionalStorage.MOD_ID + ":framed_controller_front");
         registerFramed(
             "framed_controller_extension",
+            FSItemList.FramedControllerExtension,
             controllerExtension,
             FunctionalStorage.MOD_ID + ":framed_controller_extension");
-        for (FluidDrawerBlock block : fluidDrawers) {
-            registerFramed(
-                "framed_fluid_" + block.getDrawerLayout()
-                    .getSlotCount(),
-                block,
-                FunctionalStorage.MOD_ID + ":framed_side");
-        }
+        registerFramed(
+            "framed_fluid_1",
+            FSItemList.FramedFluidDrawer1,
+            fluidDrawers.get(0),
+            FunctionalStorage.MOD_ID + ":framed_side");
+        registerFramed(
+            "framed_fluid_2",
+            FSItemList.FramedFluidDrawer2,
+            fluidDrawers.get(1),
+            FunctionalStorage.MOD_ID + ":framed_side");
+        registerFramed(
+            "framed_fluid_4",
+            FSItemList.FramedFluidDrawer4,
+            fluidDrawers.get(2),
+            FunctionalStorage.MOD_ID + ":framed_side");
 
         if (FunctionalStorageConfig.COMPATIBILITY.enableThaumcraftCompatibility && Mods.Thaumcraft.isModLoaded()) {
             for (DrawerLayout layout : DrawerLayout.values()) {
                 EssentiaDrawerBlock block = new EssentiaDrawerBlock(layout);
                 essentiaDrawers.add(block);
-                GameRegistry.registerBlock(block, "essentia_" + layout.getSlotCount());
+                String name = "essentia_" + layout.getSlotCount();
+                GameRegistry.registerBlock(block, name);
+                registerFsItemList(name, block);
             }
         }
     }
 
-    private static void registerFramed(String id, DrawerBlock original, String defaultTexture) {
+    private static void registerFsItemList(String name, DrawerBlock block) {
+        FSItemList entry = FSItemList.byName(name);
+        if (entry != null) {
+            entry.set(block);
+        }
+    }
+
+    private static void registerFramed(String id, FSItemList entry, DrawerBlock original, String defaultTexture) {
         FramedVariantBlock block = new FramedVariantBlock(id, original, defaultTexture);
-        GameRegistry.registerBlock(block, id);
+        GameRegistry.registerBlock(block, FramedDrawerBlockItem.class, id);
         specialDrawers.add(block);
+        entry.set(block);
     }
 
     private static List<WoodDrawerBlock> woodDrawerBlocks() {
@@ -267,9 +300,11 @@ public class RegistrationHandler {
 
         configurationTool = new ConfigurationToolItem();
         GameRegistry.registerItem(configurationTool, "configuration_tool");
+        FSItemList.ConfigurationTool.set(configurationTool);
 
         linkingTool = new LinkingToolItem();
         GameRegistry.registerItem(linkingTool, "linking_tool");
+        FSItemList.LinkingTool.set(linkingTool);
     }
 
     public static void registerTileEntities() {
@@ -338,6 +373,10 @@ public class RegistrationHandler {
     public static <T extends UpgradeItem> T registerUpgrade(T item, String name) {
         item.setUpgradeName(name);
         GameRegistry.registerItem(item, name);
+        FSItemList entry = FSItemList.byName(name);
+        if (entry != null) {
+            entry.set(item);
+        }
         return item;
     }
 }

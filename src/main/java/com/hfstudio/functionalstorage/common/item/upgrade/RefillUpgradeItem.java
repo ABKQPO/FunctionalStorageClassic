@@ -12,6 +12,8 @@ import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.EnumChatFormatting;
+import net.minecraft.util.StatCollector;
 
 import com.hfstudio.functionalstorage.api.storage.BigItemStack;
 import com.hfstudio.functionalstorage.api.storage.StorageAction;
@@ -32,6 +34,13 @@ public class RefillUpgradeItem extends AutomationUpgradeItem {
             dimensional ? "dimensional_refill_upgrade" : "refill_upgrade",
             FunctionalStorageConfig.UPGRADES.refillTick);
         this.dimensional = dimensional;
+    }
+
+    @Override
+    public void addDescription(List<String> tooltip) {
+        String tooltipKey = getUnlocalizedName() + ".tooltip.";
+        tooltip.add(EnumChatFormatting.GRAY + StatCollector.translateToLocal(tooltipKey + "0"));
+        tooltip.add(EnumChatFormatting.GRAY + StatCollector.translateToLocal(tooltipKey + "1"));
     }
 
     @Override

@@ -17,7 +17,6 @@ import com.google.common.cache.CacheBuilder;
 import com.gtnewhorizon.gtnhlib.util.numberformatting.NumberFormatUtil;
 import com.hfstudio.functionalstorage.common.block.base.DrawerBlock;
 import com.hfstudio.functionalstorage.common.integration.Mods;
-import com.hfstudio.functionalstorage.common.item.LinkingToolItem;
 import com.hfstudio.functionalstorage.common.item.upgrade.AutomationUpgradeItem;
 import com.hfstudio.functionalstorage.common.item.upgrade.UpgradeSettings;
 import com.hfstudio.functionalstorage.util.ItemUtil;
@@ -57,9 +56,6 @@ public class DrawerTooltipData {
         if (stack == null) {
             return sections;
         }
-        if (stack.getItem() instanceof LinkingToolItem) {
-            addFrequency(sections, LinkingToolItem.getFrequency(stack));
-        }
         if (stack.getItem() instanceof AutomationUpgradeItem upgrade) {
             List<Entry> filters = new ArrayList<>();
             for (int slot = 0; slot < UpgradeSettings.FILTER_SLOTS; slot++) {
@@ -79,7 +75,6 @@ public class DrawerTooltipData {
         if (tile == null) {
             return sections;
         }
-        addFrequency(sections, tile.getString("Frequency"));
         List<Entry> contents = new ArrayList<>();
         readEntries(
             contents,
@@ -178,13 +173,4 @@ public class DrawerTooltipData {
         return symbols;
     }
 
-    private static void addFrequency(List<Section> sections, String frequency) {
-        List<Entry> entries = new ArrayList<>();
-        for (ItemStack item : frequencyDisplay(frequency)) {
-            entries.add(new Entry(item, null, null, ""));
-        }
-        if (!entries.isEmpty()) {
-            sections.add(new Section("linkingtool.ender.frequency", entries));
-        }
-    }
 }

@@ -2,16 +2,13 @@ package com.hfstudio.functionalstorage.misc;
 
 import java.util.List;
 
-import net.minecraft.block.Block;
 import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.oredict.OreDictionary;
 import net.minecraftforge.oredict.ShapedOreRecipe;
 import net.minecraftforge.oredict.ShapelessOreRecipe;
 
-import com.hfstudio.functionalstorage.FunctionalStorage;
 import com.hfstudio.functionalstorage.api.storage.IWoodType;
 import com.hfstudio.functionalstorage.api.storage.WoodTypeRegistry;
 import com.hfstudio.functionalstorage.common.FSItemList;
@@ -26,10 +23,10 @@ import cpw.mods.fml.common.registry.GameRegistry;
 
 public class FunctionalStorageRecipes {
 
-    private static final String ORE_IRON_NUGGET = "nuggetIron";
-    private static final String ORE_NETHERITE_INGOT = "ingotNetherite";
-    private static final String ORE_COPPER_INGOT = "ingotCopper";
-    private static final String ORE_COPPER_BLOCK = "blockCopper";
+    public static final String ORE_IRON_NUGGET = "nuggetIron";
+    public static final String ORE_NETHERITE_INGOT = "ingotNetherite";
+    public static final String ORE_COPPER_INGOT = "ingotCopper";
+    public static final String ORE_COPPER_BLOCK = "blockCopper";
 
     public static void registerRecipes() {
         for (WoodDrawerBlock block : RegistrationHandler.woodDrawers) {
@@ -60,112 +57,157 @@ public class FunctionalStorageRecipes {
             if (planks == null) {
                 continue;
             }
-            String name = wood.getName();
-            for (int slots : new int[] { 1, 2, 4 }) {
-                FSItemList drawer = FSItemList.byId(name + "_" + slots);
-                if (registerDrawer(drawer, slots, planks)) {
-                    registerFrameConversion(drawer, slots);
-                }
-            }
+            registerWoodDrawer(wood, 1, planks);
+            registerWoodDrawer(wood, 2, planks);
+            registerWoodDrawer(wood, 4, planks);
         }
     }
 
-    private static boolean registerDrawer(FSItemList drawer, int slots, ItemStack planks) {
-        if (drawer == null || !drawer.isRegistered()) {
-            return false;
+    private static void registerWoodDrawer(IWoodType wood, int slots, ItemStack planks) {
+        FSItemList entry = drawerEntry(wood, slots);
+        if (entry == null || !entry.hasBeenSet()) {
+            return;
         }
-        GameRegistry
-            .addRecipe(new DrawerCraftingRecipe(drawer.get(slots), false, drawerRecipe(slots, "chestWood", planks)));
-        return true;
+        ItemStack drawer = entry.get();
+        GameRegistry.addRecipe(new DrawerCraftingRecipe(drawer, false, drawerRecipe(slots, "chestWood", planks)));
+        registerFrameConversion(drawer, slots);
+    }
+
+    private static FSItemList drawerEntry(IWoodType wood, int slots) {
+        return switch (wood.getName()) {
+            case "oak" -> slots == 1 ? FSItemList.OakDrawer1
+                : slots == 2 ? FSItemList.OakDrawer2 : FSItemList.OakDrawer4;
+            case "spruce" -> slots == 1 ? FSItemList.SpruceDrawer1
+                : slots == 2 ? FSItemList.SpruceDrawer2 : FSItemList.SpruceDrawer4;
+            case "birch" -> slots == 1 ? FSItemList.BirchDrawer1
+                : slots == 2 ? FSItemList.BirchDrawer2 : FSItemList.BirchDrawer4;
+            case "jungle" -> slots == 1 ? FSItemList.JungleDrawer1
+                : slots == 2 ? FSItemList.JungleDrawer2 : FSItemList.JungleDrawer4;
+            case "acacia" -> slots == 1 ? FSItemList.AcaciaDrawer1
+                : slots == 2 ? FSItemList.AcaciaDrawer2 : FSItemList.AcaciaDrawer4;
+            case "dark_oak" -> slots == 1 ? FSItemList.DarkOakDrawer1
+                : slots == 2 ? FSItemList.DarkOakDrawer2 : FSItemList.DarkOakDrawer4;
+            case "mangrove" -> slots == 1 ? FSItemList.MangroveDrawer1
+                : slots == 2 ? FSItemList.MangroveDrawer2 : FSItemList.MangroveDrawer4;
+            case "cherry" -> slots == 1 ? FSItemList.CherryDrawer1
+                : slots == 2 ? FSItemList.CherryDrawer2 : FSItemList.CherryDrawer4;
+            case "crimson" -> slots == 1 ? FSItemList.CrimsonDrawer1
+                : slots == 2 ? FSItemList.CrimsonDrawer2 : FSItemList.CrimsonDrawer4;
+            case "warped" -> slots == 1 ? FSItemList.WarpedDrawer1
+                : slots == 2 ? FSItemList.WarpedDrawer2 : FSItemList.WarpedDrawer4;
+            default -> null;
+        };
     }
 
     private static void registerFluidDrawerRecipes() {
-        registerOreRecipe(FSItemList.FluidDrawer1, 1, "PCP", 'C', oreOr("bucket", Items.bucket), 'P', "plankWood");
-        registerOreRecipe(FSItemList.FluidDrawer2, 2, "PCP", 'C', oreOr("bucket", Items.bucket), 'P', "plankWood");
-        registerOreRecipe(FSItemList.FluidDrawer4, 4, "PCP", 'C', oreOr("bucket", Items.bucket), 'P', "plankWood");
+        registerOreRecipe(FSItemList.FluidDrawer1.get(), "PPP", "PCP", "PPP", 'C', Items.bucket, 'P', "plankWood");
+        registerOreRecipe(FSItemList.FluidDrawer2.get(), "PCP", "PPP", "PCP", 'C', Items.bucket, 'P', "plankWood");
+        registerOreRecipe(FSItemList.FluidDrawer4.get(), "CPC", "PCP", "CPC", 'C', Items.bucket, 'P', "plankWood");
     }
 
     private static void registerFramedRecipes() {
-        Object bucket = oreOr("bucket", Items.bucket);
-        registerOreRecipe(FSItemList.FramedDrawer1, 1, "PCP", 'C', "chestWood", 'P', ORE_IRON_NUGGET);
-        registerOreRecipe(FSItemList.FramedDrawer2, 2, "PCP", 'C', "chestWood", 'P', ORE_IRON_NUGGET);
-        registerOreRecipe(FSItemList.FramedDrawer4, 4, "PCP", 'C', "chestWood", 'P', ORE_IRON_NUGGET);
-        registerOreRecipe(FSItemList.FramedFluidDrawer1, 1, "PCP", 'C', bucket, 'P', ORE_IRON_NUGGET);
-        registerOreRecipe(FSItemList.FramedFluidDrawer2, 2, "PCP", 'C', bucket, 'P', ORE_IRON_NUGGET);
-        registerOreRecipe(FSItemList.FramedFluidDrawer4, 4, "PCP", 'C', bucket, 'P', ORE_IRON_NUGGET);
+        Object iron_nugget = oreOr(ORE_IRON_NUGGET, Items.iron_ingot);
+        registerOreRecipe(FSItemList.FramedDrawer1.get(), "PPP", "PCP", "PPP", 'C', "chestWood", 'P', iron_nugget);
+        registerOreRecipe(FSItemList.FramedDrawer2.get(), "PCP", "PPP", "PCP", 'C', "chestWood", 'P', iron_nugget);
+        registerOreRecipe(FSItemList.FramedDrawer4.get(), "CPC", "PCP", "CPC", 'C', "chestWood", 'P', iron_nugget);
+        registerOreRecipe(
+            FSItemList.FramedFluidDrawer1.get(),
+            "PPP",
+            "PCP",
+            "PPP",
+            'C',
+            Items.bucket,
+            'P',
+            iron_nugget);
+        registerOreRecipe(
+            FSItemList.FramedFluidDrawer2.get(),
+            "PCP",
+            "PPP",
+            "PCP",
+            'C',
+            Items.bucket,
+            'P',
+            iron_nugget);
+        registerOreRecipe(
+            FSItemList.FramedFluidDrawer4.get(),
+            "CPC",
+            "PCP",
+            "CPC",
+            'C',
+            Items.bucket,
+            'P',
+            iron_nugget);
     }
 
     private static void registerEssentiaRecipes() {
-        Object bottle = oreOr("bottleGlass", Items.glass_bottle);
         for (var block : RegistrationHandler.essentiaDrawers) {
             int count = block.getFaceLayout()
                 .getSlotCount();
             GameRegistry.addRecipe(
-                new DrawerCraftingRecipe(new ItemStack(block, count), false, drawerRecipe(count, "plankWood", bottle)));
+                new DrawerCraftingRecipe(
+                    new ItemStack(block, count),
+                    false,
+                    drawerRecipe(count, Items.glass_bottle, "plankWood")));
         }
     }
 
     private static void registerMachineRecipes() {
-        registerShapeless(FSItemList.NetheriteUpgrade, 1, FSItemList.DiamondUpgrade, ORE_NETHERITE_INGOT);
+        Object iron_nugget = oreOr(ORE_IRON_NUGGET, Items.iron_ingot);
+        registerShapeless(FSItemList.NetheriteUpgrade.get(), FSItemList.DiamondUpgrade.get(), iron_nugget);
         registerOreRecipe(
-            FSItemList.CompactingDrawer,
-            1,
+            FSItemList.CompactingDrawer.get(),
             "SSS",
             "PDP",
             "SIS",
             'D',
             "drawerFunctionalStorage",
             'I',
-            oreOr("ingotIron", Items.iron_ingot),
+            "ingotIron",
             'P',
             Blocks.piston,
             'S',
             Blocks.stone);
         registerOreRecipe(
-            FSItemList.SimpleCompactingDrawer,
-            1,
+            FSItemList.SimpleCompactingDrawer.get(),
             "SSS",
             "SDP",
             "SIS",
             'D',
             "drawerFunctionalStorage",
             'I',
-            oreOr("ingotIron", Items.iron_ingot),
+            "ingotIron",
             'P',
             Blocks.piston,
             'S',
             Blocks.stone);
         registerOreRecipe(
-            FSItemList.CompactingFramedDrawer,
-            1,
+            FSItemList.CompactingFramedDrawer.get(),
             "SSS",
             "PDP",
             "SIS",
             'D',
             "drawerFunctionalStorage",
             'I',
-            oreOr("ingotIron", Items.iron_ingot),
+            "ingotIron",
             'P',
             Blocks.piston,
             'S',
-            ORE_IRON_NUGGET);
+            iron_nugget);
         registerOreRecipe(
-            FSItemList.FramedSimpleCompactingDrawer,
-            1,
+            FSItemList.FramedSimpleCompactingDrawer.get(),
             "SSS",
             "SDP",
             "SIS",
             'D',
             "drawerFunctionalStorage",
             'I',
-            oreOr("ingotIron", Items.iron_ingot),
+            "ingotIron",
             'P',
             Blocks.piston,
             'S',
-            ORE_IRON_NUGGET);
+            iron_nugget);
         registerOreRecipe(
-            FSItemList.EnderDrawer,
-            1,
+            FSItemList.EnderDrawer.get(),
             "PLP",
             "LCL",
             "PLP",
@@ -176,29 +218,27 @@ public class FunctionalStorageRecipes {
             'P',
             "plankWood");
         registerOreRecipe(
-            FSItemList.ArmoryCabinet,
-            1,
+            FSItemList.ArmoryCabinet.get(),
             "ICI",
             "CDC",
             "IBI",
             'B',
-            ORE_NETHERITE_INGOT,
+            oreOr(ORE_NETHERITE_INGOT, Items.nether_star),
             'C',
             "drawerFunctionalStorage",
             'D',
             Items.comparator,
             'I',
             Blocks.stone);
-        registerControllerRecipe(FSItemList.StorageController, Items.comparator, Blocks.stone);
-        registerControllerRecipe(FSItemList.ControllerExtension, Items.repeater, Blocks.stone);
-        registerControllerRecipe(FSItemList.FramedStorageController, Items.comparator, ORE_IRON_NUGGET);
-        registerControllerRecipe(FSItemList.FramedControllerExtension, Items.repeater, ORE_IRON_NUGGET);
+        registerControllerRecipe(FSItemList.StorageController.get(), Items.comparator, Blocks.stone);
+        registerControllerRecipe(FSItemList.ControllerExtension.get(), Items.repeater, Blocks.stone);
+        registerControllerRecipe(FSItemList.FramedStorageController.get(), Items.comparator, iron_nugget);
+        registerControllerRecipe(FSItemList.FramedControllerExtension.get(), Items.repeater, iron_nugget);
     }
 
-    private static void registerControllerRecipe(FSItemList controller, Object center, Object frame) {
+    private static void registerControllerRecipe(ItemStack controller, Object center, Object frame) {
         registerOreRecipe(
             controller,
-            1,
             "IBI",
             "CDC",
             "IBI",
@@ -214,60 +254,55 @@ public class FunctionalStorageRecipes {
 
     private static void registerStorageUpgradeRecipes() {
         registerOreRecipe(
-            FSItemList.IronDowngrade,
-            1,
+            FSItemList.IronDowngrade.get(),
             "III",
             "IDI",
             "III",
             'D',
             "drawerFunctionalStorage",
             'I',
-            oreOr("ingotIron", Items.iron_ingot));
+            "ingotIron");
         registerOreRecipe(
-            FSItemList.CopperUpgrade,
-            1,
+            FSItemList.CopperUpgrade.get(),
             "IBI",
             "CDC",
             "IBI",
             'B',
-            ORE_COPPER_BLOCK,
+            oreOr(ORE_COPPER_BLOCK, Blocks.iron_block),
             'C',
             "chestWood",
             'D',
             "drawerFunctionalStorage",
             'I',
-            ORE_COPPER_INGOT);
+            oreOr(ORE_COPPER_INGOT, Items.iron_ingot));
         registerOreRecipe(
-            FSItemList.GoldUpgrade,
-            1,
+            FSItemList.GoldUpgrade.get(),
             "IBI",
             "CDC",
             "BIB",
             'B',
-            oreOr("blockGold", Blocks.gold_block),
+            "blockGold",
             'C',
             "chestWood",
             'D',
-            FSItemList.CopperUpgrade.get(1),
+            FSItemList.CopperUpgrade.get(),
             'I',
-            oreOr("ingotGold", Items.gold_ingot));
+            "ingotGold");
         registerOreRecipe(
-            FSItemList.DiamondUpgrade,
-            1,
+            FSItemList.DiamondUpgrade.get(),
             "IBI",
             "CDC",
             "IBI",
             'B',
-            oreOr("blockDiamond", Blocks.diamond_block),
+            "blockDiamond",
             'C',
             "chestWood",
             'D',
-            FSItemList.GoldUpgrade.get(1),
+            FSItemList.GoldUpgrade.get(),
             'I',
-            oreOr("gemDiamond", Items.diamond));
+            "gemDiamond");
         registerOreRecipe(
-            FSItemList.MaxStorageUpgrade,
-            1,
+            FSItemList.MaxStorageUpgrade.get(),
             "IBI",
             "CDC",
             "IBI",
@@ -276,12 +311,11 @@ public class FunctionalStorageRecipes {
             'C',
             "chestWood",
             'D',
-            FSItemList.NetheriteUpgrade.get(1),
+            FSItemList.NetheriteUpgrade.get(),
             'I',
-            oreOr("gemDiamond", Items.diamond));
+            "gemDiamond");
         registerOreRecipe(
-            FSItemList.CreativeVendingUpgrade,
-            1,
+            FSItemList.CreativeVendingUpgrade.get(),
             "IBI",
             "CDC",
             "IBI",
@@ -290,15 +324,14 @@ public class FunctionalStorageRecipes {
             'C',
             "chestWood",
             'D',
-            FSItemList.NetheriteUpgrade.get(1),
+            FSItemList.NetheriteUpgrade.get(),
             'I',
-            oreOr("gemDiamond", Items.diamond));
+            "gemDiamond");
     }
 
     private static void registerUtilityUpgradeRecipes() {
         registerOreRecipe(
-            FSItemList.VoidUpgrade,
-            1,
+            FSItemList.VoidUpgrade.get(),
             "III",
             "IDI",
             "III",
@@ -307,8 +340,7 @@ public class FunctionalStorageRecipes {
             'I',
             Blocks.obsidian);
         registerOreRecipe(
-            FSItemList.RedstoneUpgrade,
-            1,
+            FSItemList.RedstoneUpgrade.get(),
             "IBI",
             "CDC",
             "IBI",
@@ -319,15 +351,14 @@ public class FunctionalStorageRecipes {
             'D',
             "drawerFunctionalStorage",
             'I',
-            oreOr("dustRedstone", Items.redstone));
+            "dustRedstone");
         registerOreRecipe(
-            FSItemList.PullingUpgrade,
-            1,
+            FSItemList.PullingUpgrade.get(),
             "ICI",
             "IDI",
             "IBI",
             'B',
-            oreOr("dustRedstone", Items.redstone),
+            "dustRedstone",
             'C',
             Blocks.hopper,
             'D',
@@ -335,13 +366,12 @@ public class FunctionalStorageRecipes {
             'I',
             Blocks.stone);
         registerOreRecipe(
-            FSItemList.PushingUpgrade,
-            1,
+            FSItemList.PushingUpgrade.get(),
             "IBI",
             "IDI",
             "IRI",
             'B',
-            oreOr("dustRedstone", Items.redstone),
+            "dustRedstone",
             'D',
             "drawerFunctionalStorage",
             'I',
@@ -349,14 +379,13 @@ public class FunctionalStorageRecipes {
             'R',
             Blocks.hopper);
         GameRegistry
-            .addRecipe(new UpgradeConversionRecipe(FSItemList.PullingUpgrade.get(1), FSItemList.PushingUpgrade.get(1)));
+            .addRecipe(new UpgradeConversionRecipe(FSItemList.PullingUpgrade.get(), FSItemList.PushingUpgrade.get()));
         GameRegistry
-            .addRecipe(new UpgradeConversionRecipe(FSItemList.PushingUpgrade.get(1), FSItemList.PullingUpgrade.get(1)));
-        registerShapeless(FSItemList.WirelessPullingUpgrade, 1, FSItemList.PullingUpgrade.get(1), Items.ender_pearl);
-        registerShapeless(FSItemList.WirelessPushingUpgrade, 1, FSItemList.PushingUpgrade.get(1), Items.ender_pearl);
+            .addRecipe(new UpgradeConversionRecipe(FSItemList.PushingUpgrade.get(), FSItemList.PullingUpgrade.get()));
+        registerShapeless(FSItemList.WirelessPullingUpgrade.get(), FSItemList.PullingUpgrade.get(), Items.ender_pearl);
+        registerShapeless(FSItemList.WirelessPushingUpgrade.get(), FSItemList.PushingUpgrade.get(), Items.ender_pearl);
         registerOreRecipe(
-            FSItemList.CollectorUpgrade,
-            1,
+            FSItemList.CollectorUpgrade.get(),
             "IBI",
             "RDR",
             "IBI",
@@ -367,10 +396,9 @@ public class FunctionalStorageRecipes {
             'I',
             Blocks.stone,
             'R',
-            oreOr("dustRedstone", Items.redstone));
+            "dustRedstone");
         registerOreRecipe(
-            FSItemList.OreDictionaryUpgrade,
-            1,
+            FSItemList.OreDictionaryUpgrade.get(),
             "W W",
             " C ",
             "W W",
@@ -379,8 +407,7 @@ public class FunctionalStorageRecipes {
             'C',
             Blocks.chest);
         registerOreRecipe(
-            FSItemList.BreakerUpgrade,
-            1,
+            FSItemList.BreakerUpgrade.get(),
             "RSR",
             "SDS",
             "RPR",
@@ -389,26 +416,24 @@ public class FunctionalStorageRecipes {
             'P',
             Items.iron_pickaxe,
             'R',
-            oreOr("dustRedstone", Items.redstone),
+            "dustRedstone",
             'S',
             Blocks.stonebrick);
         registerOreRecipe(
-            FSItemList.PlacerUpgrade,
-            1,
+            FSItemList.PlacerUpgrade.get(),
             "RdR",
             "dDd",
             "RtR",
             'D',
             "drawerFunctionalStorage",
             'R',
-            oreOr("dustRedstone", Items.redstone),
+            "dustRedstone",
             'd',
             Blocks.dispenser,
             't',
             Blocks.dirt);
         registerOreRecipe(
-            FSItemList.RefillUpgrade,
-            1,
+            FSItemList.RefillUpgrade.get(),
             "RPR",
             "PDP",
             "RCR",
@@ -419,22 +444,20 @@ public class FunctionalStorageRecipes {
             'P',
             Items.ender_pearl,
             'R',
-            oreOr("dustRedstone", Items.redstone));
+            "dustRedstone");
         registerOreRecipe(
-            FSItemList.DimensionalRefillUpgrade,
-            1,
+            FSItemList.DimensionalRefillUpgrade.get(),
             " W ",
             " U ",
             " P ",
             'P',
             Items.ender_eye,
             'U',
-            FSItemList.RefillUpgrade.get(1),
+            FSItemList.RefillUpgrade.get(),
             'W',
             new ItemStack(Items.skull, 1, 1));
         registerOreRecipe(
-            FSItemList.SpeedUpgradeAugment,
-            2,
+            FSItemList.SpeedUpgradeAugment.get(),
             "RBR",
             "BDB",
             "RBR",
@@ -443,13 +466,12 @@ public class FunctionalStorageRecipes {
             'D',
             "drawerFunctionalStorage",
             'R',
-            oreOr("dustRedstone", Items.redstone));
+            "dustRedstone");
     }
 
     private static void registerGenerationRecipes() {
         registerOreRecipe(
-            FSItemList.DrippingUpgrade,
-            1,
+            FSItemList.DrippingUpgrade.get(),
             "IBI",
             "IDI",
             "IRI",
@@ -462,8 +484,7 @@ public class FunctionalStorageRecipes {
             'R',
             Items.lava_bucket);
         registerOreRecipe(
-            FSItemList.WaterGeneratorUpgrade,
-            1,
+            FSItemList.WaterGeneratorUpgrade.get(),
             "IBI",
             "IDI",
             "IBI",
@@ -474,13 +495,12 @@ public class FunctionalStorageRecipes {
             'I',
             Blocks.stone);
         registerShapeless(
-            FSItemList.ObsidianUpgrade,
-            1,
-            FSItemList.DrippingUpgrade.get(1),
-            FSItemList.DrippingUpgrade.get(1),
-            FSItemList.DrippingUpgrade.get(1),
-            FSItemList.DrippingUpgrade.get(1),
-            FSItemList.WaterGeneratorUpgrade.get(1));
+            FSItemList.ObsidianUpgrade.get(),
+            FSItemList.DrippingUpgrade.get(),
+            FSItemList.DrippingUpgrade.get(),
+            FSItemList.DrippingUpgrade.get(),
+            FSItemList.DrippingUpgrade.get(),
+            FSItemList.WaterGeneratorUpgrade.get());
         registerGenerationTier(RegistrationHandler.waterGenerationUpgrades, new ItemStack(Items.water_bucket));
         registerGenerationTier(RegistrationHandler.stoneGenerationUpgrades, new ItemStack(Blocks.cobblestone));
     }
@@ -496,8 +516,7 @@ public class FunctionalStorageRecipes {
 
     private static void registerToolRecipes() {
         registerOreRecipe(
-            FSItemList.ConfigurationTool,
-            1,
+            FSItemList.ConfigurationTool.get(),
             "PPG",
             "PDG",
             "PEP",
@@ -506,12 +525,11 @@ public class FunctionalStorageRecipes {
             'E',
             Items.emerald,
             'G',
-            oreOr("ingotGold", Items.gold_ingot),
+            "ingotGold",
             'P',
             Items.paper);
         registerOreRecipe(
-            FSItemList.LinkingTool,
-            1,
+            FSItemList.LinkingTool.get(),
             "PPG",
             "PDG",
             "PEP",
@@ -520,17 +538,12 @@ public class FunctionalStorageRecipes {
             'E',
             Items.diamond,
             'G',
-            oreOr("ingotGold", Items.gold_ingot),
+            "ingotGold",
             'P',
             Items.paper);
     }
 
-    private static void registerFrameConversion(FSItemList source, int slots) {
-        if (source == null || !source.isRegistered()
-            || OreDictionary.getOres(ORE_IRON_NUGGET)
-                .isEmpty()) {
-            return;
-        }
+    private static void registerFrameConversion(ItemStack source, int slots) {
         FramedDrawerBlock frame = null;
         for (FramedDrawerBlock candidate : RegistrationHandler.framedDrawers) {
             if (candidate.getDrawerLayout()
@@ -546,46 +559,15 @@ public class FunctionalStorageRecipes {
             new DrawerCraftingRecipe(
                 new ItemStack(frame, slots),
                 true,
-                drawerRecipe(slots, source.get(1), ORE_IRON_NUGGET)));
+                drawerRecipe(slots, source, oreOr(ORE_IRON_NUGGET, Items.iron_ingot))));
     }
 
-    private static void registerOreRecipe(FSItemList output, int count, Object... recipe) {
-        if (output == null || !output.isRegistered()) {
-            return;
-        }
-        Object[] resolved = new Object[recipe.length];
-        for (int index = 0; index < recipe.length; index++) {
-            Object ingredient = recipe[index];
-            if (ingredient == null || missingOre(ingredient)) {
-                return;
-            }
-            resolved[index] = resolve(ingredient);
-        }
-        GameRegistry.addRecipe(new ShapedOreRecipe(output.get(count), resolved));
+    private static void registerOreRecipe(ItemStack output, Object... recipe) {
+        GameRegistry.addRecipe(new ShapedOreRecipe(output, recipe));
     }
 
-    private static void registerShapeless(FSItemList output, int count, Object... ingredients) {
-        if (output == null || !output.isRegistered()) {
-            return;
-        }
-        Object[] resolved = new Object[ingredients.length];
-        for (int index = 0; index < ingredients.length; index++) {
-            Object ingredient = ingredients[index];
-            if (ingredient == null || missingOre(ingredient)) {
-                return;
-            }
-            resolved[index] = resolve(ingredient);
-        }
-        GameRegistry.addRecipe(new ShapelessOreRecipe(output.get(count), resolved));
-    }
-
-    private static boolean missingOre(Object ingredient) {
-        return ingredient instanceof String ore && OreDictionary.getOres(ore)
-            .isEmpty();
-    }
-
-    private static Object resolve(Object ingredient) {
-        return ingredient instanceof FSItemList entry ? entry.get(1) : ingredient;
+    private static void registerShapeless(ItemStack output, Object... ingredients) {
+        GameRegistry.addRecipe(new ShapelessOreRecipe(output, ingredients));
     }
 
     private static Object oreOr(String preferred, Object fallback) {
@@ -597,22 +579,5 @@ public class FunctionalStorageRecipes {
         String[] shape = slots == 1 ? new String[] { "PPP", "PCP", "PPP" }
             : slots == 2 ? new String[] { "PCP", "PPP", "PCP" } : new String[] { "CPC", "PPP", "CPC" };
         return new Object[] { shape[0], shape[1], shape[2], 'C', center, 'P', frame };
-    }
-
-    private static ItemStack drawer(String woodName, int slots, int count) {
-        FSItemList entry = FSItemList.byId(woodName + "_" + slots);
-        if (entry != null) {
-            return entry.isRegistered() ? entry.get(count) : null;
-        }
-        return stack(FunctionalStorage.MOD_ID + ":" + woodName + "_" + slots, count, 0);
-    }
-
-    private static ItemStack stack(String id, int count, int metadata) {
-        Item item = (Item) Item.itemRegistry.getObject(id);
-        if (item != null) {
-            return new ItemStack(item, count, metadata);
-        }
-        Block block = Block.getBlockFromName(id);
-        return block == null ? null : new ItemStack(block, count, metadata);
     }
 }
