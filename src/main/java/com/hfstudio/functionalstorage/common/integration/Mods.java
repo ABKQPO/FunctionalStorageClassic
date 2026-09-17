@@ -15,6 +15,7 @@ public enum Mods implements IMod {
     InventoryBogoSorter("bogosorter"),
     MouseTweaks("MouseTweaks"),
     NotEnoughItems("NotEnoughItems"),
+    ServerUtilities("serverutilities"),
     Thaumcraft("Thaumcraft"),
     Waila("Waila"),
     ;

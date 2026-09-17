@@ -12,6 +12,7 @@ import net.minecraft.block.Block;
 import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemStack;
 
+import com.hfstudio.functionalstorage.FunctionalStorage;
 import com.hfstudio.functionalstorage.api.storage.IWoodType;
 import com.hfstudio.functionalstorage.api.storage.WoodTypeRegistry;
 
@@ -79,6 +80,23 @@ public enum DrawerWoodType implements IWoodType {
             }
         }
         return woodTypes;
+    }
+
+    public static boolean isOptionalDrawerId(@Nullable String registryName) {
+        if (registryName == null) {
+            return false;
+        }
+        for (DrawerWoodType woodType : values()) {
+            if (woodType.logName == null || woodType.isAvailable()) {
+                continue;
+            }
+            for (DrawerLayout layout : DrawerLayout.values()) {
+                if ((FunctionalStorage.MOD_ID + ":" + woodType.id + "_" + layout.getSlotCount()).equals(registryName)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     public static void registerBuiltIns() {

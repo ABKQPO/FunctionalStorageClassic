@@ -16,6 +16,7 @@ import net.minecraft.item.ItemStack;
 import com.hfstudio.functionalstorage.api.storage.BigItemStack;
 import com.hfstudio.functionalstorage.api.storage.IBigItemHandler;
 import com.hfstudio.functionalstorage.api.storage.StorageSubscription;
+import com.hfstudio.functionalstorage.common.integration.serverutilities.ServerUtilitiesIntegration;
 import com.hfstudio.functionalstorage.common.tile.ArmoryCabinetTile;
 
 import lombok.Getter;
@@ -177,8 +178,10 @@ public class ContainerArmory extends Container implements MenuSettingsReceiver, 
 
     @Override
     public boolean canInteractWith(EntityPlayer player) {
-        return tile.getWorldObj()
-            .getTileEntity(tile.xCoord, tile.yCoord, tile.zCoord) == tile
+        return tile.getWorldObj() != null
+            && !ServerUtilitiesIntegration.blocksInteraction(player, tile.xCoord, tile.yCoord, tile.zCoord)
+            && tile.getWorldObj()
+                .getTileEntity(tile.xCoord, tile.yCoord, tile.zCoord) == tile
             && player.getDistanceSq(tile.xCoord + 0.5, tile.yCoord + 0.5, tile.zCoord + 0.5) <= 64;
     }
 

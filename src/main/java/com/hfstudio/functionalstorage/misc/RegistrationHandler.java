@@ -119,7 +119,6 @@ public class RegistrationHandler {
     public static ConfigurationToolItem configurationTool;
     public static LinkingToolItem linkingTool;
 
-    /** Registry names must match the blockstate and model resource paths. */
     public static void registerBlocks() {
         for (WoodDrawerBlock block : woodDrawerBlocks()) {
             woodDrawers.add(block);
@@ -204,8 +203,6 @@ public class RegistrationHandler {
 
     private static List<WoodDrawerBlock> woodDrawerBlocks() {
         List<WoodDrawerBlock> blocks = new ArrayList<>();
-        // Contributed woods are included here, so a wood added by another mod
-        // gets the same treatment as a built-in one.
         for (IWoodType wood : WoodTypeRegistry.available()) {
             for (DrawerLayout layout : DrawerLayout.values()) {
                 blocks.add(new WoodDrawerBlock(wood, layout));

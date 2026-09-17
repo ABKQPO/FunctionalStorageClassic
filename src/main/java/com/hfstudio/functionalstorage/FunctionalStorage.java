@@ -4,6 +4,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.gtnewhorizon.gtnhlib.config.ConfigException;
+import com.hfstudio.functionalstorage.api.storage.IWoodType;
+import com.hfstudio.functionalstorage.api.storage.WoodTypeRegistry;
 import com.hfstudio.functionalstorage.common.network.ArmorySearchMessage;
 import com.hfstudio.functionalstorage.common.network.MenuSettingsMessage;
 import com.hfstudio.functionalstorage.common.network.StorageTransferMessage;
@@ -28,7 +30,7 @@ import cpw.mods.fml.relauncher.Side;
     modid = Tags.MODID,
     version = Tags.VERSION,
     name = Tags.MODNAME,
-    dependencies = "required-after:gtnhlib@[0.11.46,)",
+    dependencies = "required-after:gtnhlib@[0.11.46,);after:etfuturum",
     guiFactory = "com.hfstudio.functionalstorage.misc.ConfigGuiFactory",
     acceptableRemoteVersions = "*",
     acceptedMinecraftVersions = "[1.7.10]")
@@ -68,6 +70,7 @@ public class FunctionalStorage {
     @Mod.EventHandler
     public void init(FMLInitializationEvent event) {
         proxy.init(event);
+        WoodTypeRegistry.freeze();
     }
 
     @Mod.EventHandler
@@ -88,5 +91,9 @@ public class FunctionalStorage {
     @Mod.EventHandler
     public void onMissingMappings(FMLMissingMappingsEvent event) {
         proxy.onMissingMappings(event);
+    }
+
+    public static void registerWoodType(IWoodType woodType) {
+        WoodTypeRegistry.add(woodType);
     }
 }

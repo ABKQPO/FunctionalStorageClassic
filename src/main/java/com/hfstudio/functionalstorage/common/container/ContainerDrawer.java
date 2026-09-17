@@ -19,6 +19,7 @@ import com.hfstudio.functionalstorage.api.storage.StorageAction;
 import com.hfstudio.functionalstorage.api.storage.StorageSubscription;
 import com.hfstudio.functionalstorage.api.upgrade.IStorageUpgrade;
 import com.hfstudio.functionalstorage.common.block.base.DrawerBlock;
+import com.hfstudio.functionalstorage.common.integration.serverutilities.ServerUtilitiesIntegration;
 import com.hfstudio.functionalstorage.common.integration.thaumcraft.EssentiaContainerRegistry;
 import com.hfstudio.functionalstorage.common.interaction.ContainerExchange;
 import com.hfstudio.functionalstorage.common.interaction.FluidContainerInteraction;
@@ -150,6 +151,7 @@ public class ContainerDrawer extends Container implements MenuSettingsReceiver, 
     public boolean canInteractWith(@Nonnull EntityPlayer player) {
         return (tile instanceof StorageNetworkTile || tile.getInventoryView() == openedInventory)
             && tile.getWorldObj() != null
+            && !ServerUtilitiesIntegration.blocksInteraction(player, tile.xCoord, tile.yCoord, tile.zCoord)
             && tile.getWorldObj()
                 .getTileEntity(tile.xCoord, tile.yCoord, tile.zCoord) == tile
             && player.getDistanceSq(tile.xCoord + 0.5D, tile.yCoord + 0.5D, tile.zCoord + 0.5D) <= 64D;

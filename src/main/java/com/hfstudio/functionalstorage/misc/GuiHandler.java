@@ -10,6 +10,7 @@ import com.hfstudio.functionalstorage.client.gui.GuiUpgrade;
 import com.hfstudio.functionalstorage.common.container.ContainerArmory;
 import com.hfstudio.functionalstorage.common.container.ContainerDrawer;
 import com.hfstudio.functionalstorage.common.container.ContainerUpgrade;
+import com.hfstudio.functionalstorage.common.integration.serverutilities.ServerUtilitiesIntegration;
 import com.hfstudio.functionalstorage.common.item.upgrade.AutomationUpgradeItem;
 import com.hfstudio.functionalstorage.common.tile.ArmoryCabinetTile;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
@@ -28,6 +29,9 @@ public class GuiHandler implements IGuiHandler {
     public Object getServerGuiElement(int id, EntityPlayer player, World world, int x, int y, int z) {
         TileEntity tile = world.getTileEntity(x, y, z);
         if (!(tile instanceof ControllableDrawerTile drawer)) {
+            return null;
+        }
+        if (ServerUtilitiesIntegration.blocksInteraction(player, x, y, z)) {
             return null;
         }
         if (isUpgradeGui(drawer, id)) {

@@ -10,6 +10,8 @@ import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockContainer;
 import net.minecraft.block.material.Material;
+import net.minecraft.client.particle.EffectRenderer;
+import net.minecraft.client.particle.EntityDiggingFX;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -17,6 +19,7 @@ import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.IIcon;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.util.Vec3;
@@ -32,6 +35,7 @@ import com.gtnewhorizon.gtnhlib.client.model.baked.BakedModel;
 import com.hfstudio.functionalstorage.client.model.DrawerModelProvider;
 import com.hfstudio.functionalstorage.common.block.DrawerAttachment;
 import com.hfstudio.functionalstorage.common.block.DrawerFaceLayout;
+import com.hfstudio.functionalstorage.common.integration.serverutilities.ServerUtilitiesIntegration;
 import com.hfstudio.functionalstorage.common.tile.FluidDrawerTile;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 import com.hfstudio.functionalstorage.config.FunctionalStorageConfig;
@@ -65,6 +69,34 @@ public abstract class DrawerBlock extends BlockContainer implements IBlockModelP
     @Nonnull
     public DrawerFaceLayout getFaceLayout() {
         return faceLayout;
+    }
+
+    @Override
+    @SideOnly(Side.CLIENT)
+    public boolean addDestroyEffects(World world, int x, int y, int z, int metadata, EffectRenderer effectRenderer) {
+        IIcon icon = blockIcon;
+        for (int particleX = 0; particleX < 4; particleX++) {
+            for (int particleY = 0; particleY < 4; particleY++) {
+                for (int particleZ = 0; particleZ < 4; particleZ++) {
+                    double offsetX = (particleX + 0.5D) / 4D;
+                    double offsetY = (particleY + 0.5D) / 4D;
+                    double offsetZ = (particleZ + 0.5D) / 4D;
+                    EntityDiggingFX particle = new EntityDiggingFX(
+                        world,
+                        x + offsetX,
+                        y + offsetY,
+                        z + offsetZ,
+                        offsetX - 0.5D,
+                        offsetY - 0.5D,
+                        offsetZ - 0.5D,
+                        this,
+                        metadata);
+                    particle.setParticleIcon(icon);
+                    effectRenderer.addEffect(particle.applyColourMultiplier(x, y, z));
+                }
+            }
+        }
+        return true;
     }
 
     @Nonnull
@@ -208,6 +240,9 @@ public abstract class DrawerBlock extends BlockContainer implements IBlockModelP
         if (world.isRemote) {
             return true;
         }
+        if (ServerUtilitiesIntegration.blocksInteraction(player, x, y, z)) {
+            return false;
+        }
         TileEntity tile = world.getTileEntity(x, y, z);
         if (!(tile instanceof ControllableDrawerTile drawer)) {
             return false;
@@ -221,6 +256,9 @@ public abstract class DrawerBlock extends BlockContainer implements IBlockModelP
     @Override
     public void onBlockClicked(World world, int x, int y, int z, EntityPlayer player) {
         if (world.isRemote) {
+            return;
+        }
+        if (ServerUtilitiesIntegration.blocksInteraction(player, x, y, z)) {
             return;
         }
         TileEntity tile = world.getTileEntity(x, y, z);

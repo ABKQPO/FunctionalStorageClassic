@@ -7,6 +7,7 @@ import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
 
 import com.hfstudio.functionalstorage.FunctionalStorage;
+import com.hfstudio.functionalstorage.common.integration.serverutilities.ServerUtilitiesIntegration;
 import com.hfstudio.functionalstorage.common.item.upgrade.AutomationUpgradeItem;
 import com.hfstudio.functionalstorage.common.item.upgrade.AutomationUpgradeItem.RelativeDirection;
 import com.hfstudio.functionalstorage.common.item.upgrade.BreakerUpgradeItem;
@@ -53,8 +54,10 @@ public class ContainerUpgrade extends Container {
 
     @Override
     public boolean canInteractWith(EntityPlayer player) {
-        return tile.getWorldObj()
-            .getTileEntity(tile.xCoord, tile.yCoord, tile.zCoord) == tile
+        return tile.getWorldObj() != null
+            && !ServerUtilitiesIntegration.blocksInteraction(player, tile.xCoord, tile.yCoord, tile.zCoord)
+            && tile.getWorldObj()
+                .getTileEntity(tile.xCoord, tile.yCoord, tile.zCoord) == tile
             && tile.getUtilityUpgrade(upgradeSlot) == upgradeStack
             && player.getDistanceSq(tile.xCoord + 0.5D, tile.yCoord + 0.5D, tile.zCoord + 0.5D) <= 64D;
     }

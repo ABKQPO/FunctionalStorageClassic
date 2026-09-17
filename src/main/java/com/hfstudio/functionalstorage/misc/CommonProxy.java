@@ -29,11 +29,9 @@ public class CommonProxy {
 
     public void init(FMLInitializationEvent event) {
         MinecraftForge.EVENT_BUS.register(new DrawerClickHandler());
-        FunctionalStorageRecipes.registerEarlyRecipes();
     }
 
     public void postInit(FMLPostInitializationEvent event) {
-        FunctionalStorageRecipes.registerLateRecipes();
         if (Mods.Waila.isModLoaded()) WailaIntegration.register();
         if (Mods.InventoryBogoSorter.isModLoaded()) BogoSorterIntegration.register();
         if (FunctionalStorageConfig.COMPATIBILITY.enableAE2Compatibility && Mods.AE2.isModLoaded()) {
@@ -44,7 +42,9 @@ public class CommonProxy {
         }
     }
 
-    public void completeInit(FMLLoadCompleteEvent event) {}
+    public void completeInit(FMLLoadCompleteEvent event) {
+        FunctionalStorageRecipes.registerRecipes();
+    }
 
     public void serverStarting(FMLServerStartingEvent event) {}
 
