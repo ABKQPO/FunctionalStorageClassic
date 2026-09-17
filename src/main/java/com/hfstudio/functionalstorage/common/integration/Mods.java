@@ -11,6 +11,7 @@ public enum Mods implements IMod {
 
     // spotless:off
     AE2("appliedenergistics2"),
+    Etfuturum("etfuturum"),
     InventoryBogoSorter("bogosorter"),
     MouseTweaks("MouseTweaks"),
     NotEnoughItems("NotEnoughItems"),

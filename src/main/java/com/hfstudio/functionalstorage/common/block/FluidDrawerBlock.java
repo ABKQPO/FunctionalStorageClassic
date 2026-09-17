@@ -7,6 +7,7 @@ import javax.annotation.Nonnull;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
 
+import com.hfstudio.functionalstorage.FunctionalStorage;
 import com.hfstudio.functionalstorage.common.block.base.DrawerBlock;
 import com.hfstudio.functionalstorage.common.storage.DrawerLayout;
 import com.hfstudio.functionalstorage.common.tile.FluidDrawerTile;
@@ -20,9 +21,9 @@ public class FluidDrawerBlock extends DrawerBlock {
         super(
             layout == DrawerLayout.X_1 ? DrawerFaceLayout.X_1
                 : layout == DrawerLayout.X_2 ? DrawerFaceLayout.X_2 : DrawerFaceLayout.X_4,
-            "functionalstorage.fluid_" + layout.getSlotCount());
+            FunctionalStorage.MOD_ID + ".fluid_" + layout.getSlotCount());
         this.layout = layout;
-        setBlockTextureName("functionalstorage:fluid_front");
+        setBlockTextureName(FunctionalStorage.MOD_ID + ":fluid_front");
     }
 
     @Nonnull

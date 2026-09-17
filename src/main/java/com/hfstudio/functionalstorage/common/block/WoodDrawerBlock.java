@@ -8,23 +8,28 @@ import javax.annotation.Nonnull;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
 
+import com.hfstudio.functionalstorage.FunctionalStorage;
+import com.hfstudio.functionalstorage.api.storage.IWoodType;
 import com.hfstudio.functionalstorage.common.block.base.DrawerBlock;
 import com.hfstudio.functionalstorage.common.storage.DrawerLayout;
-import com.hfstudio.functionalstorage.common.storage.DrawerWoodType;
 import com.hfstudio.functionalstorage.common.tile.WoodDrawerTile;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 
-/** One block per wood type and layout, with a stable registry and asset identifier. */
+/**
+ * One block per wood type and layout, with a stable registry and asset
+ * identifier. The wood is an {@link IWoodType} rather than a concrete enum, so a
+ * wood contributed by another mod registers exactly like a built-in one.
+ */
 public class WoodDrawerBlock extends DrawerBlock {
 
-    private final DrawerWoodType woodType;
+    private final IWoodType woodType;
     private final DrawerLayout layout;
 
-    public WoodDrawerBlock(@Nonnull DrawerWoodType woodType, @Nonnull DrawerLayout layout) {
-        super(faceLayoutOf(layout), "functionalstorage." + woodType.getId() + "_" + layout.getSlotCount());
+    public WoodDrawerBlock(@Nonnull IWoodType woodType, @Nonnull DrawerLayout layout) {
+        super(faceLayoutOf(layout), FunctionalStorage.MOD_ID + "." + woodType.getName() + "_" + layout.getSlotCount());
         this.woodType = woodType;
         this.layout = layout;
-        setBlockTextureName("functionalstorage:" + woodType.getId() + "_front_" + layout.getSlotCount());
+        setBlockTextureName(FunctionalStorage.MOD_ID + ":" + woodType.getName() + "_front_" + layout.getSlotCount());
     }
 
     private static DrawerFaceLayout faceLayoutOf(@Nonnull DrawerLayout layout) {
@@ -36,7 +41,7 @@ public class WoodDrawerBlock extends DrawerBlock {
     }
 
     @Nonnull
-    public DrawerWoodType getWoodType() {
+    public IWoodType getWoodType() {
         return woodType;
     }
 
@@ -47,7 +52,7 @@ public class WoodDrawerBlock extends DrawerBlock {
 
     @Nonnull
     public String getDrawerId() {
-        return woodType.getId() + "_" + layout.getSlotCount();
+        return woodType.getName() + "_" + layout.getSlotCount();
     }
 
     @Nonnull

@@ -8,6 +8,7 @@ import javax.annotation.Nonnull;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
 
+import com.hfstudio.functionalstorage.FunctionalStorage;
 import com.hfstudio.functionalstorage.common.block.DrawerFaceLayout;
 import com.hfstudio.functionalstorage.common.block.base.DrawerBlock;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
@@ -16,8 +17,8 @@ import com.hfstudio.functionalstorage.common.tile.compact.CompactingDrawerTile;
 public class CompactingDrawerBlock extends DrawerBlock {
 
     public CompactingDrawerBlock() {
-        super(DrawerFaceLayout.X_3, "functionalstorage.compacting_drawer");
-        setBlockTextureName("functionalstorage:compacting_drawer_front");
+        super(DrawerFaceLayout.X_3, FunctionalStorage.MOD_ID + ".compacting_drawer");
+        setBlockTextureName(FunctionalStorage.MOD_ID + ":compacting_drawer_front");
     }
 
     @Nonnull

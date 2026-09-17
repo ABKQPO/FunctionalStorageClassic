@@ -8,6 +8,7 @@ import javax.annotation.Nonnull;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
 
+import com.hfstudio.functionalstorage.FunctionalStorage;
 import com.hfstudio.functionalstorage.common.block.base.DrawerBlock;
 import com.hfstudio.functionalstorage.common.tile.EnderDrawerTile;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
@@ -19,8 +20,8 @@ import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 public class EnderDrawerBlock extends DrawerBlock {
 
     public EnderDrawerBlock() {
-        super(DrawerFaceLayout.X_1, "functionalstorage.ender_drawer");
-        setBlockTextureName("functionalstorage:ender_front");
+        super(DrawerFaceLayout.X_1, FunctionalStorage.MOD_ID + ".ender_drawer");
+        setBlockTextureName(FunctionalStorage.MOD_ID + ":ender_front");
     }
 
     @Nonnull

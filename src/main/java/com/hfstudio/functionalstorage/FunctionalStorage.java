@@ -7,6 +7,7 @@ import com.gtnewhorizon.gtnhlib.config.ConfigException;
 import com.hfstudio.functionalstorage.common.network.ArmorySearchMessage;
 import com.hfstudio.functionalstorage.common.network.MenuSettingsMessage;
 import com.hfstudio.functionalstorage.common.network.StorageTransferMessage;
+import com.hfstudio.functionalstorage.common.storage.DrawerWoodType;
 import com.hfstudio.functionalstorage.config.FunctionalStorageConfig;
 import com.hfstudio.functionalstorage.misc.CommonProxy;
 import com.hfstudio.functionalstorage.misc.GuiHandler;
@@ -27,7 +28,7 @@ import cpw.mods.fml.relauncher.Side;
     modid = Tags.MODID,
     version = Tags.VERSION,
     name = Tags.MODNAME,
-    dependencies = "required-after:gtnhlib@[0.11.48,)",
+    dependencies = "required-after:gtnhlib@[0.11.46,)",
     guiFactory = "com.hfstudio.functionalstorage.misc.ConfigGuiFactory",
     acceptableRemoteVersions = "*",
     acceptedMinecraftVersions = "[1.7.10]")
@@ -60,6 +61,7 @@ public class FunctionalStorage {
         network.registerMessage(ArmorySearchMessage.Handler.class, ArmorySearchMessage.class, 1, Side.SERVER);
         network.registerMessage(StorageTransferMessage.Handler.class, StorageTransferMessage.class, 2, Side.SERVER);
         NetworkRegistry.INSTANCE.registerGuiHandler(this, new GuiHandler());
+        DrawerWoodType.registerBuiltIns();
         proxy.preInit(event);
     }
 

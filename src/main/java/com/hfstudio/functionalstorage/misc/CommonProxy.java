@@ -17,7 +17,6 @@ import cpw.mods.fml.common.event.FMLMissingMappingsEvent.MissingMapping;
 import cpw.mods.fml.common.event.FMLPostInitializationEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.common.event.FMLServerStartingEvent;
-import cpw.mods.fml.common.registry.GameRegistry.Type;
 
 public class CommonProxy {
 
@@ -56,8 +55,7 @@ public class CommonProxy {
                 && ("functionalstorage:essentia_1".equals(mapping.name)
                     || "functionalstorage:essentia_2".equals(mapping.name)
                     || "functionalstorage:essentia_4".equals(mapping.name));
-            if (missingEssentia
-                || mapping.type == Type.ITEM && "functionalstorage:stonecutting_upgrade".equals(mapping.name)) {
+            if (missingEssentia) {
                 mapping.ignore();
             }
         }

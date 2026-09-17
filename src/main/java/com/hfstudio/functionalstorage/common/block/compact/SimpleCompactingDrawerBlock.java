@@ -8,6 +8,7 @@ import javax.annotation.Nonnull;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
 
+import com.hfstudio.functionalstorage.FunctionalStorage;
 import com.hfstudio.functionalstorage.common.block.DrawerFaceLayout;
 import com.hfstudio.functionalstorage.common.block.base.DrawerBlock;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
@@ -18,8 +19,8 @@ public class SimpleCompactingDrawerBlock extends DrawerBlock {
     public static final int TIER_COUNT = 2;
 
     public SimpleCompactingDrawerBlock() {
-        super(DrawerFaceLayout.X_2, "functionalstorage.simple_compacting_drawer");
-        setBlockTextureName("functionalstorage:simple_compacting_drawer_front");
+        super(DrawerFaceLayout.X_2, FunctionalStorage.MOD_ID + ".simple_compacting_drawer");
+        setBlockTextureName(FunctionalStorage.MOD_ID + ":simple_compacting_drawer_front");
     }
 
     @Nonnull

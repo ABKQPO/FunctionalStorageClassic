@@ -8,6 +8,7 @@ import javax.annotation.Nonnull;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
 
+import com.hfstudio.functionalstorage.FunctionalStorage;
 import com.hfstudio.functionalstorage.common.block.DrawerFaceLayout;
 import com.hfstudio.functionalstorage.common.block.base.DrawerBlock;
 import com.hfstudio.functionalstorage.common.tile.controller.ControllerExtensionTile;
@@ -15,8 +16,8 @@ import com.hfstudio.functionalstorage.common.tile.controller.ControllerExtension
 public class ControllerExtensionBlock extends DrawerBlock {
 
     public ControllerExtensionBlock() {
-        super(DrawerFaceLayout.X_1, "functionalstorage.controller_extension");
-        setBlockTextureName("functionalstorage:controller_extension");
+        super(DrawerFaceLayout.X_1, FunctionalStorage.MOD_ID + ".controller_extension");
+        setBlockTextureName(FunctionalStorage.MOD_ID + ":controller_extension");
     }
 
     @Nonnull

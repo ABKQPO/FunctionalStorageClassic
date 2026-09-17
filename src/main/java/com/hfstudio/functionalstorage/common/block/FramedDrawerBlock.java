@@ -14,6 +14,7 @@ import net.minecraft.world.World;
 import com.gtnewhorizon.gtnhlib.api.IBlockModelProvider;
 import com.gtnewhorizon.gtnhlib.client.model.BakedModelQuadContext;
 import com.gtnewhorizon.gtnhlib.client.model.baked.BakedModel;
+import com.hfstudio.functionalstorage.FunctionalStorage;
 import com.hfstudio.functionalstorage.client.model.FramedModelHolder;
 import com.hfstudio.functionalstorage.common.block.base.DrawerBlock;
 import com.hfstudio.functionalstorage.common.storage.DrawerLayout;
@@ -33,9 +34,9 @@ public class FramedDrawerBlock extends DrawerBlock implements IBlockModelProvide
     private final DrawerLayout layout;
 
     public FramedDrawerBlock(@Nonnull DrawerLayout layout) {
-        super(faceLayoutOf(layout), "functionalstorage.framed_" + layout.getSlotCount());
+        super(faceLayoutOf(layout), FunctionalStorage.MOD_ID + ".framed_" + layout.getSlotCount());
         this.layout = layout;
-        setBlockTextureName("functionalstorage:framed_side");
+        setBlockTextureName(FunctionalStorage.MOD_ID + ":framed_side");
     }
 
     private static DrawerFaceLayout faceLayoutOf(@Nonnull DrawerLayout layout) {

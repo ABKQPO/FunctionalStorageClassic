@@ -247,7 +247,7 @@ public abstract class DrawerBlock extends BlockContainer implements IBlockModelP
         return removedByPlayer(world, player, x, y, z, false);
     }
 
-    private boolean protectCreativeClick(World world, EntityPlayer player, int x, int y, int z) {
+    public boolean protectCreativeClick(World world, EntityPlayer player, int x, int y, int z) {
         return player.capabilities.isCreativeMode && !player.isSneaking() && getHitSlot(world, x, y, z, player) >= 0;
     }
 

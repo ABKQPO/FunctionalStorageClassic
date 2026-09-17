@@ -13,6 +13,8 @@ import net.minecraftforge.fluids.FluidRegistry;
 import net.minecraftforge.fluids.FluidStack;
 
 import com.hfstudio.functionalstorage.FunctionalStorage;
+import com.hfstudio.functionalstorage.api.storage.IWoodType;
+import com.hfstudio.functionalstorage.api.storage.WoodTypeRegistry;
 import com.hfstudio.functionalstorage.common.block.ArmoryCabinetBlock;
 import com.hfstudio.functionalstorage.common.block.DrawerBlockProperties;
 import com.hfstudio.functionalstorage.common.block.EnderDrawerBlock;
@@ -45,7 +47,6 @@ import com.hfstudio.functionalstorage.common.item.upgrade.StorageUpgradeItem;
 import com.hfstudio.functionalstorage.common.item.upgrade.UpgradeItem;
 import com.hfstudio.functionalstorage.common.item.upgrade.VoidUpgradeItem;
 import com.hfstudio.functionalstorage.common.storage.DrawerLayout;
-import com.hfstudio.functionalstorage.common.storage.DrawerWoodType;
 import com.hfstudio.functionalstorage.config.FunctionalStorageConfig;
 
 import cpw.mods.fml.common.registry.GameRegistry;
@@ -162,14 +163,29 @@ public class RegistrationHandler {
             GameRegistry.registerBlock(block, block.getDrawerId());
         }
 
-        registerFramed("compacting_framed_drawer", compactingDrawer);
-        registerFramed("framed_simple_compacting_drawer", simpleCompactingDrawer);
-        registerFramed("framed_storage_controller", storageController);
-        registerFramed("framed_controller_extension", controllerExtension);
-        for (FluidDrawerBlock block : fluidDrawers) registerFramed(
-            "framed_fluid_" + block.getDrawerLayout()
-                .getSlotCount(),
-            block);
+        registerFramed(
+            "compacting_framed_drawer",
+            compactingDrawer,
+            FunctionalStorage.MOD_ID + ":framed_front_compacting");
+        registerFramed(
+            "framed_simple_compacting_drawer",
+            simpleCompactingDrawer,
+            FunctionalStorage.MOD_ID + ":framed_side");
+        registerFramed(
+            "framed_storage_controller",
+            storageController,
+            FunctionalStorage.MOD_ID + ":framed_controller_front");
+        registerFramed(
+            "framed_controller_extension",
+            controllerExtension,
+            FunctionalStorage.MOD_ID + ":framed_controller_extension");
+        for (FluidDrawerBlock block : fluidDrawers) {
+            registerFramed(
+                "framed_fluid_" + block.getDrawerLayout()
+                    .getSlotCount(),
+                block,
+                FunctionalStorage.MOD_ID + ":framed_side");
+        }
 
         if (FunctionalStorageConfig.COMPATIBILITY.enableThaumcraftCompatibility && Mods.Thaumcraft.isModLoaded()) {
             for (DrawerLayout layout : DrawerLayout.values()) {
@@ -180,15 +196,17 @@ public class RegistrationHandler {
         }
     }
 
-    private static void registerFramed(String id, DrawerBlock original) {
-        FramedVariantBlock block = new FramedVariantBlock(id, original);
+    private static void registerFramed(String id, DrawerBlock original, String defaultTexture) {
+        FramedVariantBlock block = new FramedVariantBlock(id, original, defaultTexture);
         GameRegistry.registerBlock(block, id);
         specialDrawers.add(block);
     }
 
     private static List<WoodDrawerBlock> woodDrawerBlocks() {
         List<WoodDrawerBlock> blocks = new ArrayList<>();
-        for (DrawerWoodType wood : DrawerWoodType.values()) {
+        // Contributed woods are included here, so a wood added by another mod
+        // gets the same treatment as a built-in one.
+        for (IWoodType wood : WoodTypeRegistry.available()) {
             for (DrawerLayout layout : DrawerLayout.values()) {
                 blocks.add(new WoodDrawerBlock(wood, layout));
             }

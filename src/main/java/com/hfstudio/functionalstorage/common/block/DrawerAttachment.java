@@ -3,6 +3,8 @@ package com.hfstudio.functionalstorage.common.block;
 import net.minecraft.util.StatCollector;
 import net.minecraftforge.common.util.ForgeDirection;
 
+import com.hfstudio.functionalstorage.FunctionalStorage;
+
 import lombok.Getter;
 
 /**
@@ -42,7 +44,7 @@ public enum DrawerAttachment {
     }
 
     public String getLocalizedName() {
-        return StatCollector.translateToLocal("functionalstorage.attachment." + id);
+        return StatCollector.translateToLocal(FunctionalStorage.MOD_ID + ".attachment." + id);
     }
 
     @Override

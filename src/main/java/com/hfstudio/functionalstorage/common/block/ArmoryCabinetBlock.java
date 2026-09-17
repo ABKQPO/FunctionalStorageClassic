@@ -5,9 +5,11 @@ import java.util.List;
 
 import javax.annotation.Nonnull;
 
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
 
+import com.hfstudio.functionalstorage.FunctionalStorage;
 import com.hfstudio.functionalstorage.common.block.base.DrawerBlock;
 import com.hfstudio.functionalstorage.common.tile.ArmoryCabinetTile;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
@@ -15,8 +17,8 @@ import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 public class ArmoryCabinetBlock extends DrawerBlock {
 
     public ArmoryCabinetBlock() {
-        super(DrawerFaceLayout.X_1, "functionalstorage.armory_cabinet");
-        setBlockTextureName("functionalstorage:armory_front");
+        super(DrawerFaceLayout.X_1, FunctionalStorage.MOD_ID + ".armory_cabinet");
+        setBlockTextureName(FunctionalStorage.MOD_ID + ":armory_front");
     }
 
     @Nonnull

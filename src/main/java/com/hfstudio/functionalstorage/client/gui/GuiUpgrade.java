@@ -14,6 +14,7 @@ import net.minecraft.util.StatCollector;
 import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.GL11;
 
+import com.hfstudio.functionalstorage.FunctionalStorage;
 import com.hfstudio.functionalstorage.client.gui.DrawerTooltipData.Entry;
 import com.hfstudio.functionalstorage.common.container.ContainerUpgrade;
 import com.hfstudio.functionalstorage.common.item.upgrade.AutomationUpgradeItem;
@@ -47,7 +48,7 @@ public class GuiUpgrade extends GuiContainer {
     }
 
     private static ResourceLocation texture(String name) {
-        return new ResourceLocation("functionalstorage", "textures/gui/" + name + ".png");
+        return new ResourceLocation(FunctionalStorage.MOD_ID, "textures/gui/" + name + ".png");
     }
 
     public boolean overlapsFilterPanel(int x, int y, int width, int height) {

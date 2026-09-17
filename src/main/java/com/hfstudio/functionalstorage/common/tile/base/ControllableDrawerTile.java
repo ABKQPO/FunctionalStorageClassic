@@ -343,7 +343,7 @@ public abstract class ControllableDrawerTile extends TileEntity {
         int slot) {
         ItemStack held = player.getHeldItem();
         if (held == null) {
-            if (player.isSneaking()) {
+            if (player.isSneaking() || opensGuiOnEmptyHand()) {
                 return openGui(player);
             }
             return activateItemSlot(player, slot);
@@ -362,7 +362,14 @@ public abstract class ControllableDrawerTile extends TileEntity {
             tryInstallUtilityUpgrade(player, held);
             return true;
         }
+        if (opensGuiOnEmptyHand()) {
+            return openGui(player);
+        }
         return activateItemSlot(player, slot);
+    }
+
+    protected boolean opensGuiOnEmptyHand() {
+        return false;
     }
 
     public boolean openGui(@Nonnull EntityPlayer player) {

@@ -41,7 +41,7 @@ public class DrawerGuiTextures extends Gui implements IResourceManagerReloadList
 
     public static final DrawerGuiTextures INSTANCE = new DrawerGuiTextures();
     public static final ResourceLocation BACKGROUND = new ResourceLocation(
-        "functionalstorage",
+        FunctionalStorage.MOD_ID,
         "textures/gui/background.png");
     private static final ResourceLocation INVENTORY = new ResourceLocation(
         "minecraft",

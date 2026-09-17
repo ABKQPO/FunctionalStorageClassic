@@ -61,6 +61,11 @@ public class ArmoryCabinetTile extends ControllableDrawerTile implements DrawerI
     }
 
     @Override
+    protected boolean opensGuiOnEmptyHand() {
+        return true;
+    }
+
+    @Override
     public int getStorageUpgradeSlots() {
         return 0;
     }

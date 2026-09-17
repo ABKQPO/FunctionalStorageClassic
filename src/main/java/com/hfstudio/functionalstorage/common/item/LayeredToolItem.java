@@ -5,6 +5,7 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.IIcon;
 
+import com.hfstudio.functionalstorage.FunctionalStorage;
 import com.hfstudio.functionalstorage.misc.RegistrationHandler;
 
 import cpw.mods.fml.relauncher.Side;
@@ -20,8 +21,8 @@ public abstract class LayeredToolItem extends Item {
         this.textures = textures;
         setMaxStackSize(1);
         setCreativeTab(RegistrationHandler.CREATIVE_TAB);
-        setUnlocalizedName("functionalstorage." + name);
-        setTextureName("functionalstorage:" + name);
+        setUnlocalizedName(FunctionalStorage.MOD_ID + "." + name);
+        setTextureName(FunctionalStorage.MOD_ID + ":" + name);
     }
 
     @Override
@@ -29,7 +30,7 @@ public abstract class LayeredToolItem extends Item {
     public void registerIcons(IIconRegister register) {
         layers = new IIcon[textures.length];
         for (int index = 0; index < textures.length; index++) {
-            layers[index] = register.registerIcon("functionalstorage:" + textures[index]);
+            layers[index] = register.registerIcon(FunctionalStorage.MOD_ID + ":" + textures[index]);
         }
         itemIcon = layers[0];
     }

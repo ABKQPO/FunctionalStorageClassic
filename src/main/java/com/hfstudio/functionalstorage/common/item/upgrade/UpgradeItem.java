@@ -10,6 +10,7 @@ import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.IIcon;
 import net.minecraft.util.StatCollector;
 
+import com.hfstudio.functionalstorage.FunctionalStorage;
 import com.hfstudio.functionalstorage.api.upgrade.IStorageUpgrade;
 import com.hfstudio.functionalstorage.misc.RegistrationHandler;
 
@@ -31,19 +32,19 @@ public class UpgradeItem extends Item {
         this.id = id;
         setMaxStackSize(1);
         setCreativeTab(RegistrationHandler.CREATIVE_TAB);
-        setUnlocalizedName("functionalstorage." + id);
+        setUnlocalizedName(FunctionalStorage.MOD_ID + "." + id);
     }
 
     /** Assigns the registry name without registering items during construction. */
     public void setUpgradeName(String name) {
-        setUnlocalizedName("functionalstorage." + name);
-        setTextureName("functionalstorage:" + name);
+        setUnlocalizedName(FunctionalStorage.MOD_ID + "." + name);
+        setTextureName(FunctionalStorage.MOD_ID + ":" + name);
     }
 
     @Override
     @SideOnly(Side.CLIENT)
     public void registerIcons(IIconRegister register) {
-        icon = register.registerIcon("functionalstorage:" + id);
+        icon = register.registerIcon(FunctionalStorage.MOD_ID + ":" + id);
     }
 
     @Override

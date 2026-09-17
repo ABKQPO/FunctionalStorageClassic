@@ -28,6 +28,7 @@ import com.gtnewhorizon.gtnhlib.client.model.baked.BakedModel;
 import com.gtnewhorizon.gtnhlib.client.model.loading.ModelDeserializer.Position;
 import com.gtnewhorizon.gtnhlib.client.renderer.cel.model.quad.ModelQuad;
 import com.gtnewhorizon.gtnhlib.client.renderer.cel.model.quad.ModelQuadView;
+import com.hfstudio.functionalstorage.FunctionalStorage;
 import com.hfstudio.functionalstorage.common.block.FramedBlock;
 import com.hfstudio.functionalstorage.common.storage.FramedDrawerStyle;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
@@ -39,8 +40,8 @@ import cpw.mods.fml.relauncher.SideOnly;
 @SideOnly(Side.CLIENT)
 public class FramedDrawerModelProvider implements IBlockModelProvider {
 
-    private static final String SIDE_MARKER = "functionalstorage:blocks/framed_side";
-    private static final String FRONT_MARKER = "functionalstorage:blocks/framed_front_";
+    private static final String SIDE_MARKER = FunctionalStorage.MOD_ID + ":blocks/framed_side";
+    private static final String FRONT_MARKER = FunctionalStorage.MOD_ID + ":blocks/framed_front_";
 
     private final Cache<String, PartSprites> spriteCache = CacheBuilder.newBuilder()
         .maximumSize(256)
@@ -120,11 +121,13 @@ public class FramedDrawerModelProvider implements IBlockModelProvider {
     }
 
     private static boolean isSideMarker(@Nonnull String iconName) {
-        return iconName.startsWith(SIDE_MARKER) || iconName.startsWith("functionalstorage:blocks/framed_part_side_");
+        return iconName.startsWith(SIDE_MARKER)
+            || iconName.startsWith(FunctionalStorage.MOD_ID + ":blocks/framed_part_side_");
     }
 
     private static boolean isFrontMarker(@Nonnull String iconName) {
-        return iconName.startsWith(FRONT_MARKER) || iconName.startsWith("functionalstorage:blocks/framed_part_front_");
+        return iconName.startsWith(FRONT_MARKER)
+            || iconName.startsWith(FunctionalStorage.MOD_ID + ":blocks/framed_part_front_");
     }
 
     private static boolean isCenterStrip(float min, float max) {
@@ -329,7 +332,7 @@ public class FramedDrawerModelProvider implements IBlockModelProvider {
             if (side >= 6) {
                 side = ForgeDirection.NORTH.ordinal();
             }
-            if (iconName.startsWith("functionalstorage:blocks/framed_part_divider_")) {
+            if (iconName.startsWith(FunctionalStorage.MOD_ID + ":blocks/framed_part_divider_")) {
                 return sprites.dividerFaces[side] == null ? quad : retexture(quad, marker, sprites.dividerFaces[side]);
             }
             if (isSideMarker(iconName)) {
@@ -337,7 +340,8 @@ public class FramedDrawerModelProvider implements IBlockModelProvider {
                     : retexture(quad, marker, sprites.exteriorFaces[side]);
             }
             if (isFrontMarker(iconName)) {
-                if (!iconName.startsWith("functionalstorage:blocks/framed_part_front_") && isDivider(quad, marker)) {
+                if (!iconName.startsWith(FunctionalStorage.MOD_ID + ":blocks/framed_part_front_")
+                    && isDivider(quad, marker)) {
                     return sprites.dividerFaces[side] == null ? quad
                         : retexture(quad, marker, sprites.dividerFaces[side]);
                 }

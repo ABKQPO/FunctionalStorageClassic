@@ -1,0 +1,8 @@
+{
+  "parent": "functionalstorage:blocks/base_x_1",
+  "textures": {
+    "front": "functionalstorage:blocks/crimson_front_1",
+    "side": "functionalstorage:blocks/crimson_side",
+    "top": "blocks/crimson_planks"
+  }
+}
