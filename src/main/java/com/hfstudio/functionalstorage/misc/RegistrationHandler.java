@@ -116,7 +116,6 @@ public class RegistrationHandler {
     public static UpgradeItem speedUpgradeAugment;
     public static CreativeVendingUpgradeItem creativeVendingUpgrade;
     public static ResourceGenerationUpgradeItem drippingUpgrade;
-    public static ResourceGenerationUpgradeItem waterGeneratorUpgrade;
     public static ResourceGenerationUpgradeItem obsidianUpgrade;
 
     public static ConfigurationToolItem configurationTool;
@@ -269,13 +268,6 @@ public class RegistrationHandler {
         drippingUpgrade = registerUpgrade(
             new ResourceGenerationUpgradeItem("dripping_upgrade", 20, null, new FluidStack(FluidRegistry.LAVA, 20)),
             "dripping_upgrade");
-        waterGeneratorUpgrade = registerUpgrade(
-            new ResourceGenerationUpgradeItem(
-                "water_generator_upgrade",
-                1,
-                null,
-                new FluidStack(FluidRegistry.WATER, 2000)),
-            "water_generator_upgrade");
         obsidianUpgrade = registerUpgrade(
             new ResourceGenerationUpgradeItem("obsidian_upgrade", 300, new ItemStack(Blocks.obsidian), null),
             "obsidian_upgrade");
@@ -296,7 +288,6 @@ public class RegistrationHandler {
         refillUpgrade = registerUpgrade(new RefillUpgradeItem(false), "refill_upgrade");
         dimensionalRefillUpgrade = registerUpgrade(new RefillUpgradeItem(true), "dimensional_refill_upgrade");
         speedUpgradeAugment = registerUpgrade(new UpgradeItem("speed_upgrade_augment"), "speed_upgrade_augment");
-        speedUpgradeAugment.setMaxStackSize(64);
 
         configurationTool = new ConfigurationToolItem();
         GameRegistry.registerItem(configurationTool, "configuration_tool");

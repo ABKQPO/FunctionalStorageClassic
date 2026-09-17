@@ -184,6 +184,23 @@ public class LinkingToolItem extends LayeredToolItem {
     @Override
     public ItemStack onItemRightClick(ItemStack stack, World world, EntityPlayer player) {
         if (world.isRemote) {
+            if (!getFrequency(stack).isEmpty()) {
+                if (player.isSneaking()) {
+                    showActionBarFeedback("linkingtool.drawer.clear");
+                }
+            } else {
+                if (player.isSneaking()) {
+                    showActionBarFeedback(
+                        "linkingtool.linkingmode.swapped",
+                        nextModeColor(stack),
+                        new ChatComponentTranslation(nextModeKey(stack)));
+                } else {
+                    showActionBarFeedback(
+                        "linkingtool.linkingaction.swapped",
+                        nextActionColor(stack),
+                        new ChatComponentTranslation(nextActionKey(stack)));
+                }
+            }
             return stack;
         }
         NBTTagCompound data = tag(stack);
@@ -191,15 +208,12 @@ public class LinkingToolItem extends LayeredToolItem {
             if (player.isSneaking()) {
                 data.removeTag(KEY_FREQUENCY);
                 data.removeTag(KEY_SAFETY);
-                message(player, "linkingtool.drawer.clear");
             }
         } else if (player.isSneaking()) {
             data.setBoolean(KEY_MODE, !data.getBoolean(KEY_MODE));
             data.removeTag(KEY_FIRST);
-            message(player, "linkingtool.linkingmode.swapped", new ChatComponentTranslation(modeKey(stack)));
         } else {
             data.setBoolean(KEY_REMOVE, !data.getBoolean(KEY_REMOVE));
-            message(player, "linkingtool.linkingaction.swapped", new ChatComponentTranslation(actionKey(stack)));
         }
         return stack;
     }
@@ -265,6 +279,22 @@ public class LinkingToolItem extends LayeredToolItem {
             .toLowerCase(Locale.ROOT);
     }
 
+    private static String nextModeKey(ItemStack stack) {
+        return "linkingtool.linkingmode." + (getLinkingMode(stack) == LinkingMode.SINGLE ? "multiple" : "single");
+    }
+
+    private static EnumChatFormatting nextModeColor(ItemStack stack) {
+        return getLinkingMode(stack) == LinkingMode.SINGLE ? EnumChatFormatting.GREEN : EnumChatFormatting.AQUA;
+    }
+
+    private static String nextActionKey(ItemStack stack) {
+        return "linkingtool.linkingaction." + (getActionMode(stack) == ActionMode.ADD ? "remove" : "add");
+    }
+
+    private static EnumChatFormatting nextActionColor(ItemStack stack) {
+        return getActionMode(stack) == ActionMode.ADD ? EnumChatFormatting.GOLD : EnumChatFormatting.BLUE;
+    }
+
     private NBTTagCompound tag(ItemStack stack) {
         if (!stack.hasTagCompound()) {
             stack.setTagCompound(new NBTTagCompound());
@@ -272,7 +302,8 @@ public class LinkingToolItem extends LayeredToolItem {
         return stack.getTagCompound();
     }
 
-    private void message(EntityPlayer player, String key, Object... args) {
-        ToolFeedback.send(player, new ChatComponentTranslation(key, args));
+    private void message(EntityPlayer player, String key, Object... arguments) {
+        ToolFeedback.send(player, new ChatComponentTranslation(key, arguments));
     }
+
 }

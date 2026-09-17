@@ -14,7 +14,6 @@ import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.StatCollector;
 import net.minecraft.world.World;
 
-import com.hfstudio.functionalstorage.common.interaction.ToolFeedback;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 
 import cpw.mods.fml.relauncher.Side;
@@ -26,20 +25,22 @@ public class ConfigurationToolItem extends LayeredToolItem {
     @Getter
     public enum ConfigurationAction {
 
-        LOCKING("locking", 1, 0x2883FA),
-        TOGGLE_NUMBERS("numbers", 1, 0xFA9128),
-        TOGGLE_RENDER("render", 1, 0x64FA28),
-        TOGGLE_UPGRADES("upgrades", 1, 0xA628FA),
-        INDICATOR("indicator", 3, 0xFF2828);
+        LOCKING("locking", 1, 0x2883FA, EnumChatFormatting.BLUE),
+        TOGGLE_NUMBERS("numbers", 1, 0xFA9128, EnumChatFormatting.GOLD),
+        TOGGLE_RENDER("render", 1, 0x64FA28, EnumChatFormatting.GREEN),
+        TOGGLE_UPGRADES("upgrades", 1, 0xA628FA, EnumChatFormatting.LIGHT_PURPLE),
+        INDICATOR("indicator", 3, 0xFF2828, EnumChatFormatting.RED);
 
         private final String id;
         private final int maxValue;
         private final int color;
+        private final EnumChatFormatting feedbackColor;
 
-        ConfigurationAction(String id, int maxValue, int color) {
+        ConfigurationAction(String id, int maxValue, int color, EnumChatFormatting feedbackColor) {
             this.id = id;
             this.maxValue = maxValue;
             this.color = color;
+            this.feedbackColor = feedbackColor;
         }
 
         @Nullable
@@ -75,28 +76,28 @@ public class ConfigurationToolItem extends LayeredToolItem {
     @Override
     public boolean onItemUseFirst(ItemStack stack, EntityPlayer player, World world, int x, int y, int z, int side,
         float hitX, float hitY, float hitZ) {
-        if (world.isRemote) {
-            return false;
-        }
         TileEntity tile = world.getTileEntity(x, y, z);
         if (!(tile instanceof ControllableDrawerTile drawer)) {
             return false;
         }
         ConfigurationAction action = getAction(stack);
-        drawer.applyConfiguration(action);
-        if (action == ConfigurationAction.INDICATOR) {
-            ToolFeedback.send(
-                player,
-                new ChatComponentTranslation(
-                    "configurationtool.configmode.indicator.mode_" + drawer.getDrawerOptions()
-                        .getAdvancedValue(action)));
+        if (world.isRemote) {
+            if (action == ConfigurationAction.INDICATOR) {
+                int nextValue = (drawer.getDrawerOptions()
+                    .getAdvancedValue(action) + 1) % (action.getMaxValue() + 1);
+                showActionBarFeedback(
+                    "configurationtool.configmode.indicator.mode_" + nextValue,
+                    action.getFeedbackColor());
+            }
+            return true;
         }
+        drawer.applyConfiguration(action);
         return true;
     }
 
     @Override
     public ItemStack onItemRightClick(ItemStack stack, World world, EntityPlayer player) {
-        if (!world.isRemote && player.isSneaking()) {
+        if (player.isSneaking()) {
             ConfigurationAction[] actions = ConfigurationAction.values();
             ConfigurationAction action = actions[(getAction(stack).ordinal() + 1) % actions.length];
             if (!stack.hasTagCompound()) {
@@ -104,13 +105,16 @@ public class ConfigurationToolItem extends LayeredToolItem {
             }
             stack.getTagCompound()
                 .setString(KEY_ACTION, action.name());
-            ToolFeedback.send(
-                player,
-                new ChatComponentTranslation("configurationtool.configmode.swapped").appendSibling(
+            if (world.isRemote) {
+                showActionBarFeedback(
+                    "configurationtool.configmode.swapped",
+                    action.getFeedbackColor(),
                     new ChatComponentTranslation(
                         "configurationtool.configmode." + action.name()
-                            .toLowerCase(Locale.ROOT))));
-            world.playSoundAtEntity(player, "random.click", 0.5F, 1F);
+                            .toLowerCase(Locale.ROOT)));
+            } else {
+                world.playSoundAtEntity(player, "random.click", 0.5F, 1F);
+            }
         }
         return stack;
     }

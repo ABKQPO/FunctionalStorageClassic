@@ -30,12 +30,11 @@ public class UpgradeItem extends Item {
 
     public UpgradeItem(String id) {
         this.id = id;
-        setMaxStackSize(1);
+        setMaxStackSize(64);
         setCreativeTab(RegistrationHandler.CREATIVE_TAB);
         setUnlocalizedName(FunctionalStorage.MOD_ID + "." + id);
     }
 
-    /** Assigns the registry name without registering items during construction. */
     public void setUpgradeName(String name) {
         setUnlocalizedName(FunctionalStorage.MOD_ID + "." + name);
         setTextureName(FunctionalStorage.MOD_ID + ":" + name);
@@ -63,13 +62,13 @@ public class UpgradeItem extends Item {
                     + EnumChatFormatting.WHITE
                     + StatCollector.translateToLocal(storage ? "upgrade.type.storage" : "upgrade.type.utility"));
         }
-        if (this instanceof StorageUpgradeItem || this instanceof GenerationUpgradeItem) {
-            return;
-        }
         addDescription(tooltip);
     }
 
     public void addDescription(List<String> tooltip) {
-        tooltip.add(EnumChatFormatting.GRAY + StatCollector.translateToLocal(getUnlocalizedName() + ".tooltip"));
+        String key = getUnlocalizedName() + ".tooltip";
+        if (StatCollector.canTranslate(key)) {
+            tooltip.add(EnumChatFormatting.GRAY + StatCollector.translateToLocal(key));
+        }
     }
 }
