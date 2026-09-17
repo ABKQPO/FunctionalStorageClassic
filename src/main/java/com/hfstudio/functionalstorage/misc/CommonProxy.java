@@ -29,10 +29,10 @@ public class CommonProxy {
 
     public void init(FMLInitializationEvent event) {
         MinecraftForge.EVENT_BUS.register(new DrawerClickHandler());
+        if (Mods.Waila.isModLoaded()) WailaIntegration.register();
     }
 
     public void postInit(FMLPostInitializationEvent event) {
-        if (Mods.Waila.isModLoaded()) WailaIntegration.register();
         if (Mods.InventoryBogoSorter.isModLoaded()) BogoSorterIntegration.register();
         if (FunctionalStorageConfig.COMPATIBILITY.enableAE2Compatibility && Mods.AE2.isModLoaded()) {
             AE2Integration.register();
