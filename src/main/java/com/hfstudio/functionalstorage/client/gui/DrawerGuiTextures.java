@@ -43,9 +43,6 @@ public class DrawerGuiTextures extends Gui implements IResourceManagerReloadList
     public static final ResourceLocation BACKGROUND = new ResourceLocation(
         FunctionalStorage.MOD_ID,
         "textures/gui/background.png");
-    private static final ResourceLocation INVENTORY = new ResourceLocation(
-        "minecraft",
-        "textures/gui/container/inventory.png");
     private final Map<Block, ResourceLocation> fronts = new HashMap<>();
     private final Cache<FrontKey, List<ModelQuadView>> framedFronts = CacheBuilder.newBuilder()
         .maximumSize(256)
@@ -63,8 +60,8 @@ public class DrawerGuiTextures extends Gui implements IResourceManagerReloadList
     }
 
     public void slot(int x, int y) {
-        bind(INVENTORY);
-        drawTexturedModalRect(x - 1, y - 1, 7, 83, 18, 18);
+        bind(BACKGROUND);
+        region(x - 1, y - 1, 18, 18, 238, 0, 18, 18);
     }
 
     public void front(Block block, int x, int y) {
