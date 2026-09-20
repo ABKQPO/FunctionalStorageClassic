@@ -547,14 +547,54 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
         float front, float back, int color) {
         float uLeft = icon.getInterpolatedU(0D);
         float uRight = icon.getInterpolatedU((right - left) * 16F);
+        float uSideLeft = icon.getInterpolatedU(0D);
+        float depth = Math.abs(back - front);
+        float uSideRight = icon.getInterpolatedU(depth * 16F);
         float vTop = icon.getInterpolatedV(0D);
-        float vBottom = icon.getInterpolatedV((bottom - top) * 16F);
+        float vHeightBottom = icon.getInterpolatedV((bottom - top) * 16F);
+        float vDepthBottom = icon.getInterpolatedV(depth * 16F);
         float alpha = 1F;
-        addFluidFace(tessellator, left, right, top, bottom, front, uLeft, uRight, vTop, vBottom, color, alpha);
-        addFluidFace(tessellator, right, left, top, bottom, back, uLeft, uRight, vTop, vBottom, color, alpha * 0.8F);
-        addFluidTop(tessellator, left, right, top, front, back, uLeft, uRight, vTop, vBottom, color, alpha);
-        addFluidSide(tessellator, left, top, bottom, front, back, uLeft, uRight, vTop, vBottom, color, alpha * 0.7F);
-        addFluidSide(tessellator, right, bottom, top, front, back, uLeft, uRight, vTop, vBottom, color, alpha * 0.7F);
+        addFluidFace(tessellator, left, right, top, bottom, front, uLeft, uRight, vTop, vHeightBottom, color, alpha);
+        addFluidFace(
+            tessellator,
+            right,
+            left,
+            top,
+            bottom,
+            back,
+            uLeft,
+            uRight,
+            vTop,
+            vHeightBottom,
+            color,
+            alpha * 0.8F);
+        addFluidTop(tessellator, left, right, top, front, back, uLeft, uRight, vTop, vDepthBottom, color, alpha);
+        addFluidSide(
+            tessellator,
+            left,
+            top,
+            bottom,
+            front,
+            back,
+            uSideLeft,
+            uSideRight,
+            vTop,
+            vHeightBottom,
+            color,
+            alpha * 0.7F);
+        addFluidSide(
+            tessellator,
+            right,
+            bottom,
+            top,
+            front,
+            back,
+            uSideLeft,
+            uSideRight,
+            vTop,
+            vHeightBottom,
+            color,
+            alpha * 0.7F);
         addFluidBottom(
             tessellator,
             left,
@@ -565,7 +605,7 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
             uLeft,
             uRight,
             vTop,
-            vBottom,
+            vDepthBottom,
             color,
             alpha * 0.6F);
     }
@@ -580,12 +620,12 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
     }
 
     private void addFluidTop(Tessellator tessellator, float left, float right, float top, float front, float back,
-        float uLeft, float uRight, float vTop, float vBottom, int color, float alpha) {
+        float uLeft, float uRight, float vNear, float vFar, int color, float alpha) {
         tintFluid(tessellator, color, alpha);
-        tessellator.addVertexWithUV(left, top, back, uLeft, vBottom);
-        tessellator.addVertexWithUV(right, top, back, uRight, vBottom);
-        tessellator.addVertexWithUV(right, top, front, uRight, vTop);
-        tessellator.addVertexWithUV(left, top, front, uLeft, vTop);
+        tessellator.addVertexWithUV(left, top, back, uLeft, vFar);
+        tessellator.addVertexWithUV(right, top, back, uRight, vFar);
+        tessellator.addVertexWithUV(right, top, front, uRight, vNear);
+        tessellator.addVertexWithUV(left, top, front, uLeft, vNear);
     }
 
     private void addFluidSide(Tessellator tessellator, float side, float top, float bottom, float front, float back,
@@ -598,12 +638,12 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
     }
 
     private void addFluidBottom(Tessellator tessellator, float left, float right, float bottom, float front, float back,
-        float uLeft, float uRight, float vTop, float vBottom, int color, float alpha) {
+        float uLeft, float uRight, float vNear, float vFar, int color, float alpha) {
         tintFluid(tessellator, color, alpha);
-        tessellator.addVertexWithUV(left, bottom, front, uLeft, vTop);
-        tessellator.addVertexWithUV(right, bottom, front, uRight, vTop);
-        tessellator.addVertexWithUV(right, bottom, back, uRight, vBottom);
-        tessellator.addVertexWithUV(left, bottom, back, uLeft, vBottom);
+        tessellator.addVertexWithUV(left, bottom, front, uLeft, vNear);
+        tessellator.addVertexWithUV(right, bottom, front, uRight, vNear);
+        tessellator.addVertexWithUV(right, bottom, back, uRight, vFar);
+        tessellator.addVertexWithUV(left, bottom, back, uLeft, vFar);
     }
 
     private void tintFluid(Tessellator tessellator, int color, float alpha) {
