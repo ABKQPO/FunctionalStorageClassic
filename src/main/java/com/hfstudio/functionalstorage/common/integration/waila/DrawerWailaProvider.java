@@ -8,6 +8,7 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.StatCollector;
 import net.minecraft.world.World;
+import net.minecraftforge.fluids.FluidStack;
 
 import com.gtnewhorizon.gtnhlib.util.numberformatting.NumberFormatUtil;
 import com.hfstudio.functionalstorage.api.storage.BigAspectStack;
@@ -18,12 +19,14 @@ import com.hfstudio.functionalstorage.common.integration.Mods;
 import com.hfstudio.functionalstorage.common.tile.EssentiaDrawerTile;
 import com.hfstudio.functionalstorage.common.tile.FluidDrawerTile;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
+import com.hfstudio.functionalstorage.util.ItemUtil;
 
 import cpw.mods.fml.common.Optional;
 import mcp.mobius.waila.api.IWailaConfigHandler;
 import mcp.mobius.waila.api.IWailaDataAccessor;
 import mcp.mobius.waila.api.IWailaDataProvider;
 import mcp.mobius.waila.api.IWailaRegistrar;
+import thaumcraft.api.aspects.Aspect;
 
 /** Reports drawer contents, capacity, and lock state through Waila. */
 @Optional.Interface(iface = "mcp.mobius.waila.api.IWailaDataProvider", modid = "Waila", striprefs = true)
@@ -59,7 +62,7 @@ public class DrawerWailaProvider implements IWailaDataProvider {
         }
         int slots = tag.getInteger("Slots");
         for (int index = 0; index < slots; index++) {
-            String name = tag.getString("Name" + index);
+            String name = localizedName(tag, index);
             if (name.isEmpty()) {
                 continue;
             }
@@ -81,6 +84,31 @@ public class DrawerWailaProvider implements IWailaDataProvider {
                     .translateToLocalFormatted("functionalstorage.drawer.upgrades", Integer.toString(upgrades)));
         }
         return tooltip;
+    }
+
+    @Optional.Method(modid = "Waila")
+    private String localizedName(NBTTagCompound tag, int index) {
+        NBTTagCompound item = tag.getCompoundTag("Item" + index);
+        if (!item.hasNoTags()) {
+            ItemStack stack = ItemUtil.readStack(item);
+            return stack == null ? "" : stack.getDisplayName();
+        }
+        NBTTagCompound fluid = tag.getCompoundTag("Fluid" + index);
+        if (!fluid.hasNoTags()) {
+            FluidStack stack = FluidStack.loadFluidStackFromNBT(fluid);
+            return stack == null ? "" : stack.getLocalizedName();
+        }
+        String aspectKey = tag.getString("Aspect" + index);
+        if (!aspectKey.isEmpty()) {
+            return localizedAspectName(aspectKey);
+        }
+        return "";
+    }
+
+    @Optional.Method(modid = "Thaumcraft")
+    private String localizedAspectName(String key) {
+        Aspect aspect = Aspect.getAspect(key);
+        return aspect == null ? "" : aspect.getLocalizedDescription();
     }
 
     @Override
@@ -136,7 +164,9 @@ public class DrawerWailaProvider implements IWailaDataProvider {
             if (template == null) {
                 continue;
             }
-            tag.setString("Name" + index, template.getDisplayName());
+            NBTTagCompound item = new NBTTagCompound();
+            template.writeToNBT(item);
+            tag.setTag("Item" + index, item);
             tag.setLong("Amount" + index, snapshot.getAmount());
             tag.setLong(
                 "Capacity" + index,
@@ -155,10 +185,10 @@ public class DrawerWailaProvider implements IWailaDataProvider {
             if (snapshot.getTemplate() == null) {
                 continue;
             }
-            tag.setString(
-                "Name" + index,
-                snapshot.getTemplate()
-                    .getLocalizedName());
+            NBTTagCompound fluid = new NBTTagCompound();
+            snapshot.getTemplate()
+                .writeToNBT(fluid);
+            tag.setTag("Fluid" + index, fluid);
             tag.setLong("Amount" + index, snapshot.getAmount());
             tag.setLong(
                 "Capacity" + index,
@@ -179,9 +209,9 @@ public class DrawerWailaProvider implements IWailaDataProvider {
                 continue;
             }
             tag.setString(
-                "Name" + index,
+                "Aspect" + index,
                 snapshot.getAspect()
-                    .getLocalizedDescription());
+                    .getTag());
             tag.setLong("Amount" + index, snapshot.getAmount());
             tag.setLong(
                 "Capacity" + index,

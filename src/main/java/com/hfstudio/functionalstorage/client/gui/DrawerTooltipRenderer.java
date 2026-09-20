@@ -39,7 +39,9 @@ public class DrawerTooltipRenderer extends Gui {
     @SubscribeEvent
     public void onTooltip(RenderTooltipEvent event) {
         List<Section> sections = sectionsFor(event.itemStack);
-        if (!sections.isEmpty() && event.alternativeRenderer == null) {
+        boolean drawerItem = event.itemStack.getItem() instanceof ItemBlock item
+            && item.field_150939_a instanceof DrawerBlock;
+        if (!sections.isEmpty() && !drawerItem && event.alternativeRenderer == null) {
             event.alternativeRenderer = lines -> draw(event, lines, sections);
         }
     }
