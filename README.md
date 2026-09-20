@@ -207,8 +207,9 @@ shipping any Thaumcraft assets.
 * **The One Probe** — *not supported.* The One Probe was never released for Minecraft 1.7.10,
   so Waila is used instead.
 
-This mod ships no mixins. Optional integrations register only when the corresponding mod
-is installed. Inventory shortcuts use server-authoritative storage operations, so display
+The Bogo Sorter drop-off compatibility mixin is loaded only when Inventory Bogo Sorter is
+installed. Other optional integrations register only when the corresponding mod is present.
+Inventory shortcuts use server-authoritative storage operations, so display
 icons cannot be moved as real items. Shortcut compatibility is verified with Inventory Bogo
 Sorter 1.3.50-GTNH and Mouse Tweaks 2.5.3-GTNH. Fluid containers and essentia phials use the
 drawer interface's container exchange interactions.

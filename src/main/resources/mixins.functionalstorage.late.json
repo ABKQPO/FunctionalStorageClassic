@@ -1,0 +1,11 @@
+{
+  "required": true,
+  "minVersion": "0.8.5-GTNH",
+  "package": "com.hfstudio.functionalstorage.mixins.late",
+  "refmap": "mixins.functionalstorage.refmap.json",
+  "target": "@env(DEFAULT)",
+  "injectors": {
+    "maxShiftBy": 5
+  },
+  "compatibilityLevel": "JAVA_8"
+}
