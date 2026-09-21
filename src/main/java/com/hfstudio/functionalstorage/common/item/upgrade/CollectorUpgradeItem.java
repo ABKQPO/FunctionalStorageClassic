@@ -15,8 +15,10 @@ import net.minecraftforge.fluids.FluidRegistry;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.IFluidBlock;
 
+import com.hfstudio.functionalstorage.api.storage.BigItemStack;
 import com.hfstudio.functionalstorage.api.storage.IBigFluidHandler;
 import com.hfstudio.functionalstorage.api.storage.IBigItemHandler;
+import com.hfstudio.functionalstorage.api.storage.StorageAction;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 import com.hfstudio.functionalstorage.config.FunctionalStorageConfig;
 import com.hfstudio.functionalstorage.util.UpgradeTargeting;
@@ -64,6 +66,7 @@ public class CollectorUpgradeItem extends AutomationUpgradeItem {
         }
         int budget = FunctionalStorageConfig.UPGRADES.upgradeCollectorItems;
         IBigItemHandler storage = UpgradeSettings.itemStorage(tile.getItemHandler(), stack);
+        List<Integer> candidates = UpgradeTargeting.selectedSlots(stack, storage.getStorageCount());
         for (EntityItem entity : entities) {
             if (budget <= 0) {
                 break;
@@ -74,10 +77,15 @@ public class CollectorUpgradeItem extends AutomationUpgradeItem {
                 continue;
             }
             int request = Math.min(budget, dropped.stackSize);
-            ItemStack probe = dropped.copy();
-            probe.stackSize = request;
-            ItemStack leftover = storage.insertItem(0, probe, false);
-            int stored = request - (leftover == null ? 0 : leftover.stackSize);
+            BigItemStack probe = new BigItemStack(dropped, request);
+            // Collected drops merge into the slot already holding that item, and a
+            // full matching slot is skipped rather than spilling into a new slot.
+            int target = storage.pickInsertionIndex(candidates, probe);
+            if (target < 0) {
+                continue;
+            }
+            int stored = (int) storage.insert(target, probe, StorageAction.EXECUTE)
+                .getProcessedAmount();
             if (stored <= 0) {
                 continue;
             }

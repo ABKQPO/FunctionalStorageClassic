@@ -44,13 +44,28 @@ public class TransferUtil {
             if (extracted == null || extracted.getItem() == null) {
                 continue;
             }
-            ItemStack leftover = drawer.insertItem(0, extracted, false);
-            moved = true;
-            if (leftover != null && leftover.stackSize > 0) {
-                inventory.setInventorySlotContents(slot, leftover);
+            // Pulled items merge into the slot already holding that item; a full
+            // matching slot ends the pass instead of opening an empty neighbour.
+            BigItemStack probe = new BigItemStack(extracted, extracted.stackSize);
+            int target = drawer.pickInsertionIndex(probe);
+            if (target < 0) {
+                inventory.setInventorySlotContents(slot, extracted);
                 break;
             }
-            limit -= extracted.stackSize;
+            int stored = (int) drawer.insert(target, probe, StorageAction.EXECUTE)
+                .getProcessedAmount();
+            if (stored < extracted.stackSize) {
+                ItemStack leftover = extracted.copy();
+                leftover.stackSize = extracted.stackSize - stored;
+                inventory.setInventorySlotContents(slot, leftover);
+                if (stored > 0) {
+                    moved = true;
+                }
+                limit -= stored;
+                break;
+            }
+            moved = true;
+            limit -= stored;
         }
         return moved;
     }

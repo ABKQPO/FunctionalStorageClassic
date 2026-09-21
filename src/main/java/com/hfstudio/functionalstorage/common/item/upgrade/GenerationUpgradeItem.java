@@ -14,6 +14,11 @@ import net.minecraftforge.fluids.FluidRegistry;
 import net.minecraftforge.fluids.FluidStack;
 
 import com.gtnewhorizon.gtnhlib.util.numberformatting.NumberFormatUtil;
+import com.hfstudio.functionalstorage.api.storage.BigFluidStack;
+import com.hfstudio.functionalstorage.api.storage.BigItemStack;
+import com.hfstudio.functionalstorage.api.storage.IBigFluidHandler;
+import com.hfstudio.functionalstorage.api.storage.IBigItemHandler;
+import com.hfstudio.functionalstorage.api.storage.StorageAction;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 import com.hfstudio.functionalstorage.config.FunctionalStorageConfig;
 import com.hfstudio.functionalstorage.util.ItemUtil;
@@ -90,17 +95,18 @@ public class GenerationUpgradeItem extends AutomationUpgradeItem {
         if (tile.getFluidHandler() == null || FluidRegistry.WATER == null) {
             return;
         }
-        FluidStack water = new FluidStack(FluidRegistry.WATER, waterRate());
-        UpgradeSettings.fluidStorage(tile.getFluidHandler(), upgrade)
-            .fill(water, true);
+        IBigFluidHandler storage = UpgradeSettings.fluidStorage(tile.getFluidHandler(), upgrade);
+        BigFluidStack request = new BigFluidStack(new FluidStack(FluidRegistry.WATER, 1), waterRate());
+        if (storage.hasRoomInSingleSlot(request)) {
+            storage.insertIntoSingleSlot(request, StorageAction.EXECUTE);
+        }
     }
 
     private void generateStone(@Nonnull ControllableDrawerTile tile, ItemStack upgrade) {
         if (tile.getItemHandler() == null) {
             return;
         }
-        int rate = Math.max(1, stoneRate());
-        insert(tile, upgrade, new ItemStack(Blocks.cobblestone, rate));
+        insert(tile, upgrade, new ItemStack(Blocks.cobblestone, Math.max(1, stoneRate())));
     }
 
     private void generateItem(@Nonnull ControllableDrawerTile tile, @Nonnull ItemStack stack) {
@@ -113,7 +119,7 @@ public class GenerationUpgradeItem extends AutomationUpgradeItem {
             return;
         }
         ItemStack batch = produced.copy();
-        batch.stackSize = Math.min(produced.getMaxStackSize(), 1);
+        batch.stackSize = 1;
         insert(tile, stack, batch);
     }
 
@@ -121,8 +127,11 @@ public class GenerationUpgradeItem extends AutomationUpgradeItem {
         if (stack.getItem() == null || stack.stackSize <= 0) {
             return;
         }
-        UpgradeSettings.itemStorage(tile.getItemHandler(), upgrade)
-            .insertItem(0, stack, false);
+        IBigItemHandler storage = UpgradeSettings.itemStorage(tile.getItemHandler(), upgrade);
+        BigItemStack request = new BigItemStack(stack, stack.stackSize);
+        if (storage.hasRoomInSingleSlot(request)) {
+            storage.insertIntoSingleSlot(request, StorageAction.EXECUTE);
+        }
     }
 
     private ItemStack configuredUniversalItem() {

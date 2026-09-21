@@ -75,7 +75,10 @@ public class BreakerUpgradeItem extends AutomationUpgradeItem {
                 .getStorageCount();
             BigItemStack[] reserved = new BigItemStack[count];
             List<PlannedInsert> plan = new ArrayList<>();
-            List<Integer> selected = UpgradeTargeting.selectedSlots(stack, count);
+            // Occupied slots are tried before empty ones so a drop merges into the
+            // slot already holding that item instead of opening a new slot first.
+            List<Integer> selected = tile.getItemHandler()
+                .preferMergeOrder(UpgradeTargeting.selectedSlots(stack, count));
             Predicate<ItemStack> filter = UpgradeSettings.itemFilter(stack);
             for (ItemStack drop : drops) {
                 if (!filter.test(drop)) return;

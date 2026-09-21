@@ -18,6 +18,7 @@ import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTTagList;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.IIcon;
 import net.minecraft.util.MathHelper;
@@ -401,6 +402,56 @@ public abstract class DrawerBlock extends BlockContainer implements IBlockModelP
         return stack != null && stack.hasTagCompound()
             && stack.getTagCompound()
                 .hasKey("TileData", 10);
+    }
+
+    private static final String[] CONTENT_KEYS = { "Items", "Tanks", "Aspects", "Compacting" };
+
+    @Nullable
+    public static ItemStack cleanseContents(@Nullable ItemStack stack) {
+        if (stack == null || stack.getItem() == null) {
+            return null;
+        }
+        ItemStack cleansed = stack.copy();
+        cleansed.stackSize = 1;
+        NBTTagCompound root = cleansed.getTagCompound();
+        NBTTagCompound tile = getTileData(cleansed);
+        if (root == null || tile == null) {
+            return cleansed;
+        }
+        NBTTagCompound cleansedTile = (NBTTagCompound) tile.copy();
+        for (String key : CONTENT_KEYS) {
+            cleansedTile.removeTag(key);
+        }
+        cleansedTile.removeTag("Locked");
+        root.setTag("TileData", cleansedTile);
+        return cleansed;
+    }
+
+    public static boolean hasStoredResource(@Nullable ItemStack stack) {
+        NBTTagCompound tile = getTileData(stack);
+        if (tile == null) {
+            return false;
+        }
+        for (String key : CONTENT_KEYS) {
+            if (containsResource(tile.getCompoundTag(key))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean containsResource(@Nonnull NBTTagCompound payload) {
+        if (payload.getLong("BaseAmount") > 0L) {
+            return true;
+        }
+        NBTTagList entries = payload.getTagList("Entries", 10);
+        for (int index = 0; index < entries.tagCount(); index++) {
+            if (entries.getCompoundTagAt(index)
+                .getLong("Amount") > 0L) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Nullable

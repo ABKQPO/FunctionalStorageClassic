@@ -17,6 +17,7 @@ import com.hfstudio.functionalstorage.common.block.FramedDrawerBlock;
 import com.hfstudio.functionalstorage.common.block.WoodDrawerBlock;
 import com.hfstudio.functionalstorage.common.integration.Mods;
 import com.hfstudio.functionalstorage.common.item.upgrade.GenerationUpgradeItem;
+import com.hfstudio.functionalstorage.common.recipe.DrawerCleansingRecipe;
 import com.hfstudio.functionalstorage.common.recipe.DrawerCraftingRecipe;
 import com.hfstudio.functionalstorage.common.recipe.FramedDrawerStyleRecipe;
 import com.hfstudio.functionalstorage.common.recipe.UpgradeConversionRecipe;
@@ -29,13 +30,14 @@ public class FunctionalStorageRecipes {
     private static final String ORE_NETHERITE_INGOT = "ingotNetherite";
     private static final String ORE_COPPER_INGOT = "ingotCopper";
     private static final String ORE_COPPER_BLOCK = "blockCopper";
+    private static final String DRAWER_ORE = "drawerFunctionalStorage";
 
     public static void registerRecipes() {
         for (WoodDrawerBlock block : RegistrationHandler.woodDrawers) {
-            OreDictionary.registerOre("drawerFunctionalStorage", new ItemStack(block));
+            OreDictionary.registerOre(DRAWER_ORE, new ItemStack(block));
         }
         for (FramedDrawerBlock block : RegistrationHandler.framedDrawers) {
-            OreDictionary.registerOre("drawerFunctionalStorage", new ItemStack(block));
+            OreDictionary.registerOre(DRAWER_ORE, new ItemStack(block));
         }
         GameRegistry.addRecipe(new FramedDrawerStyleRecipe());
 
@@ -48,6 +50,25 @@ public class FunctionalStorageRecipes {
         registerUtilityUpgradeRecipes();
         registerGenerationRecipes();
         registerToolRecipes();
+        registerCleansingRecipes();
+    }
+
+    private static void registerCleansingRecipes() {
+        ItemStack display = null;
+        for (WoodDrawerBlock block : RegistrationHandler.woodDrawers) {
+            display = new ItemStack(block);
+            break;
+        }
+        if (display == null) {
+            for (FramedDrawerBlock block : RegistrationHandler.framedDrawers) {
+                display = new ItemStack(block);
+                break;
+            }
+        }
+        if (display == null) {
+            return;
+        }
+        GameRegistry.addRecipe(new DrawerCleansingRecipe(DRAWER_ORE, display));
     }
 
     private static void registerWoodDrawerRecipes() {
@@ -151,7 +172,7 @@ public class FunctionalStorageRecipes {
             "PDP",
             "SIS",
             'D',
-            "drawerFunctionalStorage",
+            DRAWER_ORE,
             'I',
             "ingotIron",
             'P',
@@ -164,7 +185,7 @@ public class FunctionalStorageRecipes {
             "SDP",
             "SIS",
             'D',
-            "drawerFunctionalStorage",
+            DRAWER_ORE,
             'I',
             "ingotIron",
             'P',
@@ -177,7 +198,7 @@ public class FunctionalStorageRecipes {
             "PDP",
             "SIS",
             'D',
-            "drawerFunctionalStorage",
+            DRAWER_ORE,
             'I',
             "ingotIron",
             'P',
@@ -190,7 +211,7 @@ public class FunctionalStorageRecipes {
             "SDP",
             "SIS",
             'D',
-            "drawerFunctionalStorage",
+            DRAWER_ORE,
             'I',
             "ingotIron",
             'P',
@@ -205,7 +226,7 @@ public class FunctionalStorageRecipes {
             'C',
             Blocks.ender_chest,
             'L',
-            "drawerFunctionalStorage",
+            DRAWER_ORE,
             'P',
             "plankWood");
         registerOreRecipe(
@@ -216,7 +237,7 @@ public class FunctionalStorageRecipes {
             'B',
             oreOr(ORE_NETHERITE_INGOT, Items.nether_star),
             'C',
-            "drawerFunctionalStorage",
+            DRAWER_ORE,
             'D',
             Items.comparator,
             'I',
@@ -236,7 +257,7 @@ public class FunctionalStorageRecipes {
             'B',
             Blocks.quartz_block,
             'C',
-            "drawerFunctionalStorage",
+            DRAWER_ORE,
             'D',
             center,
             'I',
@@ -244,15 +265,7 @@ public class FunctionalStorageRecipes {
     }
 
     private static void registerStorageUpgradeRecipes() {
-        registerOreRecipe(
-            FSItemList.IronDowngrade.get(),
-            "III",
-            "IDI",
-            "III",
-            'D',
-            "drawerFunctionalStorage",
-            'I',
-            "ingotIron");
+        registerOreRecipe(FSItemList.IronDowngrade.get(), "III", "IDI", "III", 'D', DRAWER_ORE, 'I', "ingotIron");
         registerOreRecipe(
             FSItemList.CopperUpgrade.get(),
             "IBI",
@@ -263,7 +276,7 @@ public class FunctionalStorageRecipes {
             'C',
             "chestWood",
             'D',
-            "drawerFunctionalStorage",
+            DRAWER_ORE,
             'I',
             oreOr(ORE_COPPER_INGOT, Items.iron_ingot));
         registerOreRecipe(
@@ -308,15 +321,7 @@ public class FunctionalStorageRecipes {
     }
 
     private static void registerUtilityUpgradeRecipes() {
-        registerOreRecipe(
-            FSItemList.VoidUpgrade.get(),
-            "III",
-            "IDI",
-            "III",
-            'D',
-            "drawerFunctionalStorage",
-            'I',
-            Blocks.obsidian);
+        registerOreRecipe(FSItemList.VoidUpgrade.get(), "III", "IDI", "III", 'D', DRAWER_ORE, 'I', Blocks.obsidian);
         registerOreRecipe(
             FSItemList.RedstoneUpgrade.get(),
             "IBI",
@@ -327,7 +332,7 @@ public class FunctionalStorageRecipes {
             'C',
             Items.comparator,
             'D',
-            "drawerFunctionalStorage",
+            DRAWER_ORE,
             'I',
             "dustRedstone");
         registerOreRecipe(
@@ -340,7 +345,7 @@ public class FunctionalStorageRecipes {
             'C',
             Blocks.hopper,
             'D',
-            "drawerFunctionalStorage",
+            DRAWER_ORE,
             'I',
             Blocks.stone);
         registerOreRecipe(
@@ -351,7 +356,7 @@ public class FunctionalStorageRecipes {
             'B',
             "dustRedstone",
             'D',
-            "drawerFunctionalStorage",
+            DRAWER_ORE,
             'I',
             Blocks.stone,
             'R',
@@ -370,7 +375,7 @@ public class FunctionalStorageRecipes {
             'B',
             Blocks.hopper,
             'D',
-            "drawerFunctionalStorage",
+            DRAWER_ORE,
             'I',
             Blocks.stone,
             'R',
@@ -390,7 +395,7 @@ public class FunctionalStorageRecipes {
             "SDS",
             "RPR",
             'D',
-            "drawerFunctionalStorage",
+            DRAWER_ORE,
             'P',
             Items.iron_pickaxe,
             'R',
@@ -403,7 +408,7 @@ public class FunctionalStorageRecipes {
             "dDd",
             "RtR",
             'D',
-            "drawerFunctionalStorage",
+            DRAWER_ORE,
             'R',
             "dustRedstone",
             'd',
@@ -418,7 +423,7 @@ public class FunctionalStorageRecipes {
             'C',
             "chestWood",
             'D',
-            "drawerFunctionalStorage",
+            DRAWER_ORE,
             'P',
             Items.ender_pearl,
             'R',
@@ -442,7 +447,7 @@ public class FunctionalStorageRecipes {
             'B',
             Items.blaze_powder,
             'D',
-            "drawerFunctionalStorage",
+            DRAWER_ORE,
             'R',
             "dustRedstone");
     }
@@ -488,7 +493,7 @@ public class FunctionalStorageRecipes {
             "PDG",
             "PEP",
             'D',
-            "drawerFunctionalStorage",
+            DRAWER_ORE,
             'E',
             Items.emerald,
             'G',
@@ -501,7 +506,7 @@ public class FunctionalStorageRecipes {
             "PDG",
             "PEP",
             'D',
-            "drawerFunctionalStorage",
+            DRAWER_ORE,
             'E',
             Items.diamond,
             'G',
