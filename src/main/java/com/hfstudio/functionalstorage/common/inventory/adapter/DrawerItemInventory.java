@@ -196,15 +196,8 @@ public class DrawerItemInventory implements ISidedInventory {
     private void refresh(int index) {
         BigItemStack snapshot = handler.getSnapshot(index);
         ItemStack stack = snapshot.toItemStack();
-        if (stack != null) {
-            int limit = Math.min(64, stack.getMaxStackSize());
-            long space = Math.max(0L, handler.getCapacity(index) - snapshot.getAmount());
-            // Leave room for vanilla hopper insertion while retaining an extractable stack.
-            if (space > 0L && limit > 1 && stack.stackSize >= limit) {
-                limit--;
-            }
-            stack.stackSize = Math.min(stack.stackSize, limit);
-        }
+        // Keep the external stack count equal to the stored amount. StorageDrawers
+        // uses the inventory stack limit for insertion, not for truncating reads.
         if (!ItemStack.areItemStacksEqual(stack, baseline[index])) {
             exposed[index] = stack;
             baseline[index] = stack == null ? null : stack.copy();
