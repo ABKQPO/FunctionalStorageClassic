@@ -48,8 +48,9 @@ import cpw.mods.fml.relauncher.SideOnly;
 /** Metadata encodes attachment and horizontal rotation for all twelve orientations. */
 public abstract class DrawerBlock extends BlockContainer implements IBlockModelProvider {
 
-    private static final float HARDNESS = 2.5F;
-    private static final float RESISTANCE = 8.0F;
+    public static final float HARDNESS = 2.5F;
+    public static final float RESISTANCE = 8.0F;
+    public static final String[] EFFECTIVE_TOOLS = { "axe", "pickaxe" };
 
     private final DrawerFaceLayout faceLayout;
 
@@ -64,6 +65,16 @@ public abstract class DrawerBlock extends BlockContainer implements IBlockModelP
         setBlockTextureName(textureBase);
         setLightOpacity(255);
         useNeighborBrightness = true;
+    }
+
+    @Override
+    public boolean isToolEffective(String type, int metadata) {
+        for (String effective : EFFECTIVE_TOOLS) {
+            if (effective.equals(type)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Nonnull

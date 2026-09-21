@@ -645,56 +645,16 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
 
     private void addFluidVolume(Tessellator tessellator, IIcon icon, float left, float right, float top, float bottom,
         float front, float back, int color) {
-        float uLeft = icon.getInterpolatedU(0D);
-        float uRight = icon.getInterpolatedU((right - left) * 16F);
-        float uSideLeft = icon.getInterpolatedU(0D);
-        float depth = Math.abs(back - front);
-        float uSideRight = icon.getInterpolatedU(depth * 16F);
-        float vTop = icon.getInterpolatedV(0D);
-        float vHeightBottom = icon.getInterpolatedV((bottom - top) * 16F);
-        float vDepthBottom = icon.getInterpolatedV(depth * 16F);
+        float uLeft = icon.getMinU();
+        float uRight = icon.getMaxU();
+        float vTop = icon.getMinV();
+        float vBottom = icon.getMaxV();
         float alpha = 1F;
-        addFluidFace(tessellator, left, right, top, bottom, front, uLeft, uRight, vTop, vHeightBottom, color, alpha);
-        addFluidFace(
-            tessellator,
-            right,
-            left,
-            top,
-            bottom,
-            back,
-            uLeft,
-            uRight,
-            vTop,
-            vHeightBottom,
-            color,
-            alpha * 0.8F);
-        addFluidTop(tessellator, left, right, top, front, back, uLeft, uRight, vTop, vDepthBottom, color, alpha);
-        addFluidSide(
-            tessellator,
-            left,
-            top,
-            bottom,
-            front,
-            back,
-            uSideLeft,
-            uSideRight,
-            vTop,
-            vHeightBottom,
-            color,
-            alpha * 0.7F);
-        addFluidSide(
-            tessellator,
-            right,
-            bottom,
-            top,
-            front,
-            back,
-            uSideLeft,
-            uSideRight,
-            vTop,
-            vHeightBottom,
-            color,
-            alpha * 0.7F);
+        addFluidFace(tessellator, left, right, top, bottom, front, uLeft, uRight, vTop, vBottom, color, alpha);
+        addFluidFace(tessellator, right, left, top, bottom, back, uLeft, uRight, vTop, vBottom, color, alpha * 0.8F);
+        addFluidTop(tessellator, left, right, top, front, back, uLeft, uRight, vTop, vBottom, color, alpha);
+        addFluidSide(tessellator, left, top, bottom, front, back, uLeft, uRight, vTop, vBottom, color, alpha * 0.7F);
+        addFluidSide(tessellator, right, bottom, top, front, back, uLeft, uRight, vTop, vBottom, color, alpha * 0.7F);
         addFluidBottom(
             tessellator,
             left,
@@ -705,7 +665,7 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
             uLeft,
             uRight,
             vTop,
-            vDepthBottom,
+            vBottom,
             color,
             alpha * 0.6F);
     }
