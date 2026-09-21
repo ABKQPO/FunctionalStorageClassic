@@ -5,6 +5,7 @@ import java.util.List;
 
 import javax.annotation.Nonnull;
 
+import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.GuiTextField;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.entity.player.EntityPlayer;
@@ -27,6 +28,7 @@ import com.hfstudio.functionalstorage.client.integration.StorageShortcutScreen;
 import com.hfstudio.functionalstorage.common.block.base.DrawerBlock;
 import com.hfstudio.functionalstorage.common.container.ContainerDrawer;
 import com.hfstudio.functionalstorage.common.container.DrawerGuiLayout;
+import com.hfstudio.functionalstorage.common.integration.Mods;
 import com.hfstudio.functionalstorage.common.item.upgrade.AutomationUpgradeItem;
 import com.hfstudio.functionalstorage.common.item.upgrade.RedstoneUpgradeItem;
 import com.hfstudio.functionalstorage.common.network.MenuSettingsMessage;
@@ -202,39 +204,62 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
     @Override
     public void drawScreen(int mouseX, int mouseY, float partialTicks) {
         super.drawScreen(mouseX, mouseY, partialTicks);
-        if (tile instanceof StorageNetworkTile || tile.getActiveStorage() == null) {
+        if (Mods.NotEnoughItems.isModLoaded()) {
             return;
         }
-        int hovered = storageSlotAt(mouseX, mouseY);
-        if (hovered < 0) {
+        if (mc.thePlayer.inventory.getItemStack() != null) {
             return;
         }
-        if (storageSlotHoldsStack(hovered)) {
+        Slot hovered = storageSlotAt(mouseX, mouseY);
+        if (hovered == null || hovered.getHasStack()) {
             return;
         }
-        List<String> lines = new ArrayList<>();
-        Entry entry = entry(hovered);
-        lines.add(entry == null ? StatCollector.translateToLocal("gui.functionalstorage.empty") : entry.name());
-        appendStorageInfo(lines, hovered);
-        drawHoveringText(lines, mouseX, mouseY, fontRendererObj);
+        List<String> lines = storageTooltipLines(mouseX, mouseY);
+        if (!lines.isEmpty()) {
+            drawHoveringText(lines, mouseX, mouseY, fontRendererObj);
+        }
     }
 
     @Override
     protected void renderToolTip(@Nonnull ItemStack stack, int mouseX, int mouseY) {
-        int hovered = storageSlotAt(mouseX, mouseY);
-        if (hovered < 0) {
+        List<String> lines = storageTooltipLines(mouseX, mouseY);
+        if (lines.isEmpty()) {
             super.renderToolTip(stack, mouseX, mouseY);
             return;
         }
-        List<String> lines = new ArrayList<>(stack.getTooltip(mc.thePlayer, mc.gameSettings.advancedItemTooltips));
-        for (int index = 0; index < lines.size(); index++) {
-            lines.set(index, (index == 0 ? stack.getRarity().rarityColor : EnumChatFormatting.GRAY) + lines.get(index));
+        List<String> tooltip = new ArrayList<>(stack.getTooltip(mc.thePlayer, mc.gameSettings.advancedItemTooltips));
+        for (int index = 0; index < tooltip.size(); index++) {
+            tooltip.set(
+                index,
+                (index == 0 ? stack.getRarity().rarityColor : EnumChatFormatting.GRAY) + tooltip.get(index));
         }
-        appendStorageInfo(lines, hovered);
-        drawHoveringText(lines, mouseX, mouseY, fontRendererObj);
+        tooltip.addAll(lines);
+        FontRenderer font = stack.getItem()
+            .getFontRenderer(stack);
+        drawHoveringText(tooltip, mouseX, mouseY, font == null ? fontRendererObj : font);
     }
 
-    private void appendStorageInfo(@Nonnull List<String> lines, int slot) {
+    public List<String> storageTooltipLines(int mouseX, int mouseY) {
+        if (tile instanceof StorageNetworkTile || tile.getActiveStorage() == null) {
+            return List.of();
+        }
+        Slot hovered = storageSlotAt(mouseX, mouseY);
+        if (hovered == null) {
+            return List.of();
+        }
+        List<String> lines = new ArrayList<>();
+        if (!hovered.getHasStack()) {
+            Entry entry = entry(hovered.getSlotIndex());
+            lines.add(entry == null ? StatCollector.translateToLocal("gui.functionalstorage.empty") : entry.name());
+        }
+        lines.add(EnumChatFormatting.GRAY + amountLine(hovered.getSlotIndex()));
+        lines.add(
+            EnumChatFormatting.GRAY + StatCollector.translateToLocal("gui.functionalstorage.slot")
+                + hovered.getSlotIndex());
+        return lines;
+    }
+
+    private String amountLine(int slot) {
         String amount = NumberFormatUtil.formatNumber(
             tile.getActiveStorage()
                 .getSnapshot(slot)
@@ -244,29 +269,12 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
                 tile.getActiveStorage()
                     .getCapacity(slot))
             + (tile.getFluidHandler() == null ? "" : " " + NumberFormatUtil.getFluidUnit());
-        lines.add(StatCollector.translateToLocal("gui.functionalstorage.amount") + amount);
-        lines.add(StatCollector.translateToLocal("gui.functionalstorage.slot") + slot);
+        return StatCollector.translateToLocal("gui.functionalstorage.amount") + amount;
     }
 
-    private boolean storageSlotHoldsStack(int slot) {
-        return slot >= 0 && slot < inventorySlots.inventorySlots.size()
-            && inventorySlots.getSlot(slot)
-                .getHasStack();
-    }
-
-    private int storageSlotAt(int mouseX, int mouseY) {
-        int count = Math.min(
-            36,
-            tile.getActiveStorage()
-                .getStorageCount());
-        for (int slot = 0; slot < count; slot++) {
-            int x = guiLeft + contentX(slot);
-            int y = guiTop + contentY(slot);
-            if (mouseX >= x && mouseX < x + 16 && mouseY >= y && mouseY < y + 16) {
-                return slot;
-            }
-        }
-        return -1;
+    private Slot storageSlotAt(int mouseX, int mouseY) {
+        Slot slot = getSlotAt(mouseX, mouseY);
+        return slot instanceof ContainerDrawer.StorageSlot ? slot : null;
     }
 
     @Override
