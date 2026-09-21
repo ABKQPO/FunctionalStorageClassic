@@ -61,12 +61,40 @@ import thaumcraft.api.aspects.Aspect;
 @SideOnly(Side.CLIENT)
 public class DrawerRenderer extends TileEntitySpecialRenderer {
 
+    /**
+     * Face-plane offsets along the block's depth axis. The face transform negates
+     * the emitted z, so a larger emitted value ends up closer to the viewer:
+     * the count is drawn in front of the flat icon plane rather than sharing it.
+     */
     private static final float Z_ICON = -0.035F;
-    private static final float Z_TEXT = -0.02F;
+    private static final float Z_ICON_2D = -0.02F;
+    private static final float Z_TEXT = -0.01F;
     private static final float Z_INDICATOR = 0.004F;
     private static final float ICON_HALF_EXTENT = 0.5F;
-    private static final float FLUID_FRONT_DEPTH = -1F / 16F;
-    private static final float FLUID_BACK_DEPTH = -14F / 16F;
+    /**
+     * Fluid cavity bounds in model units, matching the {@code fluid_inner} panels
+     * of the fluid drawer models. Every fluid model shares these walls; the wider
+     * layouts only add dividers inside them.
+     */
+    private static final float CAVITY_NEAR = 1F;
+    private static final float CAVITY_FAR = 14.5F;
+    /**
+     * Insets kept between the fluid volume and the cavity walls it would
+     * otherwise share a depth plane with. The front frame and the rear wall both
+     * sit exactly on the cavity bounds, so a volume drawn right up to them
+     * z-fights; a hair of clearance removes the flicker and is imperceptible
+     * because the fluid fills the opening.
+     */
+    private static final float CAVITY_FRONT_INSET = 0.01F;
+    private static final float CAVITY_BACK_INSET = 0.02F;
+    private static final float CAVITY_LEFT = 1.5F;
+    private static final float CAVITY_RIGHT = 14.5F;
+    private static final float CAVITY_TOP = 14.5F;
+    private static final float CAVITY_BOTTOM = 1.5F;
+    /** Centre of the divider that splits the cavity in two, in model units. */
+    private static final float DIVIDER_CENTER = 8F;
+    /** Half thickness of a divider, so slot bounds stop at its surface. */
+    private static final float DIVIDER_HALF = 1F;
     private static final float FLUID_MINIMUM_HEIGHT = 1F / 64F;
     private static final float FLUID_INTERPOLATION_RATE = 8F;
     private static final float MAX_FLUID_INTERPOLATION_SECONDS = 0.25F;
@@ -98,29 +126,38 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
                 ? item.getSpriteNumber() == 0 ? TextureMap.locationBlocksTexture : TextureMap.locationItemsTexture
                 : textureManager.getResourceLocation(stack.getItemSpriteNumber());
             int renderPasses = item.getRenderPasses(stack.getItemDamage());
-            for (int pass = 0; pass < renderPasses; pass++) {
-                textureManager.bindTexture(texture);
-                IIcon icon = multipleRenderPasses ? item.getIcon(stack, pass) : stack.getIconIndex();
-                if (icon == null) {
-                    continue;
+            GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_COLOR_BUFFER_BIT);
+            try {
+                for (int pass = 0; pass < renderPasses; pass++) {
+                    textureManager.bindTexture(texture);
+                    IIcon icon = multipleRenderPasses ? item.getIcon(stack, pass) : stack.getIconIndex();
+                    if (icon == null) {
+                        continue;
+                    }
+                    int color = item.getColorFromItemStack(stack, pass);
+                    if (renderWithColor) {
+                        GL11.glColor4f(
+                            (color >> 16 & 0xFF) / 255F,
+                            (color >> 8 & 0xFF) / 255F,
+                            (color & 0xFF) / 255F,
+                            1F);
+                    }
+                    GL11.glEnable(GL11.GL_POLYGON_OFFSET_FILL);
+                    GL11.glPolygonOffset(-1F, -1F);
+                    GL11.glDisable(GL11.GL_LIGHTING);
+                    // Item icons are opaque; blending them would let the sprite's
+                    // soft edges mix with what is behind and read as translucent.
+                    GL11.glDisable(GL11.GL_BLEND);
+                    GL11.glEnable(GL11.GL_ALPHA_TEST);
+                    renderIcon(x, y, icon, 16, 16);
+                    if (renderEffect && stack.hasEffect(pass)) {
+                        GL11.glDisable(GL11.GL_ALPHA_TEST);
+                        renderEffect(textureManager, x, y);
+                    }
+                    GL11.glDisable(GL11.GL_POLYGON_OFFSET_FILL);
                 }
-                int color = item.getColorFromItemStack(stack, pass);
-                if (renderWithColor) {
-                    GL11.glColor4f((color >> 16 & 0xFF) / 255F, (color >> 8 & 0xFF) / 255F, (color & 0xFF) / 255F, 1F);
-                }
-                GL11.glEnable(GL11.GL_POLYGON_OFFSET_FILL);
-                GL11.glPolygonOffset(-1F, -1F);
-                GL11.glDisable(GL11.GL_LIGHTING);
-                GL11.glEnable(GL11.GL_BLEND);
-                GL11.glEnable(GL11.GL_ALPHA_TEST);
-                renderIcon(x, y, icon, 16, 16);
-                GL11.glDisable(GL11.GL_ALPHA_TEST);
-                GL11.glDisable(GL11.GL_BLEND);
-                GL11.glEnable(GL11.GL_LIGHTING);
-                if (renderEffect && stack.hasEffect(pass)) {
-                    renderEffect(textureManager, x, y);
-                }
-                GL11.glDisable(GL11.GL_POLYGON_OFFSET_FILL);
+            } finally {
+                GL11.glPopAttrib();
             }
         }
 
@@ -272,11 +309,12 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
                 state.clearTemplate(slot);
                 continue;
             }
-            float centerX = layout.getSlotX(slot);
-            float centerY = layout.getSlotY(slot);
+            float[] bounds = fluidBounds(layout, slot);
             if (options.isShowItemRender()) {
-                renderFluidVolume(fluid, centerX, centerY, fluidWidth(layout, slot), fluidHeight(layout), fill);
+                renderFluidVolume(fluid, bounds, fill);
             }
+            float centerX = (bounds[0] + bounds[1]) / 2F;
+            float centerY = (bounds[2] + bounds[3]) / 2F;
             if (hasTemplate && options.isShowItemCount()) {
                 renderText(NumberFormatUtil.formatFluid(snapshot.getAmount()), centerX, centerY, iconScale(layout));
             }
@@ -410,7 +448,7 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
                 minecraft.entityRenderer.itemRenderer
                     .renderItem(minecraft.thePlayer, stack, 0, IItemRenderer.ItemRenderType.EQUIPPED);
             } else {
-                GL11.glTranslatef(x, y, -0.02f);
+                GL11.glTranslatef(x, y, Z_ICON_2D);
                 GL11.glScalef(scale / 16F, scale / 16F, 0.0001F);
                 modelView.clear();
                 GL11.glGetFloat(GL11.GL_MODELVIEW_MATRIX, modelView);
@@ -452,13 +490,56 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
         }
     }
 
-    private float fluidWidth(DrawerFaceLayout layout, int slot) {
-        return layout == DrawerFaceLayout.X_1 || layout == DrawerFaceLayout.X_2
-            || layout == DrawerFaceLayout.X_3 && slot == 0 ? 14F / 16F : 7F / 16F;
-    }
-
-    private float fluidHeight(DrawerFaceLayout layout) {
-        return layout == DrawerFaceLayout.X_1 ? 12.5F / 16F : 5.5F / 16F;
+    /**
+     * Resolves the inner cavity region one fluid slot occupies, as
+     * {@code [left, right, top, bottom]} in the space the fluid quads are
+     * emitted in.
+     *
+     * <p>
+     * The volume must sit strictly inside the model's cavity, so the bounds come
+     * from the cavity walls rather than from the interactive face regions. Wider
+     * layouts are split at the divider the models place across the cavity, which
+     * keeps every slot clear of both the divider and the surrounding walls.
+     *
+     * <p>
+     * Cavity walls are authored in model units; the face transform mirrors both
+     * horizontal axes, so each bound is converted with {@code 1 - value} and the
+     * vertical pair swaps.
+     *
+     * @param layout model layout
+     * @param slot   slot index
+     * @return slot bounds in the emitted coordinate space
+     */
+    private static float[] fluidBounds(DrawerFaceLayout layout, int slot) {
+        float modelLeft = CAVITY_LEFT / 16F;
+        float modelRight = CAVITY_RIGHT / 16F;
+        float modelTop = CAVITY_BOTTOM / 16F;
+        float modelBottom = CAVITY_TOP / 16F;
+        if (layout != DrawerFaceLayout.X_1) {
+            float divider = DIVIDER_CENTER / 16F;
+            float dividerHalf = DIVIDER_HALF / 16F;
+            // Face regions number slots from the top down, while the cavity uses
+            // upward model units. Only the divider side is pulled back; the outer
+            // edge stays against the cavity wall. With four slots the index runs
+            // left to right, then top to bottom, so the row is the index above
+            // the column bit rather than the low bit itself.
+            boolean upperRow = layout == DrawerFaceLayout.X_4 ? slot < 2 : slot % 2 == 0;
+            if (upperRow) {
+                modelTop = divider + dividerHalf;
+                modelBottom = CAVITY_TOP / 16F;
+            } else {
+                modelTop = CAVITY_BOTTOM / 16F;
+                modelBottom = divider - dividerHalf;
+            }
+            if (layout == DrawerFaceLayout.X_4) {
+                if (slot % 2 == 0) {
+                    modelRight = divider - dividerHalf;
+                } else {
+                    modelLeft = divider + dividerHalf;
+                }
+            }
+        }
+        return new float[] { 1F - modelRight, 1F - modelLeft, 1F - modelBottom, 1F - modelTop };
     }
 
     private static class FluidRenderState {
@@ -512,8 +593,15 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
         }
     }
 
-    private void renderFluidVolume(FluidStack fluid, float centerX, float centerY, float width, float height,
-        float fill) {
+    /**
+     * Renders one slot's fluid volume inside the model cavity.
+     *
+     * @param fluid  fluid to render
+     * @param bounds slot cavity bounds as {@code [left, right, top, bottom]} in
+     *               normalised model space
+     * @param fill   fill ratio in {@code [0, 1]}
+     */
+    private void renderFluidVolume(FluidStack fluid, float[] bounds, float fill) {
         if (fluid == null || fluid.getFluid() == null) {
             return;
         }
@@ -524,23 +612,35 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
         }
         int color = fluid.getFluid()
             .getColor(fluid);
-        float left = centerX - width / 2F;
-        float right = centerX + width / 2F;
-        float bottom = centerY + height / 2F;
+        float height = bounds[3] - bounds[2];
+        float left = bounds[0];
+        float right = bounds[1];
+        float bottom = bounds[3];
         float top = bottom - Math.max(FLUID_MINIMUM_HEIGHT, height * fill);
-        GL11.glDisable(GL11.GL_LIGHTING);
-        GL11.glEnable(GL11.GL_BLEND);
-        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-        Minecraft.getMinecraft()
-            .getTextureManager()
-            .bindTexture(TextureMap.locationBlocksTexture);
-        Tessellator tessellator = Tessellator.instance;
-        tessellator.startDrawingQuads();
-        addFluidVolume(tessellator, icon, left, right, top, bottom, FLUID_FRONT_DEPTH, FLUID_BACK_DEPTH, color);
-        tessellator.draw();
-        GL11.glColor4f(1F, 1F, 1F, 1F);
-        GL11.glDisable(GL11.GL_BLEND);
-        GL11.glEnable(GL11.GL_LIGHTING);
+        GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_LIGHTING_BIT | GL11.GL_COLOR_BUFFER_BIT);
+        try {
+            GL11.glDisable(GL11.GL_LIGHTING);
+            GL11.glEnable(GL11.GL_BLEND);
+            GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+            Minecraft.getMinecraft()
+                .getTextureManager()
+                .bindTexture(TextureMap.locationBlocksTexture);
+            Tessellator tessellator = Tessellator.instance;
+            tessellator.startDrawingQuads();
+            addFluidVolume(
+                tessellator,
+                icon,
+                left,
+                right,
+                top,
+                bottom,
+                -(CAVITY_NEAR + CAVITY_FRONT_INSET) / 16F,
+                -(CAVITY_FAR - CAVITY_BACK_INSET) / 16F,
+                color);
+            tessellator.draw();
+        } finally {
+            GL11.glPopAttrib();
+        }
     }
 
     private void addFluidVolume(Tessellator tessellator, IIcon icon, float left, float right, float top, float bottom,
@@ -651,6 +751,15 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
             .setColorRGBA_F((color >> 16 & 0xFF) / 255F, (color >> 8 & 0xFF) / 255F, (color & 0xFF) / 255F, alpha);
     }
 
+    /**
+     * Draws an essentia icon on a slot. State is pushed rather than toggled and
+     * restored by hand so it survives an exception while the quad is drawn.
+     *
+     * @param aspect  aspect to draw
+     * @param centerX slot centre on the face
+     * @param centerY slot centre on the face
+     * @param scale   icon scale
+     */
     @Optional.Method(modid = "Thaumcraft")
     private void renderAspect(Aspect aspect, float centerX, float centerY, float scale) {
         ResourceLocation image = aspect.getImage();
@@ -658,37 +767,55 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
             return;
         }
         int color = aspect.getColor();
+        GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_LIGHTING_BIT | GL11.GL_COLOR_BUFFER_BIT);
         GL11.glPushMatrix();
-        GL11.glTranslatef(centerX, centerY, Z_ICON);
-        GL11.glScalef(scale, scale, 1F);
-        GL11.glDisable(GL11.GL_LIGHTING);
-        GL11.glEnable(GL11.GL_BLEND);
-        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-        Minecraft.getMinecraft()
-            .getTextureManager()
-            .bindTexture(image);
-        GL11.glColor4f(((color >> 16) & 0xFF) / 255F, ((color >> 8) & 0xFF) / 255F, (color & 0xFF) / 255F, 1F);
-        Tessellator tessellator = Tessellator.instance;
-        tessellator.startDrawingQuads();
-        tessellator.addVertexWithUV(-ICON_HALF_EXTENT, ICON_HALF_EXTENT, 0D, 0D, 1D);
-        tessellator.addVertexWithUV(ICON_HALF_EXTENT, ICON_HALF_EXTENT, 0D, 1D, 1D);
-        tessellator.addVertexWithUV(ICON_HALF_EXTENT, -ICON_HALF_EXTENT, 0D, 1D, 0D);
-        tessellator.addVertexWithUV(-ICON_HALF_EXTENT, -ICON_HALF_EXTENT, 0D, 0D, 0D);
-        tessellator.draw();
-        GL11.glColor4f(1F, 1F, 1F, 1F);
-        GL11.glDisable(GL11.GL_BLEND);
-        GL11.glEnable(GL11.GL_LIGHTING);
-        GL11.glPopMatrix();
+        try {
+            GL11.glTranslatef(centerX, centerY, Z_ICON);
+            GL11.glScalef(scale, scale, 1F);
+            GL11.glDisable(GL11.GL_LIGHTING);
+            GL11.glEnable(GL11.GL_BLEND);
+            GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+            Minecraft.getMinecraft()
+                .getTextureManager()
+                .bindTexture(image);
+            GL11.glColor4f(((color >> 16) & 0xFF) / 255F, ((color >> 8) & 0xFF) / 255F, (color & 0xFF) / 255F, 1F);
+            Tessellator tessellator = Tessellator.instance;
+            tessellator.startDrawingQuads();
+            tessellator.addVertexWithUV(-ICON_HALF_EXTENT, ICON_HALF_EXTENT, 0D, 0D, 1D);
+            tessellator.addVertexWithUV(ICON_HALF_EXTENT, ICON_HALF_EXTENT, 0D, 1D, 1D);
+            tessellator.addVertexWithUV(ICON_HALF_EXTENT, -ICON_HALF_EXTENT, 0D, 1D, 0D);
+            tessellator.addVertexWithUV(-ICON_HALF_EXTENT, -ICON_HALF_EXTENT, 0D, 0D, 0D);
+            tessellator.draw();
+        } finally {
+            GL11.glPopMatrix();
+            GL11.glPopAttrib();
+        }
     }
 
+    /**
+     * Draws a slot's count in front of the slot's icon.
+     *
+     * <p>
+     * Depth testing stays enabled so the label is occluded by the world exactly
+     * like the block it belongs to; disabling it would draw the count through
+     * every block in front of the drawer. Only depth writes are masked, which
+     * keeps the glyph quads from stacking against each other, and the scale is
+     * applied to the text extents alone so the chosen depth survives the
+     * transform.
+     *
+     * @param text      label to draw
+     * @param centerX   slot centre on the face
+     * @param centerY   slot centre on the face
+     * @param iconScale icon scale, used to place the label below the icon
+     */
     private void renderText(String text, float centerX, float centerY, float iconScale) {
         FontRenderer font = Minecraft.getMinecraft().fontRenderer;
         int width = font.getStringWidth(text);
-        GL11.glPushAttrib(GL11.GL_DEPTH_BUFFER_BIT | GL11.GL_LIGHTING_BIT);
+        GL11.glPushAttrib(GL11.GL_DEPTH_BUFFER_BIT | GL11.GL_LIGHTING_BIT | GL11.GL_ENABLE_BIT);
         GL11.glPushMatrix();
         try {
             GL11.glTranslatef(centerX, centerY + (iconScale > 0.25F ? 0.30F : 0.1F), Z_TEXT);
-            GL11.glScalef(TEXT_SCALE, TEXT_SCALE, TEXT_SCALE);
+            GL11.glScalef(TEXT_SCALE, TEXT_SCALE, 1F);
             GL11.glDisable(GL11.GL_LIGHTING);
             GL11.glDepthMask(false);
             font.drawStringWithShadow(text, -width / 2, 0, 0xFFFFFF);
@@ -698,31 +825,47 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
         }
     }
 
+    /**
+     * Draws the fill indicator bar under a slot's icon.
+     *
+     * <p>
+     * Lighting and texturing are pushed rather than toggled and restored by hand,
+     * so the state survives an exception partway through drawing the bar.
+     *
+     * @param centerX   slot centre on the face
+     * @param centerY   slot centre on the face
+     * @param iconScale icon scale, used to place the bar below the icon
+     * @param fill      fill ratio in {@code [0, 1]}
+     * @param options   drawer display options
+     */
     private void renderIndicator(float centerX, float centerY, float iconScale, float fill, DrawerOptions options) {
         int mode = options.getAdvancedValue(ConfigurationToolItem.ConfigurationAction.INDICATOR);
         if (mode == 0) {
             return;
         }
+        GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_LIGHTING_BIT);
         GL11.glPushMatrix();
-        GL11.glTranslatef(centerX, centerY + (iconScale > 0.25F ? 0.425F : 0.22F), Z_INDICATOR);
-        GL11.glDisable(GL11.GL_LIGHTING);
-        GL11.glDisable(GL11.GL_TEXTURE_2D);
-        Tessellator tessellator = Tessellator.instance;
-        if (mode != 3) {
-            tessellator.startDrawingQuads();
-            tessellator.setColorOpaque_F(0.1F, 0.1F, 0.1F);
-            addIndicatorQuad(tessellator, INDICATOR_HALF_WIDTH);
-            tessellator.draw();
+        try {
+            GL11.glTranslatef(centerX, centerY + (iconScale > 0.25F ? 0.425F : 0.22F), Z_INDICATOR);
+            GL11.glDisable(GL11.GL_LIGHTING);
+            GL11.glDisable(GL11.GL_TEXTURE_2D);
+            Tessellator tessellator = Tessellator.instance;
+            if (mode != 3) {
+                tessellator.startDrawingQuads();
+                tessellator.setColorOpaque_F(0.1F, 0.1F, 0.1F);
+                addIndicatorQuad(tessellator, INDICATOR_HALF_WIDTH);
+                tessellator.draw();
+            }
+            if (mode == 1 || fill >= 1F) {
+                tessellator.startDrawingQuads();
+                tessellator.setColorOpaque_F(0.2F, 0.8F, 0.2F);
+                addIndicatorQuad(tessellator, INDICATOR_HALF_WIDTH * Math.max(0.02F, fill));
+                tessellator.draw();
+            }
+        } finally {
+            GL11.glPopMatrix();
+            GL11.glPopAttrib();
         }
-        if (mode == 1 || fill >= 1F) {
-            tessellator.startDrawingQuads();
-            tessellator.setColorOpaque_F(0.2F, 0.8F, 0.2F);
-            addIndicatorQuad(tessellator, INDICATOR_HALF_WIDTH * Math.max(0.02F, fill));
-            tessellator.draw();
-        }
-        GL11.glEnable(GL11.GL_TEXTURE_2D);
-        GL11.glEnable(GL11.GL_LIGHTING);
-        GL11.glPopMatrix();
     }
 
     private void addIndicatorQuad(Tessellator tessellator, float halfWidth) {

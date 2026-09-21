@@ -1,7 +1,9 @@
 package com.hfstudio.functionalstorage.client.gui;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -85,24 +87,15 @@ public final class StorageContentEntry {
 
     @Nonnull
     public static List<StorageContentEntry> merge(@Nonnull List<StorageContentEntry> entries) {
-        List<StorageContentEntry> merged = new ArrayList<>(entries.size());
+        Map<Object, StorageContentEntry> merged = new LinkedHashMap<>(entries.size());
         for (StorageContentEntry entry : entries) {
             Object identity = entry.identity();
-            boolean combined = false;
-            for (int index = 0; index < merged.size(); index++) {
-                StorageContentEntry existing = merged.get(index);
-                if (existing.identity()
-                    .equals(identity)) {
-                    merged.set(index, existing.withAmount(saturatedAdd(existing.amount(), entry.amount())));
-                    combined = true;
-                    break;
-                }
-            }
-            if (!combined) {
-                merged.add(entry);
-            }
+            merged.compute(
+                identity,
+                (k, existing) -> existing == null ? entry
+                    : existing.withAmount(saturatedAdd(existing.amount(), entry.amount())));
         }
-        return merged;
+        return new ArrayList<>(merged.values());
     }
 
     @Nonnull

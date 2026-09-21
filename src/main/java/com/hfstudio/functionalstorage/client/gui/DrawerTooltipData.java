@@ -75,34 +75,32 @@ public class DrawerTooltipData {
         if (tile == null) {
             return sections;
         }
-        List<Entry> contents = new ArrayList<>();
+        List<StorageContentEntry> contents = new ArrayList<>();
         readEntries(
             contents,
             tile.getCompoundTag("Items")
                 .getTagList("Entries", 10),
-            0);
+            ContentKind.ITEM);
         readEntries(
             contents,
             tile.getCompoundTag("Tanks")
                 .getTagList("Entries", 10),
-            1);
+            ContentKind.FLUID);
         readEntries(
             contents,
             tile.getCompoundTag("Aspects")
                 .getTagList("Entries", 10),
-            2);
-        NBTTagCompound compacting = tile.getCompoundTag("Compacting");
-        NBTTagList tiers = compacting.getTagList("Tiers", 10);
-        for (int index = 0; index < tiers.tagCount(); index++) {
-            NBTTagCompound tier = tiers.getCompoundTagAt(index);
-            ItemStack item = ItemUtil.readStack(tier.getCompoundTag("Template"));
-            if (item != null) {
-                long count = compacting.getLong("BaseAmount") / Math.max(1L, tier.getLong("BaseUnits"));
-                contents.add(new Entry(item, null, null, NumberFormatUtil.formatNumberCompact(count)));
-            }
-        }
+            ContentKind.ASPECT);
+        readCompactingTiers(contents, tile);
         if (!contents.isEmpty()) {
-            sections.add(new Section("drawer.block.contents", contents));
+            // A drawer may spread one resource over several slots, so entries are
+            // merged by resource identity before display. Item and fluid identity
+            // both include NBT, keeping differently configured stacks apart.
+            List<Entry> merged = new ArrayList<>();
+            for (StorageContentEntry entry : StorageContentEntry.merge(contents)) {
+                merged.add(toEntry(entry));
+            }
+            sections.add(new Section("drawer.block.contents", merged));
         }
         List<Entry> upgrades = new ArrayList<>();
         for (String key : new String[] { "StorageUpgrades", "UtilityUpgrades" }) {
@@ -120,20 +118,59 @@ public class DrawerTooltipData {
         return sections;
     }
 
-    private static void readEntries(List<Entry> entries, NBTTagList list, int kind) {
+    /**
+     * Converts a merged content entry into a display entry, formatting the amount
+     * with the unit that matches the resource kind.
+     *
+     * @param entry merged content entry
+     * @return the display entry
+     */
+    private static Entry toEntry(StorageContentEntry entry) {
+        if (entry.item() != null) {
+            return new Entry(entry.item(), null, null, NumberFormatUtil.formatNumberCompact(entry.amount()));
+        }
+        if (entry.fluid() != null) {
+            return new Entry(null, entry.fluid(), null, NumberFormatUtil.formatFluid(entry.amount()));
+        }
+        return new Entry(null, null, entry.aspect(), NumberFormatUtil.formatNumberCompact(entry.amount()));
+    }
+
+    /**
+     * Reads the compacted tiers a compacting drawer exposes as stored content.
+     *
+     * @param contents accumulator
+     * @param tile     drawer tile data
+     */
+    private static void readCompactingTiers(List<StorageContentEntry> contents, NBTTagCompound tile) {
+        NBTTagCompound compacting = tile.getCompoundTag("Compacting");
+        NBTTagList tiers = compacting.getTagList("Tiers", 10);
+        for (int index = 0; index < tiers.tagCount(); index++) {
+            NBTTagCompound tier = tiers.getCompoundTagAt(index);
+            ItemStack item = ItemUtil.readStack(tier.getCompoundTag("Template"));
+            if (item != null) {
+                long count = compacting.getLong("BaseAmount") / Math.max(1L, tier.getLong("BaseUnits"));
+                contents.add(StorageContentEntry.ofItem(item, count));
+            }
+        }
+    }
+
+    private static void readEntries(List<StorageContentEntry> entries, NBTTagList list, ContentKind kind) {
         for (int index = 0; index < list.tagCount(); index++) {
             NBTTagCompound entry = list.getCompoundTagAt(index);
             NBTTagCompound template = entry.getCompoundTag("Template");
             long count = entry.getLong("Amount");
-            if (kind == 0) {
+            if (count <= 0L) {
+                continue;
+            }
+            if (kind == ContentKind.ITEM) {
                 ItemStack item = ItemUtil.readStack(template);
                 if (item != null) {
-                    entries.add(new Entry(item, null, null, NumberFormatUtil.formatNumberCompact(count)));
+                    entries.add(StorageContentEntry.ofItem(item, count));
                 }
-            } else if (kind == 1) {
+            } else if (kind == ContentKind.FLUID) {
                 FluidStack fluid = FluidStack.loadFluidStackFromNBT(template);
                 if (fluid != null) {
-                    entries.add(new Entry(null, fluid, null, NumberFormatUtil.formatFluid(count)));
+                    entries.add(StorageContentEntry.ofFluid(fluid, count));
                 }
             } else if (Mods.Thaumcraft.isModLoaded()) {
                 readAspectEntry(entries, template, count);
@@ -142,10 +179,21 @@ public class DrawerTooltipData {
     }
 
     @Optional.Method(modid = "Thaumcraft")
-    private static void readAspectEntry(List<Entry> entries, NBTTagCompound template, long count) {
+    private static void readAspectEntry(List<StorageContentEntry> entries, NBTTagCompound template, long count) {
         Aspect aspect = Aspect.getAspect(template.getString("Aspect"));
-        if (aspect != null)
-            entries.add(new Entry(null, null, AspectIcon.of(aspect), NumberFormatUtil.formatNumberCompact(count)));
+        if (aspect != null) {
+            entries.add(StorageContentEntry.ofAspect(AspectIcon.of(aspect), count));
+        }
+    }
+
+    /**
+     * Which accumulator a storage list feeds, so amounts are formatted with the
+     * right unit once entries are merged.
+     */
+    private enum ContentKind {
+        ITEM,
+        FLUID,
+        ASPECT
     }
 
     public static List<ItemStack> frequencyDisplay(String frequency) {
