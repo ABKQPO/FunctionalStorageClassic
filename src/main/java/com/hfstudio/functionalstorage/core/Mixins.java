@@ -6,7 +6,7 @@ import com.gtnewhorizon.gtnhmixins.builders.MixinBuilder;
 public enum Mixins implements IMixins {
 
     BOGO_SORTER_DROP_OFF(new MixinBuilder().addCommonMixins("bogosorter.MixinDropOffHandler")
-        .addRequiredMod(TargetedMod.INVENTORY_BOGO_SORTER)
+        .addRequiredMod(Mods.INVENTORY_BOGO_SORTER)
         .setPhase(Phase.LATE));
 
     private final MixinBuilder builder;

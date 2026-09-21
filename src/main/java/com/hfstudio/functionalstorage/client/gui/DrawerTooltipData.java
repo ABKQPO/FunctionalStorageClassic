@@ -64,7 +64,7 @@ public class DrawerTooltipData {
             }
             if (!filters.isEmpty()) sections.add(new Section("functionalstorage.upgrade.filtered", filters));
             List<Entry> attachments = new ArrayList<>();
-            for (String key : new String[] { "Tool", "SpeedAugments" }) {
+            for (String key : UpgradeSettings.NESTED_SLOT_KEYS) {
                 ItemStack attachment = UpgradeSettings.getStack(stack, key);
                 if (attachment != null)
                     attachments.add(new Entry(attachment, null, null, Integer.toString(attachment.stackSize)));

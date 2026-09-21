@@ -42,7 +42,7 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
     private final ControllableDrawerTile tile;
     private final DrawerGuiLayout layout;
     private final DrawerInfoPanel info;
-    private final DrawerTooltipRenderer previews = new DrawerTooltipRenderer();
+    private final StorageTooltipPainter previews = StorageTooltipPainter.INSTANCE;
 
     public GuiDrawer(@Nonnull EntityPlayer player, @Nonnull ControllableDrawerTile tile) {
         super(new ContainerDrawer(tile, player));
@@ -51,6 +51,11 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
         this.layout = ((ContainerDrawer) inventorySlots).getLayout();
         this.xSize = WINDOW_WIDTH;
         this.ySize = layout.height();
+    }
+
+    @Nonnull
+    public ControllableDrawerTile getTile() {
+        return tile;
     }
 
     @Override

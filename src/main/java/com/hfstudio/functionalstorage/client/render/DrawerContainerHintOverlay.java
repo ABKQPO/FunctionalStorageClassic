@@ -15,6 +15,8 @@ import net.minecraftforge.client.event.RenderGameOverlayEvent;
 
 import org.lwjgl.opengl.GL11;
 
+import com.hfstudio.functionalstorage.client.gui.StorageTooltipPainter;
+import com.hfstudio.functionalstorage.common.integration.Mods;
 import com.hfstudio.functionalstorage.common.integration.thaumcraft.EssentiaContainerRegistry;
 import com.hfstudio.functionalstorage.common.interaction.FluidContainerInteraction;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
@@ -26,6 +28,10 @@ import cpw.mods.fml.relauncher.SideOnly;
 
 @SideOnly(Side.CLIENT)
 public class DrawerContainerHintOverlay extends Gui {
+
+    public static final int BACKGROUND = 0xF0100010;
+    public static final int BORDER_START = 0x505000FF;
+    public static final int BORDER_END = 0x5028007F;
 
     @SubscribeEvent
     public void render(RenderGameOverlayEvent.Post event) {
@@ -56,7 +62,10 @@ public class DrawerContainerHintOverlay extends Gui {
         if (drawer.getFluidHandler() != null && FluidContainerInteraction.isFluidContainer(held)) {
             return "fluid_drawer_hint";
         }
-        return drawer.getAspectHandler() != null && isEssentiaContainer(held) ? "essentia_drawer_hint" : null;
+        if (Mods.Thaumcraft.isModLoaded() && drawer.getAspectHandler() != null && isEssentiaContainer(held)) {
+            return "essentia_drawer_hint";
+        }
+        return null;
     }
 
     @Optional.Method(modid = "Thaumcraft")
@@ -109,18 +118,7 @@ public class DrawerContainerHintOverlay extends Gui {
     }
 
     private void drawTooltipBackground(int x, int y, int width, int height) {
-        int backgroundStart = 0xF0100010;
-        int backgroundEnd = 0xF0100010;
-        int borderStart = 0x505000FF;
-        int borderEnd = 0x5028007F;
-        drawGradientRect(x - 3, y - 4, x + width + 3, y - 3, backgroundStart, backgroundStart);
-        drawGradientRect(x - 3, y + height + 3, x + width + 3, y + height + 4, backgroundEnd, backgroundEnd);
-        drawGradientRect(x - 3, y - 3, x + width + 3, y + height + 3, backgroundStart, backgroundEnd);
-        drawGradientRect(x - 4, y - 3, x - 3, y + height + 3, backgroundStart, backgroundEnd);
-        drawGradientRect(x + width + 3, y - 3, x + width + 4, y + height + 3, backgroundStart, backgroundEnd);
-        drawGradientRect(x - 3, y - 3, x + width + 3, y - 2, borderStart, borderStart);
-        drawGradientRect(x - 3, y + height + 2, x + width + 3, y + height + 3, borderEnd, borderEnd);
-        drawGradientRect(x - 3, y - 2, x - 2, y + height + 2, borderStart, borderEnd);
-        drawGradientRect(x + width + 2, y - 2, x + width + 3, y + height + 2, borderStart, borderEnd);
+        StorageTooltipPainter.INSTANCE
+            .drawBackground(x, y, width, height, BACKGROUND, BACKGROUND, BORDER_START, BORDER_END);
     }
 }

@@ -22,7 +22,7 @@ public class DrawerInfoPanel extends Gui {
 
     private final ControllableDrawerTile tile;
     private final DrawerFaceLayout face;
-    private final DrawerTooltipRenderer previews = new DrawerTooltipRenderer();
+    private final StorageTooltipPainter previews = StorageTooltipPainter.INSTANCE;
 
     public DrawerInfoPanel(ControllableDrawerTile tile) {
         this.tile = tile;

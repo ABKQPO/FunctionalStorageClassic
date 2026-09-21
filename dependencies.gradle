@@ -6,6 +6,9 @@ dependencies {
     compileOnly("com.github.GTNewHorizons:NotEnoughItems:2.8.140-GTNH:dev")
     runtimeOnlyNonPublishable("com.github.GTNewHorizons:NotEnoughItems:2.8.140-GTNH:dev")
 
+    compileOnlyApi("com.github.GTNewHorizons:CodeChickenCore:1.4.19:dev") { transitive = false }
+    runtimeOnlyNonPublishable("com.github.GTNewHorizons:CodeChickenCore:1.4.19:dev")
+
     compileOnly("com.github.GTNewHorizons:InventoryBogoSorter:1.3.50-GTNH:dev") { transitive = false }
     compileOnly("com.github.GTNewHorizons:MouseTweaks:2.5.3-GTNH:dev") { transitive = false }
     compileOnly("com.github.GTNewHorizons:ModularUI2:2.3.85-1.7.10:dev") { transitive = false }

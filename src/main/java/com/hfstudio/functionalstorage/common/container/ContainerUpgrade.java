@@ -33,8 +33,9 @@ public class ContainerUpgrade extends Container {
         this.upgradeStack = tile.getUtilityUpgrade(upgradeSlot);
         this.upgrade = (AutomationUpgradeItem) upgradeStack.getItem();
         this.attachments = new InventoryBasic("Upgrade attachments", false, 2);
-        attachments.setInventorySlotContents(0, UpgradeSettings.getStack(upgradeStack, "Tool"));
-        attachments.setInventorySlotContents(1, UpgradeSettings.getStack(upgradeStack, "SpeedAugments"));
+        attachments.setInventorySlotContents(0, UpgradeSettings.getStack(upgradeStack, UpgradeSettings.TOOL_KEY));
+        attachments
+            .setInventorySlotContents(1, UpgradeSettings.getStack(upgradeStack, UpgradeSettings.SPEED_AUGMENTS_KEY));
         addSlotToContainer(new AttachmentSlot(0, 80, 80));
         addSlotToContainer(new AttachmentSlot(1, 152, 80));
         for (int row = 0; row < 3; row++) {
@@ -167,7 +168,10 @@ public class ContainerUpgrade extends Container {
         public void onSlotChanged() {
             super.onSlotChanged();
             if (!tile.getWorldObj().isRemote) {
-                UpgradeSettings.setStack(upgradeStack, slotNumber == 0 ? "Tool" : "SpeedAugments", getStack());
+                UpgradeSettings.setStack(
+                    upgradeStack,
+                    slotNumber == 0 ? UpgradeSettings.TOOL_KEY : UpgradeSettings.SPEED_AUGMENTS_KEY,
+                    getStack());
                 tile.markOptionsDirty();
             }
         }

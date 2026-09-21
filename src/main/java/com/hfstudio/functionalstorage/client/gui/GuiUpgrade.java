@@ -35,7 +35,7 @@ public class GuiUpgrade extends GuiContainer {
     private final ContainerUpgrade container;
     private final DrawerInfoPanel drawer;
     private final boolean itemFilters;
-    private final DrawerTooltipRenderer previews = new DrawerTooltipRenderer();
+    private final StorageTooltipPainter previews = StorageTooltipPainter.INSTANCE;
     private boolean filtersOpen;
 
     public GuiUpgrade(EntityPlayer player, ControllableDrawerTile tile, int upgradeSlot) {

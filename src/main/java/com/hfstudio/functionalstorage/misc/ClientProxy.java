@@ -10,6 +10,7 @@ import com.hfstudio.functionalstorage.client.integration.BogoSorterShortcuts;
 import com.hfstudio.functionalstorage.client.integration.MouseTweaksShortcuts;
 import com.hfstudio.functionalstorage.client.integration.NEIGuiIntegration;
 import com.hfstudio.functionalstorage.client.integration.NEIStorageShortcuts;
+import com.hfstudio.functionalstorage.client.integration.StorageOverlayHandler;
 import com.hfstudio.functionalstorage.client.render.DrawerContainerHintOverlay;
 import com.hfstudio.functionalstorage.client.render.LinkingToolOverlay;
 import com.hfstudio.functionalstorage.common.integration.Mods;
@@ -40,6 +41,7 @@ public class ClientProxy extends CommonProxy {
         if (Mods.NotEnoughItems.isModLoaded()) {
             NEIGuiIntegration.register();
             NEIStorageShortcuts.register();
+            StorageOverlayHandler.register();
         }
         if (Mods.InventoryBogoSorter.isModLoaded()) MinecraftForge.EVENT_BUS.register(new BogoSorterShortcuts());
         if (Mods.MouseTweaks.isModLoaded()) FMLCommonHandler.instance()

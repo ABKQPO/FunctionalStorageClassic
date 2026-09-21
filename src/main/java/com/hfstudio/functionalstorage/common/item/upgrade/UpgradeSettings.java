@@ -18,6 +18,9 @@ import com.hfstudio.functionalstorage.util.ItemUtil;
 public class UpgradeSettings {
 
     public static final int FILTER_SLOTS = 9;
+    public static final String TOOL_KEY = "Tool";
+    public static final String SPEED_AUGMENTS_KEY = "SpeedAugments";
+    public static final String[] NESTED_SLOT_KEYS = { TOOL_KEY, SPEED_AUGMENTS_KEY };
 
     public record ItemFilter(ItemStack stack, String ore) {}
 
