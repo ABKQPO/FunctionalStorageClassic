@@ -38,7 +38,10 @@ public class NEIStorageShortcuts implements IContainerInputHandler {
         if (!StorageShortcutInput.supports(gui) || !enabled()) return false;
         Slot slot = GuiContainerManager.getSlotMouseOver(gui);
         if (!StorageShortcutInput.supportsSlot(gui, slot)) return false;
-        if (scrolled != 0 && slot.getHasStack() && !((StorageShortcutScreen) gui).isTextInputFocused()) {
+        // An empty slot cannot be drained but is still a valid target, so the
+        // server decides whether the scroll does anything instead of the client
+        // rejecting it up front.
+        if (scrolled != 0 && !((StorageShortcutScreen) gui).isTextInputFocused()) {
             boolean push = (scrolled > 0) != NEIClientConfig.shouldInvertMouseScrollTransfer();
             StorageShortcutInput.send(gui, slot, push ? Action.PUSH : Action.PULL, 1, false);
         }

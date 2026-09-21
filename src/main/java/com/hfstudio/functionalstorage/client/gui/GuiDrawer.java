@@ -1,5 +1,6 @@
 package com.hfstudio.functionalstorage.client.gui;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.annotation.Nonnull;
@@ -9,6 +10,7 @@ import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.StatCollector;
 
@@ -203,36 +205,68 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
         if (tile instanceof StorageNetworkTile || tile.getActiveStorage() == null) {
             return;
         }
-        for (int slot = 0; slot < Math.min(
+        int hovered = storageSlotAt(mouseX, mouseY);
+        if (hovered < 0) {
+            return;
+        }
+        if (storageSlotHoldsStack(hovered)) {
+            return;
+        }
+        List<String> lines = new ArrayList<>();
+        Entry entry = entry(hovered);
+        lines.add(entry == null ? StatCollector.translateToLocal("gui.functionalstorage.empty") : entry.name());
+        appendStorageInfo(lines, hovered);
+        drawHoveringText(lines, mouseX, mouseY, fontRendererObj);
+    }
+
+    @Override
+    protected void renderToolTip(@Nonnull ItemStack stack, int mouseX, int mouseY) {
+        int hovered = storageSlotAt(mouseX, mouseY);
+        if (hovered < 0) {
+            super.renderToolTip(stack, mouseX, mouseY);
+            return;
+        }
+        List<String> lines = new ArrayList<>(stack.getTooltip(mc.thePlayer, mc.gameSettings.advancedItemTooltips));
+        for (int index = 0; index < lines.size(); index++) {
+            lines.set(index, (index == 0 ? stack.getRarity().rarityColor : EnumChatFormatting.GRAY) + lines.get(index));
+        }
+        appendStorageInfo(lines, hovered);
+        drawHoveringText(lines, mouseX, mouseY, fontRendererObj);
+    }
+
+    private void appendStorageInfo(@Nonnull List<String> lines, int slot) {
+        String amount = NumberFormatUtil.formatNumber(
+            tile.getActiveStorage()
+                .getSnapshot(slot)
+                .getAmount())
+            + "/"
+            + NumberFormatUtil.formatNumber(
+                tile.getActiveStorage()
+                    .getCapacity(slot))
+            + (tile.getFluidHandler() == null ? "" : " " + NumberFormatUtil.getFluidUnit());
+        lines.add(StatCollector.translateToLocal("gui.functionalstorage.amount") + amount);
+        lines.add(StatCollector.translateToLocal("gui.functionalstorage.slot") + slot);
+    }
+
+    private boolean storageSlotHoldsStack(int slot) {
+        return slot >= 0 && slot < inventorySlots.inventorySlots.size()
+            && inventorySlots.getSlot(slot)
+                .getHasStack();
+    }
+
+    private int storageSlotAt(int mouseX, int mouseY) {
+        int count = Math.min(
             36,
             tile.getActiveStorage()
-                .getStorageCount()); slot++) {
+                .getStorageCount());
+        for (int slot = 0; slot < count; slot++) {
             int x = guiLeft + contentX(slot);
             int y = guiTop + contentY(slot);
             if (mouseX >= x && mouseX < x + 16 && mouseY >= y && mouseY < y + 16) {
-                Entry entry = entry(slot);
-                String name = entry == null ? StatCollector.translateToLocal("gui.functionalstorage.empty")
-                    : entry.name();
-                String amount = NumberFormatUtil.formatNumber(
-                    tile.getActiveStorage()
-                        .getSnapshot(slot)
-                        .getAmount())
-                    + "/"
-                    + NumberFormatUtil.formatNumber(
-                        tile.getActiveStorage()
-                            .getCapacity(slot))
-                    + (tile.getFluidHandler() == null ? "" : " " + NumberFormatUtil.getFluidUnit());
-                drawHoveringText(
-                    List.of(
-                        name,
-                        StatCollector.translateToLocal("gui.functionalstorage.amount") + amount,
-                        StatCollector.translateToLocal("gui.functionalstorage.slot") + slot),
-                    mouseX,
-                    mouseY,
-                    fontRendererObj);
-                break;
+                return slot;
             }
         }
+        return -1;
     }
 
     @Override

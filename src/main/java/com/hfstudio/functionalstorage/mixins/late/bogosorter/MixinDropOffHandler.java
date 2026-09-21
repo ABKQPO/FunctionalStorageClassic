@@ -31,25 +31,28 @@ public class MixinDropOffHandler {
         if (!(toInventory instanceof ControllableDrawerTile drawer)) {
             return;
         }
+        // Take ownership of drawers before the upstream arithmetic can run, even
+        // when nothing ends up being transferred.
+        callbackInfo.cancel();
         IBigItemHandler handler = drawer.getItemHandler();
-        ItemStack stack = playerStackIndex < 0 || playerStackIndex >= playerStacks.length ? null
-            : playerStacks[playerStackIndex];
-        if (handler == null || stack == null || stack.getItem() == null || stack.stackSize <= 0) {
+        if (handler == null || playerStackIndex < 0 || playerStackIndex >= playerStacks.length) {
+            return;
+        }
+        ItemStack stack = playerStacks[playerStackIndex];
+        if (stack == null || stack.getItem() == null || stack.stackSize <= 0) {
             return;
         }
 
         TransferResult<BigItemStack, ItemStorageKey> result = handler
             .insertRouted(new BigItemStack(stack, stack.stackSize), StorageAction.EXECUTE);
-        long processed = result.getProcessedAmount();
+        long processed = Math.min(Math.max(0L, result.getProcessedAmount()), stack.stackSize);
         if (processed <= 0L) {
             return;
         }
 
-        int moved = (int) Math.min(processed, stack.stackSize);
-        stack.stackSize -= moved;
+        stack.stackSize -= (int) processed;
         if (stack.stackSize <= 0) {
             playerStacks[playerStackIndex] = null;
         }
-        callbackInfo.cancel();
     }
 }

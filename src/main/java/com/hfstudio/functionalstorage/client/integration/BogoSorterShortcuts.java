@@ -38,7 +38,7 @@ public class BogoSorterShortcuts {
         if (!(event.gui instanceof GuiContainer gui) || !StorageShortcutInput.supports(gui)
             || ((StorageShortcutScreen) gui).isTextInputFocused()) return;
         Slot slot = ((GuiContainerAccessor) gui).getHoveredSlot();
-        if (!StorageShortcutInput.supportsSlot(gui, slot) || !slot.getHasStack()) return;
+        if (!StorageShortcutInput.supportsSlot(gui, slot)) return;
         KeyBind.checkKeys(ClientEventHandler.getTicks());
         Action action = pressed(BSKeybinds.getActiveKeyBind(BSKeybinds.MOVE_ALL), false) ? Action.MOVE_ALL
             : pressed(BSKeybinds.getActiveKeyBind(BSKeybinds.MOVE_ALL_SAME), false) ? Action.MOVE_SAME
@@ -46,11 +46,21 @@ public class BogoSorterShortcuts {
                     : pressed(BSKeybinds.getActiveKeyBind(BSKeybinds.MOVE_SINGLE_EMPTY), true) ? Action.MOVE_ONE_EMPTY
                         : null;
         if (action == null) return;
+        // An empty slot has nothing to move out of it, but it is still a valid
+        // destination, so the actions that fill a slot stay available.
+        if (!slot.getHasStack() && !fillsSlot(action)) return;
         event.setCanceled(true);
         long now = Minecraft.getSystemTime();
         if (now - lastAction < 50L) return;
         StorageShortcutInput.send(gui, slot, action, 1, false);
         lastAction = now;
+    }
+
+    @Optional.Method(modid = "bogosorter")
+    private static boolean fillsSlot(Action action) {
+        return action == Action.MOVE_ALL || action == Action.MOVE_SAME
+            || action == Action.MOVE_ONE
+            || action == Action.MOVE_ONE_EMPTY;
     }
 
     @Optional.Method(modid = "bogosorter")

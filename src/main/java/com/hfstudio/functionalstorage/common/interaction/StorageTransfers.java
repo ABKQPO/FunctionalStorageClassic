@@ -90,32 +90,41 @@ public class StorageTransfers {
             else withdraw(storedSlot, 1, emptyOnly, true);
             return;
         }
-        ItemStack type = fromPlayer ? hovered.getStack()
-            : storage.getSnapshot(storedSlot)
+        if (!fromPlayer) {
+            // Hovering a storage slot moves its contents out to the player. Slots
+            // that hold nothing are skipped rather than aborting the whole action,
+            // so an empty slot among matches no longer cancels the transfer.
+            ItemStack stored = storage.getSnapshot(storedSlot)
                 .getTemplate();
-        if (type == null) return;
-        if (fromPlayer) {
-            int first = hovered.getSlotIndex() < 9 ? 0 : 9;
-            int end = first == 0 ? 9 : 36;
-            for (int index = first; index < end; index++) {
-                if (index != hovered.getSlotIndex() && pinned(index)) continue;
-                ItemStack stack = player.inventory.getStackInSlot(index);
-                if (stack != null && (action != Action.MOVE_SAME || BigItemStack.matches(type, stack))) {
-                    deposit(index, -1, stack.stackSize, false);
-                }
-            }
-        } else {
-            int[] indices = new int[count];
-            for (int index = 0; index < count; index++) indices[index] = menu.getTransferSlot(index);
-            for (int index : indices) {
-                if (index < 0) continue;
+            if (stored == null) return;
+            for (int index : transferredSlots(count)) {
                 ItemStack stack = storage.getSnapshot(index)
                     .getTemplate();
-                if (stack != null && (action != Action.MOVE_SAME || BigItemStack.matches(type, stack))) {
+                if (stack != null && (action != Action.MOVE_SAME || BigItemStack.matches(stored, stack))) {
                     withdraw(index, 27 * Math.min(64, stack.getMaxStackSize()), false, true);
                 }
             }
+            return;
         }
+        ItemStack type = hovered.getStack();
+        if (type == null) return;
+        int first = hovered.getSlotIndex() < 9 ? 0 : 9;
+        int end = first == 0 ? 9 : 36;
+        for (int index = first; index < end; index++) {
+            if (index != hovered.getSlotIndex() && pinned(index)) continue;
+            ItemStack stack = player.inventory.getStackInSlot(index);
+            if (stack != null && (action != Action.MOVE_SAME || BigItemStack.matches(type, stack))) {
+                deposit(index, -1, stack.stackSize, false);
+            }
+        }
+    }
+
+    private int[] transferredSlots(int count) {
+        int[] indices = new int[count];
+        for (int index = 0; index < count; index++) {
+            indices[index] = menu.getTransferSlot(index);
+        }
+        return indices;
     }
 
     private int deposit(int playerSlot, int storageSlot, int limit, boolean emptyOnly) {
