@@ -7,6 +7,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.renderer.RenderHelper;
+import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.entity.RenderItem;
 import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.util.IIcon;
@@ -326,7 +327,13 @@ public class StorageTooltipPainter extends Gui {
         minecraft.getTextureManager()
             .bindTexture(aspect.texture());
         tint(aspect.color());
-        func_146110_a(x, y, 0, 0, ICON_SIZE, ICON_SIZE, 16, 16);
+        Tessellator tessellator = Tessellator.instance;
+        tessellator.startDrawingQuads();
+        tessellator.addVertexWithUV(x, y + ICON_SIZE, zLevel, 0D, 1D);
+        tessellator.addVertexWithUV(x + ICON_SIZE, y + ICON_SIZE, zLevel, 1D, 1D);
+        tessellator.addVertexWithUV(x + ICON_SIZE, y, zLevel, 1D, 0D);
+        tessellator.addVertexWithUV(x, y, zLevel, 0D, 0D);
+        tessellator.draw();
     }
 
     /**
