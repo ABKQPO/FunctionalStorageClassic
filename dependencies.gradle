@@ -44,6 +44,16 @@ dependencies {
 
     implementation("com.google.auto.value:auto-value-annotations:1.10.4")
     annotationProcessor("com.google.auto.value:auto-value:1.10.4")
+
+    // Harness tests for the storage core. These never reach the published jar.
+    testImplementation(platform("org.junit:junit-bom:5.11.4"))
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testImplementation("org.objenesis:objenesis:3.3")
+    // Compile-only mods do not reach the test classpath, so the optional
+    // integrations under test are declared again here.
+    testImplementation("thaumcraft:Thaumcraft:1.7.10-4.2.3.5:dev") { transitive = false }
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
 }
 
 configurations.configureEach {

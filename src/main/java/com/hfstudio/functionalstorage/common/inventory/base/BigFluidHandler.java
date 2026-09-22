@@ -19,6 +19,12 @@ public class BigFluidHandler extends AbstractStorageHandler<BigFluidStack, Fluid
 
     private final boolean[] fillable;
     private final boolean[] drainable;
+    // Cached because an untyped drain asks for the first populated index once per tank
+    // a caller was told about, so an empty tank set would otherwise be walked whole for
+    // every one of those requests.
+    private int firstPopulated = UNKNOWN;
+
+    private static final int UNKNOWN = -2;
 
     public BigFluidHandler(int slots) {
         this(slots, true, true);
@@ -31,6 +37,26 @@ public class BigFluidHandler extends AbstractStorageHandler<BigFluidStack, Fluid
         this.drainable = new boolean[count];
         Arrays.fill(this.fillable, fillable);
         Arrays.fill(this.drainable, drainable);
+    }
+
+    @Override
+    public int firstPopulatedIndex() {
+        int cached = firstPopulated;
+        if (cached == UNKNOWN) {
+            cached = IBigFluidHandler.super.firstPopulatedIndex();
+            firstPopulated = cached;
+        }
+        return cached;
+    }
+
+    @Override
+    protected void onSlotChanged() {
+        firstPopulated = UNKNOWN;
+    }
+
+    @Override
+    protected void onCapacityChanged() {
+        firstPopulated = UNKNOWN;
     }
 
     @Override

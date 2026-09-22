@@ -89,11 +89,15 @@ public class DrawerFluidHandler implements IFluidHandler {
         if (fluid == null) {
             return false;
         }
-        for (int index = 0; index < Math.max(0, handler.getStorageCount()); index++) {
+        int count = Math.max(0, handler.getStorageCount());
+        // One probe serves every index. Building it inside the loop allocated a stack
+        // and a snapshot per tank, and a pipe asks this for every neighbouring side on
+        // its own timer.
+        BigFluidStack probe = new BigFluidStack(new FluidStack(fluid, 1), 1L);
+        for (int index = 0; index < count; index++) {
             if (!handler.supportsFill(index)) {
                 continue;
             }
-            BigFluidStack probe = new BigFluidStack(new FluidStack(fluid, 1), 1L);
             if (handler.supportsFluid(index, probe)) {
                 return true;
             }
@@ -106,12 +110,14 @@ public class DrawerFluidHandler implements IFluidHandler {
         if (fluid == null) {
             return false;
         }
-        for (int index = 0; index < Math.max(0, handler.getStorageCount()); index++) {
+        int count = Math.max(0, handler.getStorageCount());
+        FluidStack probe = new FluidStack(fluid, 1);
+        for (int index = 0; index < count; index++) {
             if (!handler.supportsDrain(index)) {
                 continue;
             }
-            BigFluidStack snapshot = handler.getSnapshot(index);
-            if (snapshot.isSameType(new FluidStack(fluid, 1))) {
+            if (handler.getSnapshot(index)
+                .isSameType(probe)) {
                 return true;
             }
         }

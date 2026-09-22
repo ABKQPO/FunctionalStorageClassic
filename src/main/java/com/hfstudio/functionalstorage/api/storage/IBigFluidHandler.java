@@ -162,14 +162,46 @@ public interface IBigFluidHandler extends IStorageHandler<BigFluidStack, FluidSt
         if (requested == 0L) {
             return new TransferResult<>(0L, BigFluidStack.empty(), action);
         }
+        // Starting at the first index that holds anything is what keeps this cheap.
+        // A caller that asks for an unspecified fluid repeats the same question for
+        // every tank it was told about, and AE2's storage bus does exactly that, so a
+        // walk from zero turned one poll into a walk per tank. Any index before the
+        // first populated one is empty and could never answer anyway.
+        int start = firstPopulatedIndex();
+        if (start < 0) {
+            return new TransferResult<>(requested, BigFluidStack.empty(), action);
+        }
         int count = Math.max(0, getStorageCount());
-        for (int index = 0; index < count; index++) {
+        for (int index = start; index < count; index++) {
             BigFluidStack current = getSnapshot(index);
             if (!current.isEmpty() && supportsDrain(index) && supportsFluid(index, current)) {
                 return drainRouted(current.withAmount(requested), action);
             }
         }
         return new TransferResult<>(requested, BigFluidStack.empty(), action);
+    }
+
+    /**
+     * Reports the lowest index holding any fluid.
+     *
+     * <p>
+     * Handlers that span many indices should memoize this and drop the memo whenever
+     * contents change, because the alternative is a full walk for every untyped
+     * request and such requests arrive once per reported tank. An empty handler is
+     * the worst case, since every one of those requests then walks the whole array to
+     * discover the same nothing.
+     * </p>
+     *
+     * @return the lowest populated index, or {@code -1} when nothing is stored
+     */
+    default int firstPopulatedIndex() {
+        int count = Math.max(0, getStorageCount());
+        for (int index = 0; index < count; index++) {
+            if (!getSnapshot(index).isEmpty()) {
+                return index;
+            }
+        }
+        return -1;
     }
 
     private static long saturatedAdd(long left, long right) {

@@ -23,7 +23,7 @@ public class DrawerItemInventory implements ISidedInventory {
     private final Runnable changeListener;
     private final ItemStack[] exposed;
     private final ItemStack[] baseline;
-    private final BitSet observed = new BitSet();
+    private final BitSet handedOut = new BitSet();
     private final int[] accessibleSlots;
     private boolean synchronizing;
     private int stackLimit = Integer.MIN_VALUE;
@@ -52,6 +52,10 @@ public class DrawerItemInventory implements ISidedInventory {
             return null;
         }
         refresh(index);
+        // The caller may edit the returned stack in place, which is how a hopper
+        // moves items. Marking the slot here is what makes that edit visible; only
+        // marked slots are examined when changes are committed.
+        handedOut.set(index);
         return exposed[index];
     }
 
@@ -65,7 +69,7 @@ public class DrawerItemInventory implements ISidedInventory {
             refresh(index);
         }
         exposed[index] = stack == null ? null : stack.copy();
-        observed.set(index);
+        handedOut.set(index);
         flushChanges();
     }
 
@@ -123,9 +127,10 @@ public class DrawerItemInventory implements ISidedInventory {
             if (capacity <= 0L) {
                 continue;
             }
-            ItemStack template = handler.getSnapshot(index)
-                .getTemplate();
-            int stackSize = template == null ? 64 : Math.max(1, template.getMaxStackSize());
+            long stackSize = Math.max(
+                1,
+                handler.getSnapshot(index)
+                    .getTemplateStackSize());
             unit = Math.min(unit, capacity / stackSize);
             measured = true;
         }
@@ -139,18 +144,43 @@ public class DrawerItemInventory implements ISidedInventory {
     @Override
     public void markDirty() {
         flushChanges();
-        stackLimit = Integer.MIN_VALUE;
         changeListener.run();
     }
 
-    /** Commits stack-size changes made directly by vanilla slots and hoppers. */
+    /**
+     * Discards the cached insertion limit so the next read recomputes it.
+     *
+     * <p>
+     * Only an upgrade, lock, or reload transition changes the capacity the limit
+     * derives from, and the owning tile calls this from exactly those transitions.
+     * Committing stored amounts must not call it: a transfer reads the limit once
+     * per step, so dropping it there would rescan a whole aggregated network for
+     * every stack moved.
+     * </p>
+     */
+    public void invalidateLimit() {
+        stackLimit = Integer.MIN_VALUE;
+    }
+
+    /**
+     * Commits stack-size changes made directly by vanilla slots and hoppers.
+     *
+     * <p>
+     * Only slots whose stack was actually handed to a caller since the last commit
+     * are examined. A caller can only mutate a stack it received, so nothing is
+     * missed, and the cost stays proportional to the work done rather than to the
+     * size of the inventory. Rescanning every slot that was ever handed out would
+     * make a full sweep of the inventory cost the square of its slot count, which is
+     * exactly how an external storage bus reads a drawer.
+     * </p>
+     */
     public void flushChanges() {
-        if (synchronizing) {
+        if (synchronizing || handedOut.isEmpty()) {
             return;
         }
         synchronizing = true;
         try {
-            for (int index = observed.nextSetBit(0); index >= 0; index = observed.nextSetBit(index + 1)) {
+            for (int index = handedOut.nextSetBit(0); index >= 0; index = handedOut.nextSetBit(index + 1)) {
                 ItemStack before = baseline[index];
                 ItemStack after = exposed[index];
                 if (ItemStack.areItemStacksEqual(before, after)) {
@@ -173,6 +203,7 @@ public class DrawerItemInventory implements ISidedInventory {
                 // Replacing a populated drawer with a different type would hide its reserve.
                 refresh(index);
             }
+            handedOut.clear();
         } finally {
             synchronizing = false;
         }
@@ -234,7 +265,9 @@ public class DrawerItemInventory implements ISidedInventory {
         } else if (!ItemStack.areItemStacksEqual(exposed[index], baseline[index])) {
             exposed[index] = stack;
         }
-        observed.set(index, exposed[index] != null || baseline[index] != null);
+        // The exposed stack now agrees with the committed amount, so there is
+        // nothing left to reconcile for this slot.
+        handedOut.clear(index);
     }
 
     private boolean valid(int index) {

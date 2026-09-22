@@ -13,6 +13,7 @@ import net.minecraftforge.fluids.IFluidHandler;
 import com.hfstudio.functionalstorage.api.storage.IBigAspectHandler;
 import com.hfstudio.functionalstorage.api.storage.IBigFluidHandler;
 import com.hfstudio.functionalstorage.api.storage.IBigItemHandler;
+import com.hfstudio.functionalstorage.api.storage.StorageViewCache;
 import com.hfstudio.functionalstorage.api.upgrade.IStorageUpgrade;
 import com.hfstudio.functionalstorage.common.integration.Mods;
 import com.hfstudio.functionalstorage.common.integration.thaumcraft.DrawerEssentiaTransport;
@@ -54,8 +55,34 @@ public abstract class StorageNetworkTile extends ControllableDrawerTile
     protected abstract List<ControllableDrawerTile> connectedDrawers();
 
     public void invalidateNetwork() {
-        if (inventory instanceof DrawerItemInventory view) view.flushChanges();
+        if (inventory instanceof DrawerItemInventory view) {
+            view.flushChanges();
+            // The aggregate is rebuilt lazily, so the limit derived from it must be
+            // dropped here too: this is the funnel every drawer change reaches.
+            view.invalidateLimit();
+        }
+        dropAggregateCache();
         checkedAt = Long.MIN_VALUE;
+    }
+
+    /**
+     * Drops the aggregated read memos.
+     *
+     * <p>
+     * A linked drawer reaches this through a storage change, but an upgrade that
+     * only alters capacity need not change any stored amount, so the memos are also
+     * dropped here where every structural drawer change funnels through.
+     * </p>
+     */
+    private void dropAggregateCache() {
+        StorageViewCache cache = items.getStorageViewCache();
+        if (cache != null) {
+            cache.invalidate();
+        }
+        fluids.invalidateFirstPopulated();
+        if (aspects != null) {
+            aspects.invalidateSummary();
+        }
     }
 
     private void refreshNetwork() {

@@ -344,6 +344,22 @@ public abstract class CompactingItemHandler implements IBigItemHandler {
 
     public abstract double getMultiplier();
 
+    /**
+     * Reports whether a non-exact resource may still share a tier.
+     *
+     * <p>
+     * Routing relies on this to skip a compatibility probe that could never succeed,
+     * so a subclass that widens matching must answer {@code true} here as well as
+     * through {@link #allowsEquivalentItems}.
+     * </p>
+     *
+     * @return whether equivalent resources are interchangeable
+     */
+    @Override
+    public boolean allowsEquivalentResources() {
+        return allowsEquivalentItems();
+    }
+
     protected boolean allowsEquivalentItems() {
         return false;
     }

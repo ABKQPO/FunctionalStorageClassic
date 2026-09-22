@@ -15,6 +15,36 @@ import thaumcraft.api.aspects.Aspect;
  */
 public interface IBigAspectHandler extends IStorageHandler<BigAspectStack, AspectStorageKey> {
 
+    /**
+     * Returns a memo of this storage's contents, or {@code null} to compute one on
+     * each request.
+     *
+     * <p>
+     * Thaumcraft polls a container for its contents and its suction repeatedly, and a
+     * tube asks every neighbouring side on its own timer, so the same walk is
+     * repeated long after the answer stopped changing. A handler that spans many
+     * indices should keep a memo it drops on every change; one that does not is
+     * summarized per request, which is correct and merely slower.
+     * </p>
+     *
+     * @return this handler's memo, or {@code null} to summarize per request
+     */
+    @Nullable
+    default AspectSummary getSummary() {
+        return null;
+    }
+
+    /**
+     * Summarizes this storage, reusing the handler's memo when it keeps one.
+     *
+     * @return an immutable summary of the current contents
+     */
+    @Nonnull
+    default AspectSummary summary() {
+        AspectSummary cached = getSummary();
+        return cached == null ? AspectSummary.of(this) : cached;
+    }
+
     default boolean supportsAspect(int index, @Nullable Aspect aspect) {
         if (aspect == null || index < 0 || index >= Math.max(0, getStorageCount())) {
             return false;
@@ -37,6 +67,13 @@ public interface IBigAspectHandler extends IStorageHandler<BigAspectStack, Aspec
         long requested = request.isEmpty() ? 0L : request.getAmount();
         if (requested == 0L) {
             return new TransferResult<>(0L, BigAspectStack.empty(), action);
+        }
+        // Nothing that refuses a single unit can accept any amount, because an index
+        // either has room and takes at least one, or has none and takes nothing. A
+        // full network therefore answers immediately instead of walking every index
+        // twice to discover it is full.
+        if (!summary().acceptsMore()) {
+            return new TransferResult<>(requested, request.withAmount(0L), action);
         }
         long processedTotal = 0L;
         int count = Math.max(0, getStorageCount());

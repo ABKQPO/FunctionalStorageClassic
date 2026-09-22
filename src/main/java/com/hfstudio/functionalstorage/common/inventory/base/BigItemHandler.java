@@ -9,6 +9,7 @@ import com.hfstudio.functionalstorage.api.storage.BigItemStack;
 import com.hfstudio.functionalstorage.api.storage.IBigItemHandler;
 import com.hfstudio.functionalstorage.api.storage.ItemStorageKey;
 import com.hfstudio.functionalstorage.api.storage.StorageAction;
+import com.hfstudio.functionalstorage.api.storage.StorageViewCache;
 import com.hfstudio.functionalstorage.common.storage.ItemStorageResource;
 import com.hfstudio.functionalstorage.util.ItemUtil;
 
@@ -18,8 +19,36 @@ import com.hfstudio.functionalstorage.util.ItemUtil;
  */
 public class BigItemHandler extends AbstractStorageHandler<BigItemStack, ItemStorageKey> implements IBigItemHandler {
 
+    private final StorageViewCache viewCache = new StorageViewCache();
+
     public BigItemHandler(int slots) {
         super(ItemStorageResource.INSTANCE, slots);
+    }
+
+    @Override
+    public StorageViewCache getStorageViewCache() {
+        return viewCache;
+    }
+
+    @Override
+    protected void onSlotChanged() {
+        viewCache.invalidate();
+    }
+
+    /**
+     * Reports whether a non-exact resource may still share a slot.
+     *
+     * <p>
+     * Routing relies on this to skip a compatibility probe that could never succeed,
+     * so a subclass that widens matching must answer {@code true} here as well as in
+     * {@link #isCompatible}.
+     * </p>
+     *
+     * @return whether equivalent resources are interchangeable
+     */
+    @Override
+    public boolean allowsEquivalentResources() {
+        return allowsEquivalentItems();
     }
 
     @Override

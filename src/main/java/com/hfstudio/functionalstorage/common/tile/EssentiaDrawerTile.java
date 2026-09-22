@@ -1,5 +1,7 @@
 package com.hfstudio.functionalstorage.common.tile;
 
+import java.util.Map;
+
 import javax.annotation.Nonnull;
 
 import net.minecraft.entity.player.EntityPlayer;
@@ -148,12 +150,10 @@ public class EssentiaDrawerTile extends ControllableDrawerTile implements IAspec
     @Optional.Method(modid = "Thaumcraft")
     public AspectList getAspects() {
         AspectList list = new AspectList();
-        for (int index = 0; index < handler.getStorageCount(); index++) {
-            BigAspectStack snapshot = handler.getSnapshot(index);
-            Aspect aspect = snapshot.getAspect();
-            if (aspect != null && !snapshot.isEmpty()) {
-                list.add(aspect, snapshot.toAmount());
-            }
+        for (Map.Entry<Aspect, Long> entry : handler.summary()
+            .getTotals()
+            .entrySet()) {
+            list.add(entry.getKey(), (int) Math.min(Integer.MAX_VALUE, entry.getValue()));
         }
         return list;
     }
@@ -227,17 +227,11 @@ public class EssentiaDrawerTile extends ControllableDrawerTile implements IAspec
     @Override
     @Optional.Method(modid = "Thaumcraft")
     public int containerContains(Aspect aspect) {
-        if (aspect == null) {
-            return 0;
-        }
-        long total = 0L;
-        for (int index = 0; index < handler.getStorageCount(); index++) {
-            BigAspectStack snapshot = handler.getSnapshot(index);
-            if (snapshot.isSameType(aspect)) {
-                total += snapshot.getAmount();
-            }
-        }
-        return (int) Math.min(Integer.MAX_VALUE, total);
+        return aspect == null ? 0
+            : (int) Math.min(
+                Integer.MAX_VALUE,
+                handler.summary()
+                    .getTotal(aspect));
     }
 
     @Override

@@ -1,9 +1,9 @@
 package com.hfstudio.functionalstorage.api.storage;
 
-import java.util.List;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import net.minecraft.item.ItemStack;
 
@@ -16,14 +16,31 @@ import net.minecraft.item.ItemStack;
 public interface IBigItemHandler extends IStorageHandler<BigItemStack, ItemStorageKey> {
 
     /**
+     * Returns a memo the bridge may reuse across reads, or {@code null} for a
+     * handler that is cheap enough to walk on every question.
+     *
+     * <p>
+     * These methods are asked once per virtual slot by Forge-style callers, so a
+     * handler spanning many indices should return a cache it invalidates on every
+     * change. Handlers that do not return one are aggregated on each call, which is
+     * correct and merely slower.
+     * </p>
+     *
+     * @return this handler's memo, or {@code null} to aggregate per call
+     */
+    @Nullable
+    default StorageViewCache getStorageViewCache() {
+        return null;
+    }
+
+    /**
      * Exposes one virtual slot per stored item key and, when available, one
      * leading empty insertion slot. Physical storage positions stay internal.
      *
      * @return the number of virtual slots
      */
     default int getSlots() {
-        return ItemStorageView.storages(this)
-            .size() + (ItemStorageView.hasEmptyStorage(this) ? 1 : 0);
+        return ItemStorageView.virtualSlots(this);
     }
 
     /**
@@ -49,16 +66,7 @@ public interface IBigItemHandler extends IStorageHandler<BigItemStack, ItemStora
     }
 
     default int getSlotLimit(int slot) {
-        boolean hasEmpty = ItemStorageView.hasEmptyStorage(this);
-        List<ItemStorageView> storages = ItemStorageView.storages(this);
-        if (hasEmpty && slot == 0) {
-            return ItemStorageView.toForgeLimit(ItemStorageView.emptyStorageCapacity(this));
-        }
-        ItemStorageView storage = ItemStorageView.storageAt(slot, hasEmpty, storages);
-        if (storage == null) {
-            return 0;
-        }
-        return storage.voidsOverflow() ? Integer.MAX_VALUE : ItemStorageView.toForgeLimit(storage.getCapacity());
+        return ItemStorageView.slotLimit(this, slot);
     }
 
     /**
@@ -178,7 +186,12 @@ public interface IBigItemHandler extends IStorageHandler<BigItemStack, ItemStora
         long processedTotal = 0L;
         BigItemStack compatibilityProbe = request.withAmount(1L);
         int count = Math.max(0, getStorageCount());
-        for (int pass = 0; pass < 3 && processedTotal < requested; pass++) {
+        // A storage that never treats different resources as interchangeable can only
+        // accept into a slot already holding the exact type, so the middle pass could
+        // only ever discover that. Skipping it removes a full walk plus a probe per
+        // occupied index, which is most of the cost of storing a new type.
+        int passes = allowsEquivalentResources() ? 3 : 2;
+        for (int pass = 0; pass < passes && processedTotal < requested; pass++) {
             for (int index = 0; index < count && processedTotal < requested; index++) {
                 BigItemStack current = getSnapshot(index);
                 boolean hasTemplate = current.hasTemplate();
@@ -186,7 +199,7 @@ public interface IBigItemHandler extends IStorageHandler<BigItemStack, ItemStora
                 if (pass == 0 && !exact) {
                     continue;
                 }
-                if (pass == 1) {
+                if (passes == 3 && pass == 1) {
                     if (!hasTemplate || exact) {
                         continue;
                     }
@@ -198,7 +211,7 @@ public interface IBigItemHandler extends IStorageHandler<BigItemStack, ItemStora
                         continue;
                     }
                 }
-                if (pass == 2 && hasTemplate) {
+                if (pass == passes - 1 && hasTemplate) {
                     continue;
                 }
                 long remaining = requested - processedTotal;

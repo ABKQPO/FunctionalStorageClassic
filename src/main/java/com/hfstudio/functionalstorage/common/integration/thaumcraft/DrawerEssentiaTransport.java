@@ -78,21 +78,9 @@ public class DrawerEssentiaTransport implements IEssentiaTransport {
     @Override
     @Optional.Method(modid = "Thaumcraft")
     public Aspect getSuctionType(ForgeDirection side) {
-        IBigAspectHandler handler = storage.get();
-        for (int slot = 0; slot < handler.getStorageCount(); slot++) {
-            BigAspectStack snapshot = handler.getSnapshot(slot);
-            if (!snapshot.hasTemplate() && !handler.isLocked()) {
-                return null;
-            }
-        }
-        for (int slot = 0; slot < handler.getStorageCount(); slot++) {
-            BigAspectStack snapshot = handler.getSnapshot(slot);
-            if (snapshot.getAspect() != null && handler.insert(slot, snapshot.withAmount(1L), StorageAction.SIMULATE)
-                .isComplete()) {
-                return snapshot.getAspect();
-            }
-        }
-        return null;
+        return storage.get()
+            .summary()
+            .getSuctionType();
     }
 
     @Override
@@ -101,18 +89,9 @@ public class DrawerEssentiaTransport implements IEssentiaTransport {
         if (!canInputFrom(side)) {
             return 0;
         }
-        IBigAspectHandler handler = storage.get();
-        for (int slot = 0; slot < handler.getStorageCount(); slot++) {
-            BigAspectStack snapshot = handler.getSnapshot(slot);
-            if (!snapshot.hasTemplate() && !handler.isLocked() && handler.getCapacity(slot) > 0L) {
-                return 32;
-            }
-            if (snapshot.hasTemplate() && handler.insert(slot, snapshot.withAmount(1L), StorageAction.SIMULATE)
-                .isComplete()) {
-                return handler.isLocked() ? 64 : 32;
-            }
-        }
-        return 0;
+        return storage.get()
+            .summary()
+            .suctionAmount();
     }
 
     @Override
@@ -134,12 +113,11 @@ public class DrawerEssentiaTransport implements IEssentiaTransport {
     @Override
     @Optional.Method(modid = "Thaumcraft")
     public Aspect getEssentiaType(ForgeDirection side) {
-        IBigAspectHandler handler = storage.get();
-        for (int slot = 0; slot < handler.getStorageCount(); slot++) {
-            BigAspectStack snapshot = handler.getSnapshot(slot);
-            if (!snapshot.isEmpty()) {
-                return snapshot.getAspect();
-            }
+        for (Aspect aspect : storage.get()
+            .summary()
+            .getTotals()
+            .keySet()) {
+            return aspect;
         }
         return null;
     }
@@ -148,10 +126,13 @@ public class DrawerEssentiaTransport implements IEssentiaTransport {
     @Optional.Method(modid = "Thaumcraft")
     public int getEssentiaAmount(ForgeDirection side) {
         Aspect aspect = getEssentiaType(side);
-        return aspect == null ? 0
-            : (int) storage.get()
-                .extractRouted(new BigAspectStack(aspect, Integer.MAX_VALUE), StorageAction.SIMULATE)
-                .getProcessedAmount();
+        if (aspect == null) {
+            return 0;
+        }
+        long total = storage.get()
+            .summary()
+            .getTotal(aspect);
+        return (int) Math.min(Integer.MAX_VALUE, total);
     }
 
     @Override

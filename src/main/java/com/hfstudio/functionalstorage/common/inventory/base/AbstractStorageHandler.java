@@ -191,9 +191,12 @@ public abstract class AbstractStorageHandler<S extends StorageSnapshot<S, K>, K 
                 }
             }
             if (!entries.isEmpty()) {
+                onSlotChanged();
                 changeDispatcher.dispatch(StorageChange.delta(entries));
             }
         }
+        onSlotChanged();
+        onCapacityChanged();
         changeDispatcher.dispatch(StorageChange.reset());
     }
 
@@ -249,6 +252,9 @@ public abstract class AbstractStorageHandler<S extends StorageSnapshot<S, K>, K 
             }
             templates[index] = restoredTemplates[index];
             amounts[index] = restoredAmounts[index];
+        }
+        if (changed) {
+            onSlotChanged();
         }
         if (changed && changeDispatcher.hasSubscribers()) {
             changeDispatcher.dispatch(StorageChange.reset());
@@ -317,8 +323,29 @@ public abstract class AbstractStorageHandler<S extends StorageSnapshot<S, K>, K 
         if (sameSlot(before, beforeCapacity, after, getCapacity(index))) {
             return;
         }
+        onSlotChanged();
         changeDispatcher.dispatch(StorageChange.delta(index, before, after));
     }
+
+    /**
+     * Notifies this handler that a slot's contents or capacity changed.
+     *
+     * <p>
+     * Subclasses holding derived state drop it here. Called before listeners run,
+     * so a listener that reads the handler back observes the new state.
+     * </p>
+     */
+    protected void onSlotChanged() {}
+
+    /**
+     * Notifies this handler that what it invites changed without any amount moving.
+     *
+     * <p>
+     * A lock transition alters whether empty slots accept a request while leaving
+     * every stored amount untouched, so derived state must be dropped here as well.
+     * </p>
+     */
+    protected void onCapacityChanged() {}
 
     private void setSlotSilently(int index, @Nonnull S template, long amount) {
         templates[index] = resource.hasTemplate(template) ? resource.templateOf(template) : resource.empty();

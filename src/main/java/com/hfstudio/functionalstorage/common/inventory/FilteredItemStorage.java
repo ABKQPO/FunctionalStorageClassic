@@ -73,4 +73,9 @@ public class FilteredItemStorage implements IBigItemHandler {
     public Object getStorageIdentity() {
         return storage.getStorageIdentity();
     }
+
+    @Override
+    public boolean allowsEquivalentResources() {
+        return storage.allowsEquivalentResources();
+    }
 }

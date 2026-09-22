@@ -1,6 +1,7 @@
 package com.hfstudio.functionalstorage.api.storage;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,11 +34,17 @@ public class ItemStorageView {
     /**
      * Collapses all populated indices into one view per exact item key.
      *
+     * <p>
+     * Walks every index of the handler. Callers that ask repeatedly for the same
+     * unchanged handler should go through {@link #storages(IBigItemHandler)},
+     * which reuses a handler's own memo when it has one.
+     * </p>
+     *
      * @param handler handler to read
      * @return immutable ordered views
      */
     @Nonnull
-    public static List<ItemStorageView> storages(@Nonnull IBigItemHandler handler) {
+    public static List<ItemStorageView> aggregate(@Nonnull IBigItemHandler handler) {
         Map<ItemStorageKey, ItemStorageView> byKey = new LinkedHashMap<>();
         int count = Math.max(0, handler.getStorageCount());
         for (int index = 0; index < count; index++) {
@@ -60,10 +67,28 @@ public class ItemStorageView {
                         previous.voidsOverflow || voids));
             }
         }
-        return new ArrayList<>(byKey.values());
+        // Unmodifiable because a memoized result is handed to several readers.
+        return Collections.unmodifiableList(new ArrayList<>(byKey.values()));
+    }
+
+    /**
+     * Aggregates every populated index into one view per exact item key, reusing
+     * the handler's memo when it keeps one.
+     *
+     * @param handler handler to read
+     * @return immutable ordered views
+     */
+    @Nonnull
+    public static List<ItemStorageView> storages(@Nonnull IBigItemHandler handler) {
+        StorageViewCache cache = handler.getStorageViewCache();
+        return cache == null ? aggregate(handler) : cache.views(handler);
     }
 
     public static boolean hasEmptyStorage(@Nonnull IBigItemHandler handler) {
+        StorageViewCache cache = handler.getStorageViewCache();
+        if (cache != null) {
+            return cache.hasEmptyStorage(handler);
+        }
         int count = Math.max(0, handler.getStorageCount());
         for (int index = 0; index < count; index++) {
             if (handler.isEmptyStorageAvailable(index)) {
@@ -78,6 +103,10 @@ public class ItemStorageView {
      * @return summed capacity of every unconfigured insertion-capable index
      */
     public static long emptyStorageCapacity(@Nonnull IBigItemHandler handler) {
+        StorageViewCache cache = handler.getStorageViewCache();
+        if (cache != null) {
+            return cache.emptyCapacity(handler);
+        }
         long capacity = 0L;
         int count = Math.max(0, handler.getStorageCount());
         for (int index = 0; index < count; index++) {
@@ -86,6 +115,40 @@ public class ItemStorageView {
             }
         }
         return capacity;
+    }
+
+    /**
+     * Reports how many virtual slots a handler exposes, counting the leading
+     * empty insertion slot when the handler offers one.
+     *
+     * @param handler handler to inspect
+     * @return the virtual slot count
+     */
+    public static int virtualSlots(@Nonnull IBigItemHandler handler) {
+        StorageViewCache cache = handler.getStorageViewCache();
+        if (cache != null) {
+            return cache.virtualSlots(handler);
+        }
+        return storages(handler).size() + (hasEmptyStorage(handler) ? 1 : 0);
+    }
+
+    /**
+     * Reports the writable amount of one virtual slot.
+     *
+     * @param handler handler to read
+     * @param slot    virtual slot index
+     * @return the slot limit, or zero when the slot does not exist
+     */
+    public static int slotLimit(@Nonnull IBigItemHandler handler, int slot) {
+        boolean hasEmpty = hasEmptyStorage(handler);
+        if (hasEmpty && slot == 0) {
+            return toForgeLimit(emptyStorageCapacity(handler));
+        }
+        ItemStorageView storage = storageAt(slot, hasEmpty, storages(handler));
+        if (storage == null) {
+            return 0;
+        }
+        return storage.voidsOverflow() ? Integer.MAX_VALUE : toForgeLimit(storage.getCapacity());
     }
 
     /**

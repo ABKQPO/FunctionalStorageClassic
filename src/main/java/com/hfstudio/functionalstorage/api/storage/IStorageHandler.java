@@ -139,12 +139,17 @@ public interface IStorageHandler<S extends StorageSnapshot<S, K>, K extends Stor
      */
     default boolean hasMatchingResource(@Nonnull S request) {
         int count = Math.max(0, getStorageCount());
+        // A storage that never treats different resources as interchangeable can only
+        // accept into a slot already holding the exact type, so probing every occupied
+        // index for compatibility would only ever confirm what the exact comparison
+        // already decided.
+        boolean probeCompatible = allowsEquivalentResources();
         for (int index = 0; index < count; index++) {
             S current = getSnapshot(index);
             if (!current.hasTemplate()) {
                 continue;
             }
-            if (current.isSameType(request) || acceptsAny(index, request)) {
+            if (current.isSameType(request) || (probeCompatible && acceptsAny(index, request))) {
                 return true;
             }
         }
@@ -259,6 +264,24 @@ public interface IStorageHandler<S extends StorageSnapshot<S, K>, K extends Stor
      * @return whether compatible overflow is consumed instead of returned
      */
     default boolean voidsOverflow() {
+        return false;
+    }
+
+    /**
+     * Reports whether this storage may treat resources that are not exactly equal as
+     * interchangeable, such as two items sharing an ore dictionary entry.
+     *
+     * <p>
+     * Routing uses this to decide whether a compatibility probe is worth making. When
+     * nothing but an exact match can ever be compatible, a probe against a slot holding
+     * a different resource is guaranteed to fail, so the walk that would perform it is
+     * skipped entirely. Reporting {@code false} when a subclass does accept equivalents
+     * would silently stop such resources from sharing a slot.
+     * </p>
+     *
+     * @return whether non-exact resources may still be compatible
+     */
+    default boolean allowsEquivalentResources() {
         return false;
     }
 

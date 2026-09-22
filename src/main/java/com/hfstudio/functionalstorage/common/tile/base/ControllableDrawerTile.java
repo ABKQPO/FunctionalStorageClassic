@@ -27,6 +27,7 @@ import com.hfstudio.functionalstorage.api.storage.IBigItemHandler;
 import com.hfstudio.functionalstorage.api.storage.IStorageHandler;
 import com.hfstudio.functionalstorage.api.storage.StorageAction;
 import com.hfstudio.functionalstorage.api.storage.StorageSubscription;
+import com.hfstudio.functionalstorage.api.storage.StorageViewCache;
 import com.hfstudio.functionalstorage.api.upgrade.IStorageUpgrade;
 import com.hfstudio.functionalstorage.api.upgrade.StorageFeature;
 import com.hfstudio.functionalstorage.api.upgrade.UpgradeAttribute;
@@ -226,6 +227,8 @@ public abstract class ControllableDrawerTile extends TileEntity {
         target[slot] = stack == null || stack.getItem() == null ? null : stack;
         upgradeCacheDirty = true;
         reconcileStorageConfiguration();
+        invalidateStorageViews();
+        invalidateStorageLimit();
         markDirty();
         requestUpdatePacket();
     }
@@ -233,6 +236,8 @@ public abstract class ControllableDrawerTile extends TileEntity {
     public void onUpgradeSlotChanged(boolean storage, int slot) {
         upgradeCacheDirty = true;
         reconcileStorageConfiguration();
+        invalidateStorageViews();
+        invalidateStorageLimit();
         markDirty();
         requestUpdatePacket();
     }
@@ -253,6 +258,8 @@ public abstract class ControllableDrawerTile extends TileEntity {
         if (storage instanceof AbstractStorageHandler) {
             ((AbstractStorageHandler<?, ?>) storage).applyLockConfiguration(locked);
         }
+        invalidateStorageViews();
+        invalidateStorageLimit();
         markDirty();
         requestUpdatePacket();
     }
@@ -533,6 +540,7 @@ public abstract class ControllableDrawerTile extends TileEntity {
         }
         readStorageData(tag);
         upgradeCacheDirty = true;
+        invalidateStorageLimit();
     }
 
     @Override
@@ -877,6 +885,59 @@ public abstract class ControllableDrawerTile extends TileEntity {
      * Reapplies upgrade-derived state such as capacity and lock retention.
      */
     protected void reconcileStorageConfiguration() {}
+
+    /**
+     * Drops the cached insertion limit of the physical inventory view.
+     *
+     * <p>
+     * Callers are the transitions that change capacity: installing or removing an
+     * upgrade, toggling the lock, replacing the backing handler, and restoring from
+     * NBT. Committing a stored amount must not call this, because an external
+     * caller reads the limit once per transfer step and recomputing it walks every
+     * index of an aggregated network.
+     * </p>
+     *
+     * <p>
+     * A linked drawer also drops the limit of the controller aggregating it. The
+     * aggregate is the smallest per-item capacity of its drawers, so a drawer whose
+     * capacity fell would otherwise leave the controller reporting room that no
+     * longer exists, and a caller that trusts that figure loses whatever it believed
+     * it had handed over.
+     * </p>
+     */
+    protected final void invalidateStorageLimit() {
+        if (inventoryView instanceof DrawerItemInventory inventory) {
+            inventory.invalidateLimit();
+        }
+        if (worldObj != null && controllerX != Integer.MIN_VALUE
+            && worldObj.blockExists(controllerX, controllerY, controllerZ)
+            && worldObj
+                .getTileEntity(controllerX, controllerY, controllerZ) instanceof DrawerControllerTile controller) {
+            controller.invalidateNetwork();
+        }
+    }
+
+    /**
+     * Drops the memoized read view of this drawer's own storage.
+     *
+     * <p>
+     * Toggling a lock or swapping an upgrade can change a capacity while every
+     * stored amount stays put, and a storage change event never fires for that, so
+     * the read memo cannot rely on events alone. Unlike {@link #invalidateStorageLimit}
+     * this resolves the backing handler, which is why the NBT load path does not call
+     * it: rebuilding a network must never happen while a chunk is still materializing.
+     * </p>
+     */
+    protected final void invalidateStorageViews() {
+        IBigItemHandler items = getItemHandler();
+        if (items == null) {
+            return;
+        }
+        StorageViewCache cache = items.getStorageViewCache();
+        if (cache != null) {
+            cache.invalidate();
+        }
+    }
 
     private UpgradeState computeUpgradeState() {
         UpgradeState.Builder builder = UpgradeState.builder();

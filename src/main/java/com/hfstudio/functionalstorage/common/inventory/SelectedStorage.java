@@ -73,6 +73,11 @@ public class SelectedStorage<S extends StorageSnapshot<S, K>, K extends StorageK
     }
 
     @Override
+    public boolean allowsEquivalentResources() {
+        return storage.allowsEquivalentResources();
+    }
+
+    @Override
     public boolean voidsOverflow(int index) {
         return selected(index) && storage.voidsOverflow(index);
     }

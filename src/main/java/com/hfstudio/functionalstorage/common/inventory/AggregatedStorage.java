@@ -7,7 +7,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 
+import javax.annotation.Nonnull;
+
 import com.hfstudio.functionalstorage.api.storage.AspectStorageKey;
+import com.hfstudio.functionalstorage.api.storage.AspectSummary;
 import com.hfstudio.functionalstorage.api.storage.BigAspectStack;
 import com.hfstudio.functionalstorage.api.storage.BigFluidStack;
 import com.hfstudio.functionalstorage.api.storage.BigItemStack;
@@ -23,6 +26,7 @@ import com.hfstudio.functionalstorage.api.storage.StorageChangeDispatcher;
 import com.hfstudio.functionalstorage.api.storage.StorageKey;
 import com.hfstudio.functionalstorage.api.storage.StorageSnapshot;
 import com.hfstudio.functionalstorage.api.storage.StorageSubscription;
+import com.hfstudio.functionalstorage.api.storage.StorageViewCache;
 import com.hfstudio.functionalstorage.api.storage.TransferResult;
 
 public class AggregatedStorage<S extends StorageSnapshot<S, K>, K extends StorageKey> implements IStorageHandler<S, K> {
@@ -77,10 +81,25 @@ public class AggregatedStorage<S extends StorageSnapshot<S, K>, K extends Storag
         }
         unique.clear();
         if (changes.hasSubscribers()) changes.dispatch(StorageChange.reset());
+        onChildChanged();
         return true;
     }
 
+    /**
+     * Drops derived state whenever the aggregated contents or membership change.
+     *
+     * <p>
+     * Called for every child change and for every rebuild, including while nothing
+     * is subscribed, because a memoized read must never outlive the state it
+     * describes.
+     * </p>
+     */
+    protected void onChildChanged() {}
+
     private void forwardChange(int offset, StorageChange<S, K> change) {
+        // Runs before the subscriber check: a memo must drop even while nobody is
+        // listening, or the first reader after a quiet change would see stale state.
+        onChildChanged();
         if (!changes.hasSubscribers()) return;
         if (change.isReset()) {
             changes.dispatch(StorageChange.reset());
@@ -144,6 +163,28 @@ public class AggregatedStorage<S extends StorageSnapshot<S, K>, K extends Storag
             .voidsOverflow(localIndex(index, child));
     }
 
+    /**
+     * Reports equivalence support for the aggregate.
+     *
+     * <p>
+     * Any spanned storage that widens matching forces a real compatibility probe,
+     * because the probe may succeed in that storage even though it cannot in the
+     * others. Reporting false while a child widens matching would silently stop such
+     * resources from sharing a slot.
+     * </p>
+     *
+     * @return whether any spanned storage accepts equivalent resources
+     */
+    @Override
+    public boolean allowsEquivalentResources() {
+        for (IStorageHandler<S, K> child : children) {
+            if (child.allowsEquivalentResources()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     protected IStorageHandler<S, K> childAt(int index) {
         int child = childIndex(index);
         return child < 0 ? null : children.get(child);
@@ -172,8 +213,20 @@ public class AggregatedStorage<S extends StorageSnapshot<S, K>, K extends Storag
 
     public static class Items extends AggregatedStorage<BigItemStack, ItemStorageKey> implements IBigItemHandler {
 
+        private final StorageViewCache viewCache = new StorageViewCache();
+
         public Items() {
             super(BigItemStack.empty());
+        }
+
+        @Override
+        public StorageViewCache getStorageViewCache() {
+            return viewCache;
+        }
+
+        @Override
+        protected void onChildChanged() {
+            viewCache.invalidate();
         }
 
         @Override
@@ -185,16 +238,83 @@ public class AggregatedStorage<S extends StorageSnapshot<S, K>, K extends Storag
 
     public static class Fluids extends AggregatedStorage<BigFluidStack, FluidStorageKey> implements IBigFluidHandler {
 
+        // Null means unknown, so the first request computes a real answer. Cached
+        // because an untyped drain asks for the first populated index once per tank a
+        // caller was told about, which is how AE2's storage bus polls.
+        private Integer firstPopulated;
+
         public Fluids() {
             super(BigFluidStack.empty());
+        }
+
+        @Override
+        public int firstPopulatedIndex() {
+            Integer cached = firstPopulated;
+            if (cached == null) {
+                cached = IBigFluidHandler.super.firstPopulatedIndex();
+                firstPopulated = cached;
+            }
+            return cached;
+        }
+
+        @Override
+        protected void onChildChanged() {
+            firstPopulated = null;
+        }
+
+        /**
+         * Drops the memo without computing a replacement.
+         *
+         * <p>
+         * The owning network calls this when a linked drawer changes capacity, which
+         * alters what this storage holds without any amount moving.
+         * </p>
+         */
+        public void invalidateFirstPopulated() {
+            firstPopulated = null;
         }
     }
 
     public static class Aspects extends AggregatedStorage<BigAspectStack, AspectStorageKey>
         implements IBigAspectHandler {
 
+        // Starts null so the first request computes a real summary. A pre-filled
+        // value would be returned as-is and report an empty storage forever.
+        private AspectSummary summary;
+
         public Aspects() {
             super(BigAspectStack.empty());
+        }
+
+        @Override
+        @Nonnull
+        public AspectSummary getSummary() {
+            AspectSummary cached = summary;
+            if (cached == null) {
+                cached = AspectSummary.of(this);
+                summary = cached;
+            }
+            return cached;
+        }
+
+        @Override
+        protected void onChildChanged() {
+            summary = null;
+        }
+
+        /**
+         * Drops the memo without computing a replacement.
+         *
+         * <p>
+         * A lock transition arrives as a child change, and an aggregate answers
+         * {@code isLocked} from the interface default, so contents are the only input
+         * this memo depends on. The owning network also calls this when a linked
+         * drawer changes capacity, which alters what the storage invites without
+         * moving any essentia.
+         * </p>
+         */
+        public void invalidateSummary() {
+            summary = null;
         }
     }
 }

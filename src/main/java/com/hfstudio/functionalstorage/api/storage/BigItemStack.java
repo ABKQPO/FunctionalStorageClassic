@@ -92,6 +92,21 @@ public class BigItemStack implements StorageSnapshot<BigItemStack, ItemStorageKe
         return template == null ? null : template.copy();
     }
 
+    /**
+     * Reports how large a stack of the represented item may grow.
+     *
+     * <p>
+     * Capacity arithmetic runs this over every index of a storage, including a
+     * whole controller network, so it must not copy the template. Callers that
+     * need the stack itself use {@link #getTemplate()}.
+     * </p>
+     *
+     * @return the template's maximum stack size, or sixty-four when empty
+     */
+    public int getTemplateStackSize() {
+        return template == null ? 64 : Math.max(1, template.getMaxStackSize());
+    }
+
     @Nullable
     @Override
     public ItemStorageKey getKey() {
