@@ -18,37 +18,20 @@ public interface IStorageHandler<S extends StorageSnapshot<S, K>, K extends Stor
     int getStorageCount();
 
     /**
-     * @param index storage index
-     * @return detached immutable snapshot, or an unconfigured empty snapshot for an invalid index
+     * @return detached immutable snapshot, or an unconfigured empty snapshot for an
+     *         invalid index
      */
     @Nonnull
     S getSnapshot(int index);
 
     /**
-     * @param index storage index
      * @return non-negative long capacity, or zero for an invalid index
      */
     long getCapacity(int index);
 
-    /**
-     * Inserts into exactly one index.
-     *
-     * @param index   storage index
-     * @param request requested resource and amount
-     * @param action  execute or simulate
-     * @return the processed amount
-     */
     @Nonnull
     TransferResult<S, K> insert(int index, @Nonnull S request, @Nonnull StorageAction action);
 
-    /**
-     * Extracts from exactly one index.
-     *
-     * @param index  storage index
-     * @param amount requested amount
-     * @param action execute or simulate
-     * @return the processed amount
-     */
     @Nonnull
     TransferResult<S, K> extract(int index, long amount, @Nonnull StorageAction action);
 
@@ -60,17 +43,23 @@ public interface IStorageHandler<S extends StorageSnapshot<S, K>, K extends Stor
     }
 
     /**
-     * Chooses the single index an insertion should target.
+     * Locking is a property of a single storage, but one that spans several drawers
+     * carries one lock per drawer, so a caller asking about one index must use this
+     * rather than {@link #isLocked()}.
      *
-     * <p>
-     * A slot already holding the same resource type always wins, so a resource
-     * stays in the slot it occupies and a full slot simply accepts nothing more
-     * rather than spilling into a neighbour. Otherwise the first empty slot that
-     * would accept the request is used. Nothing is ever spread across slots,
-     * which is what keeps generators and similar upgrades confined to one slot
-     * instead of filling a whole drawer.
+     * @return whether that index refuses resources it does not already retain
+     */
+    default boolean isLocked(int index) {
+        return isLocked();
+    }
+
+    /**
+     * Chooses the single index an insertion should target. A slot already holding the
+     * same resource type always wins, so a resource stays where it is and a full slot
+     * accepts nothing more rather than spilling into a neighbour. Otherwise the first
+     * empty slot that would accept the request is used. Nothing is ever spread across
+     * slots, which keeps generators and similar upgrades confined to one slot.
      *
-     * @param request requested resource and amount
      * @return the chosen index, or {@code -1} when no slot can hold it
      */
     default int pickInsertionIndex(@Nonnull S request) {
@@ -92,12 +81,7 @@ public interface IStorageHandler<S extends StorageSnapshot<S, K>, K extends Stor
     }
 
     /**
-     * Reports whether one index would accept any of the request, without
-     * changing state.
-     *
-     * @param index   storage index
-     * @param request requested resource and amount
-     * @return whether at least one unit would be accepted
+     * @return whether at least one unit would be accepted, without changing state
      */
     default boolean acceptsAny(int index, @Nonnull S request) {
         if (index < 0 || index >= Math.max(0, getStorageCount())) {
@@ -107,10 +91,6 @@ public interface IStorageHandler<S extends StorageSnapshot<S, K>, K extends Stor
     }
 
     /**
-     * Inserts into exactly one index, the one {@link #pickInsertionIndex} selects.
-     *
-     * @param request requested resource and amount
-     * @param action  execute or simulate
      * @return the processed amount, zero when the target slot is full or absent
      */
     default long insertIntoSingleSlot(@Nonnull S request, @Nonnull StorageAction action) {
@@ -127,22 +107,18 @@ public interface IStorageHandler<S extends StorageSnapshot<S, K>, K extends Stor
      * <p>
      * Callers that top up storage with whatever a player hands over, rather than
      * targeting a slot, use this to decide whether they may write at all. An
-     * unfamiliar resource is refused, so such a caller never starts a new pile
-     * beside resources that are already stored; only storage that has been given
-     * the resource before accepts more of it. An index whose contents are full
-     * still answers {@code true}, because the type is known and a caller may
-     * legitimately deposit into a further index of the same drawer, while a
-     * retained filter counts for the same reason even though the index is empty.
-     *
-     * @param request requested resource and amount
-     * @return whether an index already holds a matching resource
+     * unfamiliar resource is refused, so such a caller never starts a new pile beside
+     * resources that are already stored. An index whose contents are full still
+     * answers {@code true}, because the type is known and a caller may legitimately
+     * deposit into a further index of the same drawer, while a retained filter counts
+     * for the same reason even though the index is empty.
+     * </p>
      */
     default boolean hasMatchingResource(@Nonnull S request) {
         int count = Math.max(0, getStorageCount());
         // A storage that never treats different resources as interchangeable can only
         // accept into a slot already holding the exact type, so probing every occupied
-        // index for compatibility would only ever confirm what the exact comparison
-        // already decided.
+        // index for compatibility would only confirm what the exact comparison decided.
         boolean probeCompatible = allowsEquivalentResources();
         for (int index = 0; index < count; index++) {
             S current = getSnapshot(index);
@@ -158,15 +134,10 @@ public interface IStorageHandler<S extends StorageSnapshot<S, K>, K extends Stor
 
     /**
      * Reports whether the slot an insertion would target still has spare capacity.
-     *
-     * <p>
-     * Fullness is read from the stored amount against the slot capacity rather
-     * than from an {@link #insert} result, because a void upgrade reports success
-     * for resources it destroys. Producers rely on this to stop working once a
-     * slot is full instead of generating only for the output to be voided.
-     *
-     * @param request requested resource and amount
-     * @return whether the target slot can still hold more
+     * Fullness is read from the stored amount against the slot capacity rather than
+     * from an {@link #insert} result, because a void upgrade reports success for
+     * resources it destroys; producers rely on this to stop working once a slot is
+     * full instead of generating only for the output to be voided.
      */
     default boolean hasRoomInSingleSlot(@Nonnull S request) {
         int index = pickInsertionIndex(request);
@@ -181,18 +152,10 @@ public interface IStorageHandler<S extends StorageSnapshot<S, K>, K extends Stor
     }
 
     /**
-     * Orders candidate indices so that merging into an occupied slot is tried
-     * before opening an empty one.
-     *
-     * <p>
-     * Automation upgrades that already know which slots they may use pass their
-     * candidates here instead of iterating them in index order. A slot holding any
-     * resource moves ahead of an empty slot, so a resource already stored stays
-     * consolidated in its slot instead of a neighbouring empty slot being opened
-     * first. Order within each group is preserved.
-     *
-     * @param candidates candidate indices in caller order
-     * @return occupied candidates first, then empty candidates
+     * Orders candidate indices so that merging into an occupied slot is tried before
+     * opening an empty one, which keeps a stored resource consolidated instead of
+     * opening a neighbouring empty slot first. Out-of-range candidates are dropped,
+     * and order within each group is preserved.
      */
     @Nonnull
     default List<Integer> preferMergeOrder(@Nonnull List<Integer> candidates) {
@@ -210,17 +173,9 @@ public interface IStorageHandler<S extends StorageSnapshot<S, K>, K extends Stor
     }
 
     /**
-     * Picks the single index an insertion should target within a restricted set.
+     * Applies {@link #pickInsertionIndex} to a restricted candidate set rather than to
+     * every index.
      *
-     * <p>
-     * Applies the rules of {@link #pickInsertionIndex} to the caller's candidates:
-     * a slot already holding the same resource type wins, otherwise the first
-     * empty candidate that would accept the request is used. Occupied candidates
-     * are considered first, so a matching slot is found and topped up before any
-     * empty slot is opened.
-     *
-     * @param candidates candidate indices in caller order
-     * @param request    requested resource and amount
      * @return the chosen index, or {@code -1} when no candidate can hold it
      */
     default int pickInsertionIndex(@Nonnull List<Integer> candidates, @Nonnull S request) {
@@ -241,12 +196,8 @@ public interface IStorageHandler<S extends StorageSnapshot<S, K>, K extends Stor
     }
 
     /**
-     * Reports whether any candidate slot that already holds a resource is close to
-     * full, so callers can skip work that would only be rejected.
-     *
-     * @param candidates candidate indices in caller order
-     * @param request    requested resource and amount
-     * @return whether a matching candidate still has room
+     * @return whether the chosen candidate still has room, so callers can skip work
+     *         that would only be rejected
      */
     default boolean hasRoomInSingleSlot(@Nonnull List<Integer> candidates, @Nonnull S request) {
         int index = pickInsertionIndex(candidates, request);
@@ -268,25 +219,22 @@ public interface IStorageHandler<S extends StorageSnapshot<S, K>, K extends Stor
     }
 
     /**
-     * Reports whether this storage may treat resources that are not exactly equal as
+     * Reports whether resources that are not exactly equal may still be
      * interchangeable, such as two items sharing an ore dictionary entry.
      *
      * <p>
-     * Routing uses this to decide whether a compatibility probe is worth making. When
-     * nothing but an exact match can ever be compatible, a probe against a slot holding
-     * a different resource is guaranteed to fail, so the walk that would perform it is
-     * skipped entirely. Reporting {@code false} when a subclass does accept equivalents
-     * would silently stop such resources from sharing a slot.
+     * Routing uses this to decide whether a compatibility probe is worth making: when
+     * only an exact match can be compatible, a probe against a slot holding a different
+     * resource is guaranteed to fail, so that walk is skipped. Reporting {@code false}
+     * while a subclass does accept equivalents would silently stop such resources from
+     * sharing a slot.
      * </p>
-     *
-     * @return whether non-exact resources may still be compatible
      */
     default boolean allowsEquivalentResources() {
         return false;
     }
 
     /**
-     * @param index storage index
      * @return whether the indexed storage consumes compatible overflow
      */
     default boolean voidsOverflow(int index) {
@@ -305,8 +253,8 @@ public interface IStorageHandler<S extends StorageSnapshot<S, K>, K extends Stor
     }
 
     /**
-     * @return stable physical storage identity; wrappers should forward their
-     *         target identity so aggregate handlers can remove duplicates
+     * @return stable physical storage identity; wrappers must forward their target
+     *         identity so aggregates can remove duplicates
      */
     @Nonnull
     default Object getStorageIdentity() {
@@ -314,20 +262,14 @@ public interface IStorageHandler<S extends StorageSnapshot<S, K>, K extends Stor
     }
 
     /**
-     * Publishes a completed observable change. Stateless compatibility handlers
-     * may keep the default no-op; mutable handlers should delegate to a
-     * {@link StorageChangeDispatcher}.
-     *
-     * @param change completed change
+     * Stateless compatibility handlers may keep the default no-op; mutable handlers
+     * should delegate to a {@link StorageChangeDispatcher}.
      */
     default void onChange(@Nonnull StorageChange<S, K> change) {}
 
     /**
-     * Subscribes to observable storage changes. Handlers without an event
-     * source return an already-closed subscription.
-     *
-     * @param listener notified for each subsequent change
-     * @return a subscription that stops notifications when closed
+     * @return a subscription that stops notifications when closed; handlers without an
+     *         event source return an already-closed subscription
      */
     @Nonnull
     default StorageSubscription subscribe(@Nonnull Consumer<? super StorageChange<S, K>> listener) {

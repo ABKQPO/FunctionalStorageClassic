@@ -111,11 +111,19 @@ public class CacheInvalidationTest {
         AggregatedStorage.Aspects network = new AggregatedStorage.Aspects();
         network.rebuild(children);
 
-        assertEquals(0L, network.summary().getTotal(aspect), "the memo must start empty");
+        assertEquals(
+            0L,
+            network.summary()
+                .getTotal(aspect),
+            "the memo must start empty");
 
         child.insertRouted(new BigAspectStack(aspect, 40L), StorageAction.EXECUTE);
 
-        assertEquals(40L, network.summary().getTotal(aspect), "the memo must see essentia added to the child");
+        assertEquals(
+            40L,
+            network.summary()
+                .getTotal(aspect),
+            "the memo must see essentia added to the child");
     }
 
     @Test
@@ -136,7 +144,10 @@ public class CacheInvalidationTest {
         // With one index and a lock-free fill, the storage is full and must refuse. The
         // memo that records this is exactly the value the early exit trusts.
         locked[0] = true;
-        assertFalse(network.summary().acceptsMore(), "a full locked storage must invite nothing");
+        assertFalse(
+            network.summary()
+                .acceptsMore(),
+            "a full locked storage must invite nothing");
         assertEquals(
             0L,
             network.insertRouted(new BigAspectStack(aspect, 1L), StorageAction.SIMULATE)
@@ -146,7 +157,10 @@ public class CacheInvalidationTest {
         // Freeing room must be honoured on the very next call, or the refusal sticks.
         child.extractRouted(new BigAspectStack(aspect, capacity / 2L), StorageAction.EXECUTE);
 
-        assertTrue(network.summary().acceptsMore(), "a storage with room must invite more");
+        assertTrue(
+            network.summary()
+                .acceptsMore(),
+            "a storage with room must invite more");
         assertTrue(
             network.insertRouted(new BigAspectStack(aspect, 1L), StorageAction.SIMULATE)
                 .getProcessedAmount() > 0L,
@@ -167,11 +181,17 @@ public class CacheInvalidationTest {
         StorageViewCache cache = network.getStorageViewCache();
         assertNotNull(cache, "the aggregate must expose a view memo");
 
-        assertTrue(cache.views(network).isEmpty(), "the memo must start with no views");
+        assertTrue(
+            cache.views(network)
+                .isEmpty(),
+            "the memo must start with no views");
 
         child.insert(1, new BigItemStack(StorageFixtures.one(item), 25L), StorageAction.EXECUTE);
 
-        assertFalse(cache.views(network).isEmpty(), "the memo must see the new child contents");
+        assertFalse(
+            cache.views(network)
+                .isEmpty(),
+            "the memo must see the new child contents");
         assertEquals(
             25L,
             cache.views(network)
@@ -225,13 +245,26 @@ public class CacheInvalidationTest {
     void lockTransitionDropsMemo() {
         boolean[] locked = { false };
         BigAspectHandler handler = AspectBootstrap.lockableHandler(2, locked);
-        assertTrue(handler.summary().acceptsMore(), "an unlocked empty storage invites essentia");
-        assertTrue(handler.summary().suctionAmount() > 0, "an unlocked empty storage has suction");
+        assertTrue(
+            handler.summary()
+                .acceptsMore(),
+            "an unlocked empty storage invites essentia");
+        assertTrue(
+            handler.summary()
+                .suctionAmount() > 0,
+            "an unlocked empty storage has suction");
 
         locked[0] = true;
         handler.applyLockConfiguration(true);
 
-        assertFalse(handler.summary().acceptsMore(), "a locked empty storage must invite nothing");
-        assertEquals(0, handler.summary().suctionAmount(), "a locked empty storage must have no suction");
+        assertFalse(
+            handler.summary()
+                .acceptsMore(),
+            "a locked empty storage must invite nothing");
+        assertEquals(
+            0,
+            handler.summary()
+                .suctionAmount(),
+            "a locked empty storage must have no suction");
     }
 }

@@ -24,9 +24,17 @@ import com.hfstudio.functionalstorage.support.VanillaBootstrap;
  * Two styles exist in the game and both must work. A hopper reads a stack, edits
  * the returned object in place, and then either writes it back or simply moves on;
  * a generic inventory iterator reads a stack and writes a replacement through
- * {@code setInventorySlotContents}. Reading a slot records that the caller now
- * holds its stack, so an in-place edit is committed the next time the inventory is
- * touched, and writing a slot commits immediately.
+ * {@code setInventorySlotContents}. Reading a slot records that the caller now holds
+ * its stack, so an in-place edit is committed when that slot is next touched, when
+ * the slot is written, or when the inventory is flushed by {@code markDirty}.
+ * </p>
+ *
+ * <p>
+ * Touching one slot deliberately does not commit the others. A caller may hold a
+ * stack it was handed while it reads a further slot, and it may edit that first stack
+ * afterwards; committing every outstanding slot on each read would discard the mark on
+ * a stack the caller is still holding and the later edit would vanish. The edit is not
+ * lost by the narrower rule, because the mark survives until that slot is committed.
  * </p>
  */
 public class InPlaceEditTest {
@@ -37,8 +45,8 @@ public class InPlaceEditTest {
     }
 
     @Test
-    @DisplayName("an in-place edit to a handed-out stack is committed on the next read")
-    void inPlaceEditCommitsOnNextRead() {
+    @DisplayName("an in-place edit is committed once the inventory is flushed")
+    void inPlaceEditReachesStorageOnMarkDirty() {
         BigItemHandler handler = StorageFixtures.handler(4);
         IInventory view = new DrawerItemInventory(handler, "drawer", () -> {});
         Item item = StorageFixtures.newItem();
@@ -50,9 +58,50 @@ public class InPlaceEditTest {
         assertNotNull(held, "a populated slot must hand out a stack");
         held.stackSize = 40;
 
-        // Reading another slot is what flushes pending edits.
-        view.getStackInSlot(1);
+        view.markDirty();
         assertEquals(40, StorageFixtures.total(handler, item), "the in-place edit must have been committed");
+    }
+
+    @Test
+    @DisplayName("an edit survives reading a different slot in between")
+    void inPlaceEditSurvivesAnotherRead() {
+        BigItemHandler handler = StorageFixtures.handler(4);
+        IInventory view = new DrawerItemInventory(handler, "drawer", () -> {});
+        Item item = StorageFixtures.newItem();
+
+        view.setInventorySlotContents(0, StorageFixtures.stack(item, 100));
+
+        // The caller keeps the stack it holds while it reads a further slot, which is
+        // ordinary use of the interface, and edits it only afterwards.
+        ItemStack held = view.getStackInSlot(0);
+        assertNotNull(held, "a populated slot must hand out a stack");
+        view.getStackInSlot(1);
+        held.stackSize = 40;
+
+        view.markDirty();
+        assertEquals(
+            40,
+            StorageFixtures.total(handler, item),
+            "an edit made after reading another slot must still reach storage");
+    }
+
+    @Test
+    @DisplayName("touching the edited slot again commits it immediately")
+    void reReadingTheSlotCommits() {
+        BigItemHandler handler = StorageFixtures.handler(4);
+        IInventory view = new DrawerItemInventory(handler, "drawer", () -> {});
+        Item item = StorageFixtures.newItem();
+
+        view.setInventorySlotContents(0, StorageFixtures.stack(item, 100));
+
+        ItemStack held = view.getStackInSlot(0);
+        assertNotNull(held, "a populated slot must hand out a stack");
+        held.stackSize = 40;
+
+        ItemStack reread = view.getStackInSlot(0);
+        assertNotNull(reread, "the slot must still hold a stack");
+        assertEquals(40, reread.stackSize, "re-reading the slot must report the committed edit");
+        assertEquals(40, StorageFixtures.total(handler, item), "re-reading the slot must commit the edit");
     }
 
     @Test

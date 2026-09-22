@@ -156,6 +156,26 @@ public class AggregatedStorage<S extends StorageSnapshot<S, K>, K extends Storag
                 .extract(localIndex(index, child), amount, action);
     }
 
+    /**
+     * Reports whether one spanned index retains and enforces a filter.
+     *
+     * <p>
+     * The spanned drawers each carry their own lock, so asking this storage as a whole
+     * would answer with the interface default and claim nothing is locked. A caller
+     * deciding whether an index invites a resource must get that index's own answer,
+     * or the storage advertises room that the drawer behind it will refuse.
+     * </p>
+     *
+     * @param index aggregate index
+     * @return whether the storage behind that index is locked
+     */
+    @Override
+    public boolean isLocked(int index) {
+        int child = childIndex(index);
+        return child >= 0 && children.get(child)
+            .isLocked(localIndex(index, child));
+    }
+
     @Override
     public boolean voidsOverflow(int index) {
         int child = childIndex(index);

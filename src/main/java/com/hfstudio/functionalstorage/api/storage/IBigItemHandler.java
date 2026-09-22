@@ -164,7 +164,9 @@ public interface IBigItemHandler extends IStorageHandler<BigItemStack, ItemStora
             return false;
         }
         BigItemStack snapshot = getSnapshot(index);
-        return snapshot.isEmpty() && getCapacity(index) > 0L && (snapshot.hasTemplate() || !isLocked());
+        // The lock is read per index: a storage spanning several drawers carries one
+        // lock per drawer, so the storage-wide answer would misdescribe this index.
+        return snapshot.isEmpty() && getCapacity(index) > 0L && (snapshot.hasTemplate() || !isLocked(index));
     }
 
     /**

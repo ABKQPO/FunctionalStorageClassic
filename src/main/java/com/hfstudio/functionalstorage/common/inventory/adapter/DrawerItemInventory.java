@@ -47,7 +47,7 @@ public class DrawerItemInventory implements ISidedInventory {
     @Nullable
     @Override
     public ItemStack getStackInSlot(int index) {
-        flushChanges();
+        commitSlot(index);
         if (!valid(index)) {
             return null;
         }
@@ -64,19 +64,20 @@ public class DrawerItemInventory implements ISidedInventory {
         if (!valid(index)) {
             return;
         }
+        commitSlot(index);
         // A caller may pass back the same stack it just edited. Keep the original baseline.
         if (baseline[index] == null && exposed[index] == null) {
             refresh(index);
         }
         exposed[index] = stack == null ? null : stack.copy();
         handedOut.set(index);
-        flushChanges();
+        commitSlot(index);
     }
 
     @Nullable
     @Override
     public ItemStack decrStackSize(int index, int count) {
-        flushChanges();
+        commitSlot(index);
         if (!valid(index) || count <= 0) {
             return null;
         }
@@ -181,32 +182,66 @@ public class DrawerItemInventory implements ISidedInventory {
         synchronizing = true;
         try {
             for (int index = handedOut.nextSetBit(0); index >= 0; index = handedOut.nextSetBit(index + 1)) {
-                ItemStack before = baseline[index];
-                ItemStack after = exposed[index];
-                if (ItemStack.areItemStacksEqual(before, after)) {
-                    continue;
-                }
-                int oldCount = count(before);
-                int newCount = count(after);
-                if (sameType(before, after)) {
-                    int delta = newCount - oldCount;
-                    if (delta > 0) {
-                        handler.insert(index, new BigItemStack(after, delta), StorageAction.EXECUTE);
-                    } else if (delta < 0) {
-                        handler.extract(index, -delta, StorageAction.EXECUTE);
-                    }
-                } else if (oldCount == 0) {
-                    handler.insert(index, new BigItemStack(after, newCount), StorageAction.EXECUTE);
-                } else if (newCount == 0) {
-                    handler.extract(index, oldCount, StorageAction.EXECUTE);
-                }
-                // Replacing a populated drawer with a different type would hide its reserve.
-                refresh(index);
+                commit(index);
             }
-            handedOut.clear();
         } finally {
             synchronizing = false;
         }
+    }
+
+    /**
+     * Commits any pending edit to one slot and resynchronizes it.
+     *
+     * <p>
+     * Touching a single slot must not commit the whole inventory. A caller may hold a
+     * stack it was handed while it reads another slot, and it may edit that first
+     * stack afterwards: committing every outstanding slot on each read would clear the
+     * mark on a stack the caller is still holding, and the later edit would be lost
+     * with the storage keeping a stale amount. Committing only the slot being touched
+     * leaves every other mark in place, and a stack that was merely read is unchanged,
+     * so committing it costs one comparison.
+     * </p>
+     *
+     * @param index slot whose pending edit must be committed
+     */
+    private void commitSlot(int index) {
+        if (synchronizing || !valid(index) || !handedOut.get(index)) {
+            return;
+        }
+        synchronizing = true;
+        try {
+            commit(index);
+        } finally {
+            synchronizing = false;
+        }
+    }
+
+    /**
+     * Applies one slot's pending edit and resynchronizes the exposed stack.
+     *
+     * @param index slot to commit
+     */
+    private void commit(int index) {
+        ItemStack before = baseline[index];
+        ItemStack after = exposed[index];
+        if (!ItemStack.areItemStacksEqual(before, after)) {
+            int oldCount = count(before);
+            int newCount = count(after);
+            if (sameType(before, after)) {
+                int delta = newCount - oldCount;
+                if (delta > 0) {
+                    handler.insert(index, new BigItemStack(after, delta), StorageAction.EXECUTE);
+                } else if (delta < 0) {
+                    handler.extract(index, -delta, StorageAction.EXECUTE);
+                }
+            } else if (oldCount == 0) {
+                handler.insert(index, new BigItemStack(after, newCount), StorageAction.EXECUTE);
+            } else if (newCount == 0) {
+                handler.extract(index, oldCount, StorageAction.EXECUTE);
+            }
+        }
+        // Replacing a populated drawer with a different type would hide its reserve.
+        refresh(index);
     }
 
     @Override

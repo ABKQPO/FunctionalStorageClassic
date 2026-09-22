@@ -78,4 +78,23 @@ public class FilteredItemStorage implements IBigItemHandler {
     public boolean allowsEquivalentResources() {
         return storage.allowsEquivalentResources();
     }
+
+    /**
+     * Reports whether one index retains and enforces a filter.
+     *
+     * <p>
+     * An index outside this view's selection is not served by it at all, so it must
+     * answer for itself rather than borrow the lock of an index it does serve. The
+     * capacity and contents reads already refuse unselected indices; a lock read that
+     * did not would let a caller conclude that an index it cannot reach is one it may
+     * write to.
+     * </p>
+     *
+     * @param index storage index
+     * @return whether that index is served by this view and locked
+     */
+    @Override
+    public boolean isLocked(int index) {
+        return selected(index) && storage.isLocked(index);
+    }
 }

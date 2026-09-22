@@ -68,6 +68,11 @@ public class SelectedStorage<S extends StorageSnapshot<S, K>, K extends StorageK
     }
 
     @Override
+    public boolean isLocked(int index) {
+        return selected(index) && storage.isLocked(index);
+    }
+
+    @Override
     public boolean isCreative() {
         return storage.isCreative();
     }
