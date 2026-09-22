@@ -122,6 +122,36 @@ public interface IStorageHandler<S extends StorageSnapshot<S, K>, K extends Stor
     }
 
     /**
+     * Reports whether this storage already holds the requested resource type.
+     *
+     * <p>
+     * Callers that top up storage with whatever a player hands over, rather than
+     * targeting a slot, use this to decide whether they may write at all. An
+     * unfamiliar resource is refused, so such a caller never starts a new pile
+     * beside resources that are already stored; only storage that has been given
+     * the resource before accepts more of it. An index whose contents are full
+     * still answers {@code true}, because the type is known and a caller may
+     * legitimately deposit into a further index of the same drawer, while a
+     * retained filter counts for the same reason even though the index is empty.
+     *
+     * @param request requested resource and amount
+     * @return whether an index already holds a matching resource
+     */
+    default boolean hasMatchingResource(@Nonnull S request) {
+        int count = Math.max(0, getStorageCount());
+        for (int index = 0; index < count; index++) {
+            S current = getSnapshot(index);
+            if (!current.hasTemplate()) {
+                continue;
+            }
+            if (current.isSameType(request) || acceptsAny(index, request)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Reports whether the slot an insertion would target still has spare capacity.
      *
      * <p>
