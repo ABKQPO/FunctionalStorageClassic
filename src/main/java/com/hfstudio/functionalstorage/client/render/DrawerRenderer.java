@@ -35,6 +35,7 @@ import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL12;
 
 import com.gtnewhorizon.gtnhlib.util.numberformatting.NumberFormatUtil;
+import com.hfstudio.functionalstorage.FunctionalStorage;
 import com.hfstudio.functionalstorage.api.storage.BigAspectStack;
 import com.hfstudio.functionalstorage.api.storage.BigFluidStack;
 import com.hfstudio.functionalstorage.api.storage.BigItemStack;
@@ -78,22 +79,13 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
      */
     private static final float CAVITY_NEAR = 1F;
     private static final float CAVITY_FAR = 14.5F;
-    /**
-     * Insets kept between the fluid volume and the cavity walls it would
-     * otherwise share a depth plane with. The front frame and the rear wall both
-     * sit exactly on the cavity bounds, so a volume drawn right up to them
-     * z-fights; a hair of clearance removes the flicker and is imperceptible
-     * because the fluid fills the opening.
-     */
     private static final float CAVITY_FRONT_INSET = 0.01F;
     private static final float CAVITY_BACK_INSET = 0.02F;
     private static final float CAVITY_LEFT = 1.5F;
     private static final float CAVITY_RIGHT = 14.5F;
     private static final float CAVITY_TOP = 14.5F;
     private static final float CAVITY_BOTTOM = 1.5F;
-    /** Centre of the divider that splits the cavity in two, in model units. */
     private static final float DIVIDER_CENTER = 8F;
-    /** Half thickness of a divider, so slot bounds stop at its surface. */
     private static final float DIVIDER_HALF = 1F;
     private static final float FLUID_MINIMUM_HEIGHT = 1F / 64F;
     private static final float FLUID_INTERPOLATION_RATE = 8F;
@@ -101,6 +93,12 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
     private static final float INDICATOR_HALF_WIDTH = 0.18F;
     private static final float INDICATOR_HALF_HEIGHT = 0.02F;
     private static final float TEXT_SCALE = 0.01F;
+    private static final float LOCK_HALF = 0.5F / 16F;
+    private static final float LOCK_CENTER_Y = LOCK_HALF;
+    private static final float Z_LOCK = 0.006F;
+    private static final ResourceLocation LOCK_TEXTURE = new ResourceLocation(
+        FunctionalStorage.MOD_ID,
+        "textures/blocks/lock.png");
     private ItemStack voidBadge;
 
     private final FloatBuffer modelView = BufferUtils.createFloatBuffer(16);
@@ -208,9 +206,13 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
         }
 
         DrawerOptions options = drawer.getDrawerOptions();
-        if (!options.isShowItemRender() && !options.isShowItemCount()
-            && !options.isShowUpgrades()
-            && options.getAdvancedValue(ConfigurationToolItem.ConfigurationAction.INDICATOR) == 0) {
+        // Locking is drawer state rather than a display option, so a locked drawer
+        // still shows its badge when the contents are hidden. Only a drawer with
+        // nothing at all to draw, and which is not locked, is skipped.
+        boolean contents = options.isShowItemRender() || options.isShowItemCount()
+            || options.isShowUpgrades()
+            || options.getAdvancedValue(ConfigurationToolItem.ConfigurationAction.INDICATOR) != 0;
+        if (!contents && !drawer.isLocked()) {
             return;
         }
         int metadata = tile.getBlockMetadata();
@@ -243,6 +245,9 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
             }
             if (options.isShowUpgrades()) {
                 renderUpgrades(drawer);
+            }
+            if (drawer.isLocked()) {
+                renderLockBadge();
             }
             if (drawer instanceof EnderDrawerTile ender && ender.getFrequency() != null) {
                 int index = 0;
@@ -752,22 +757,31 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
         }
     }
 
-    /**
-     * Draws a slot's count in front of the slot's icon.
-     *
-     * <p>
-     * Depth testing stays enabled so the label is occluded by the world exactly
-     * like the block it belongs to; disabling it would draw the count through
-     * every block in front of the drawer. Only depth writes are masked, which
-     * keeps the glyph quads from stacking against each other, and the scale is
-     * applied to the text extents alone so the chosen depth survives the
-     * transform.
-     *
-     * @param text      label to draw
-     * @param centerX   slot centre on the face
-     * @param centerY   slot centre on the face
-     * @param iconScale icon scale, used to place the label below the icon
-     */
+    private void renderLockBadge() {
+        GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_LIGHTING_BIT | GL11.GL_COLOR_BUFFER_BIT);
+        GL11.glPushMatrix();
+        try {
+            GL11.glTranslatef(0.5F, LOCK_CENTER_Y, Z_LOCK);
+            GL11.glDisable(GL11.GL_LIGHTING);
+            GL11.glEnable(GL11.GL_BLEND);
+            GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+            Minecraft.getMinecraft()
+                .getTextureManager()
+                .bindTexture(LOCK_TEXTURE);
+            GL11.glColor4f(1F, 1F, 1F, 1F);
+            Tessellator tessellator = Tessellator.instance;
+            tessellator.startDrawingQuads();
+            tessellator.addVertexWithUV(-LOCK_HALF, LOCK_HALF, 0D, 0D, 1D);
+            tessellator.addVertexWithUV(LOCK_HALF, LOCK_HALF, 0D, 1D, 1D);
+            tessellator.addVertexWithUV(LOCK_HALF, -LOCK_HALF, 0D, 1D, 0D);
+            tessellator.addVertexWithUV(-LOCK_HALF, -LOCK_HALF, 0D, 0D, 0D);
+            tessellator.draw();
+        } finally {
+            GL11.glPopMatrix();
+            GL11.glPopAttrib();
+        }
+    }
+
     private void renderText(String text, float centerX, float centerY, float iconScale) {
         FontRenderer font = Minecraft.getMinecraft().fontRenderer;
         int width = font.getStringWidth(text);
@@ -785,19 +799,6 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
         }
     }
 
-    /**
-     * Draws the fill indicator bar under a slot's icon.
-     *
-     * <p>
-     * Lighting and texturing are pushed rather than toggled and restored by hand,
-     * so the state survives an exception partway through drawing the bar.
-     *
-     * @param centerX   slot centre on the face
-     * @param centerY   slot centre on the face
-     * @param iconScale icon scale, used to place the bar below the icon
-     * @param fill      fill ratio in {@code [0, 1]}
-     * @param options   drawer display options
-     */
     private void renderIndicator(float centerX, float centerY, float iconScale, float fill, DrawerOptions options) {
         int mode = options.getAdvancedValue(ConfigurationToolItem.ConfigurationAction.INDICATOR);
         if (mode == 0) {
