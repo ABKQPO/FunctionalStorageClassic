@@ -538,9 +538,9 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
             }
             if (layout == DrawerFaceLayout.X_4) {
                 if (slot % 2 == 0) {
-                    modelRight = divider - dividerHalf;
-                } else {
                     modelLeft = divider + dividerHalf;
+                } else {
+                    modelRight = divider - dividerHalf;
                 }
             }
         }
