@@ -76,9 +76,6 @@ public class ItemRoutingCostTest {
     /**
      * Measures the two questions an external caller asks about an unknown resource and
      * divides by the number of indices walked.
-     *
-     * @param drawers how many drawers the network spans
-     * @return nanoseconds per index
      */
     private static long perIndexNanos(int drawers) {
         Item stored = StorageFixtures.newItem();

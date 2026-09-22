@@ -153,9 +153,6 @@ public class SingleCapacityStorageTest {
     /**
      * Builds storage with the armory cabinet's rules: one item per slot, and only for
      * items that do not stack.
-     *
-     * @param slots slot count
-     * @return storage with single-capacity slots
      */
     private static BigItemHandler cabinet(int slots) {
         return new BigItemHandler(slots) {

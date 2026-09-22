@@ -17,22 +17,11 @@ import com.hfstudio.functionalstorage.support.StorageFixtures;
 import com.hfstudio.functionalstorage.support.VanillaBootstrap;
 
 /**
- * Guards the cost of reading a whole drawer.
- *
- * <p>
- * A storage bus, an inventory scanner, or any caller looking for a matching slot
- * walks every slot in order. Each read commits whatever edits a previous caller
- * made, and if that commit re-examines every slot that was ever handed out, the
- * walk costs the square of the slot count. A drawer is allowed to hold hundreds of
- * slots, so that shape decides whether such a caller is usable at all.
- * </p>
- *
- * <p>
- * The check is a ratio rather than an absolute time, so it means the same thing on
- * any machine: the cost per slot on a large drawer must stay within a small factor
- * of the cost per slot on a small one. A quadratic walk makes that ratio grow with
- * the slot count, which is what the threshold below catches.
- * </p>
+ * Guards the cost of reading a whole drawer. Any caller scanning for a matching slot
+ * walks every slot, and each read commits whatever edits a previous caller made, so if
+ * that commit re-examines every slot ever handed out the walk costs the square of the
+ * slot count. The check is a ratio rather than an absolute time, so it means the same
+ * thing on any machine: a quadratic walk makes the ratio grow with the slot count.
  */
 public class SweepScalingTest {
 

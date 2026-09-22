@@ -151,8 +151,6 @@ public class AspectReplacementTest {
 
     /**
      * Performs the clear half of a wholesale replacement.
-     *
-     * @param handler handler to empty
      */
     private static void clearAll(BigAspectHandler handler) {
         for (int index = 0; index < handler.getStorageCount(); index++) {

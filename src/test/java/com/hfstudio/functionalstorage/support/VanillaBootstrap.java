@@ -12,18 +12,12 @@ import sun.misc.Unsafe;
  *
  * <p>
  * GTNHLib reads an item's metadata through {@code Items.feather}, a plain vanilla
- * item whose only job is to hand back the damage value stored on the stack. That
- * field is populated from the game's item registry, which is empty here because
- * nothing runs the registry bootstrap, so every call through GTNHLib's inventory
- * bridge would dereference null. Installing an ordinary item in its place restores
- * exactly the behaviour the game has, because the method being called does nothing
- * but return the value already on the stack.
- * </p>
- *
- * <p>
- * The field is written after the owning class has initialized. Writing earlier
- * would be pointless, since that initializer assigns every field unconditionally as
- * its last act and would overwrite the value.
+ * item whose only job is to hand back the damage value stored on the stack. That field
+ * is populated from the game's item registry, which is empty here, so every call through
+ * GTNHLib's inventory bridge would dereference null; an ordinary item restores exactly
+ * the game's behaviour, since the called method only returns the value already on the
+ * stack. The field is written after its owning class has initialized, because that
+ * initializer assigns every field unconditionally as its last act.
  * </p>
  */
 public class VanillaBootstrap {
@@ -53,10 +47,6 @@ public class VanillaBootstrap {
      * Reflection refuses to write a static final field, and this one is final. The
      * field is private to the harness and never escapes it.
      * </p>
-     *
-     * @param owner field owner
-     * @param name  field name
-     * @param value value to store
      */
     private static void putStatic(Class<?> owner, String name, Object value) {
         try {

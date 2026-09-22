@@ -222,9 +222,6 @@ public class StorageKeyContractTest {
 
     /**
      * Puts keys into a hashed set, so an inconsistent hash shows up as a duplicate.
-     *
-     * @param keys keys to collect
-     * @return the populated set
      */
     private static Set<Object> setOf(Object... keys) {
         Set<Object> set = new HashSet<>();

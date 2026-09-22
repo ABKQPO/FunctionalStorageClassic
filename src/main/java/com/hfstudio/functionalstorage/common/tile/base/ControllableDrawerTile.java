@@ -17,6 +17,7 @@ import net.minecraft.network.NetworkManager;
 import net.minecraft.network.Packet;
 import net.minecraft.network.play.server.S35PacketUpdateTileEntity;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.world.World;
 
 import com.hfstudio.functionalstorage.FunctionalStorage;
@@ -720,6 +721,11 @@ public abstract class ControllableDrawerTile extends TileEntity {
     public void invalidate() {
         closeStorageSubscription();
         super.invalidate();
+    }
+
+    @Override
+    public AxisAlignedBB getRenderBoundingBox() {
+        return INFINITE_EXTENT_AABB;
     }
 
     @Override

@@ -11,23 +11,17 @@ import org.objenesis.ObjenesisStd;
 import cpw.mods.fml.common.registry.RegistryDelegate;
 
 /**
- * A fluid stack that behaves like the real one outside a running game.
+ * A fluid stack that behaves like the real one outside a running game. Forge's
+ * constructor refuses any fluid not in its registry, and that registry cannot even
+ * initialize here because it reads vanilla blocks. The base class is not final and its
+ * {@code copy} is overridable, so an instance is allocated without a constructor, wired
+ * to a registry delegate, and taught to copy itself; identity and amount stay exactly
+ * Forge's semantics, which is all the storage core asks of a fluid.
  *
  * <p>
- * Forge's constructor refuses any fluid that is not in its registry, and that
- * registry cannot even initialize here because it reads vanilla blocks, which are
- * themselves populated by the game's own registry bootstrap. The base class is not
- * final and its {@code copy} is overridable, so an instance is allocated without a
- * constructor, wired to a registry delegate, and taught to copy itself through the
- * same cheap path. Identity and amount stay exactly Forge's semantics, which is
- * all the storage core ever asks of a fluid.
- * </p>
- *
- * <p>
- * Every instance is intended to be reused: a caller mutates {@code amount} between
- * operations instead of allocating, because the storage core copies the template it
- * is handed and never mutates the caller's stack. A harness that allocates per
- * interaction measures its own allocation rather than the code under test.
+ * Instances are meant to be reused: a caller mutates {@code amount} between operations
+ * instead of allocating, so a harness that allocates per interaction would measure its
+ * own allocation rather than the code under test.
  * </p>
  */
 public class TestFluidStack extends FluidStack {
@@ -44,10 +38,6 @@ public class TestFluidStack extends FluidStack {
 
     /**
      * Creates a reusable stack for one fluid.
-     *
-     * @param fluid  fluid identity
-     * @param amount initial amount in millibuckets
-     * @return a stack that copies itself cheaply
      */
     public static TestFluidStack of(Fluid fluid, int amount) {
         TestFluidStack stack = OBJENESIS.newInstance(TestFluidStack.class);

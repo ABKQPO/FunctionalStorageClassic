@@ -21,21 +21,12 @@ import com.hfstudio.functionalstorage.support.StorageFixtures;
 import com.hfstudio.functionalstorage.support.TestFluidStack;
 
 /**
- * Long-capacity fluid storage driven through Forge's int-counted fluid surface.
- *
- * <p>
- * A fluid drawer holds far more than an int can express, while every pipe and
- * machine in the game speaks millibuckets as an int. These checks hold a thousand
- * distinct fluids and drive millions of those int-sized interactions, asserting
- * that the long total moves by exactly the reported int amount each time. A
- * mismatch means fluid was created or destroyed at the boundary.
- * </p>
- *
- * <p>
- * Stacks are reused and only their amount is changed between calls. The storage
- * core copies whatever template it is handed, so this is what a real caller does,
- * and it keeps the measurement on the code under test instead of on the harness.
- * </p>
+ * Long-capacity fluid storage driven through Forge's int-counted fluid surface. A fluid
+ * drawer holds far more than an int can express while every pipe speaks millibuckets as
+ * an int, so these checks drive millions of int-sized interactions and assert the long
+ * total moves by exactly the reported amount; a mismatch means fluid was created or
+ * destroyed at the boundary. Stacks are reused between calls, which is what a real
+ * caller does and keeps the measurement on the code under test.
  */
 public class FluidScaleTest {
 

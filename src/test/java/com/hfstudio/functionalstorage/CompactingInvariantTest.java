@@ -226,11 +226,6 @@ public class CompactingInvariantTest {
     /**
      * Builds a configured handler whose tiers are block, ingot, nugget from highest
      * to lowest, with the ratios this test measures against.
-     *
-     * @param block  highest tier
-     * @param ingot  middle tier
-     * @param nugget lowest tier
-     * @return a handler with three configured tiers
      */
     private static CompactingItemHandler configuredHandler(Item block, Item ingot, Item nugget) {
         CompactingItemHandler handler = new CompactingItemHandler(3) {

@@ -19,22 +19,12 @@ import com.hfstudio.functionalstorage.support.AspectBootstrap;
 import thaumcraft.api.aspects.Aspect;
 
 /**
- * Guards the cost of the essentia reads Thaumcraft repeats.
- *
- * <p>
- * A tube asks a container for its suction and its contents on a timer, for every
- * neighbouring side, and the container API is polled while a player watches a jar.
- * Those answers only change when essentia moves, which is far less often than they
- * are asked, so each read must stay cheap no matter how large the network behind it
- * grows. Walking the network per read is what made these calls cost hundreds of
- * microseconds on a linked controller.
- * </p>
- *
- * <p>
- * The check compares two network sizes rather than asserting an absolute time, so it
- * means the same thing on any machine: a memoized read barely changes with size,
- * while a scanning one grows with it.
- * </p>
+ * Guards the cost of the essentia reads Thaumcraft repeats. A tube asks a container for
+ * suction and contents on a timer for every neighbouring side, while those answers only
+ * change when essentia moves, so each read must stay cheap however large the network
+ * behind it grows. Comparing two network sizes rather than an absolute time keeps the
+ * check meaningful on any machine: a memoized read barely changes with size, a scanning
+ * one grows with it.
  */
 public class AspectHotPathTest {
 

@@ -24,22 +24,11 @@ import com.hfstudio.functionalstorage.support.StorageFixtures;
 import com.hfstudio.functionalstorage.support.VanillaBootstrap;
 
 /**
- * Guards the cost of one AE2 fluid storage bus poll.
- *
- * <p>
- * The bus asks for the tank list and then asks {@code drain} for a single unit once
- * per tank it was just told about. Since it repeats that on a timer, an untyped drain
- * that walks from index zero makes one poll cost the square of the tank count, and an
- * empty network is the worst case because no index can answer and every request then
- * walks the whole array.
- * </p>
- *
- * <p>
- * The bus itself decides how many calls a poll makes, so the figure that matters is
- * the cost per tank rather than per poll: a poll over a larger network is expected to
- * take longer simply because it asks more questions, while a per-tank cost that grows
- * with the network is the quadratic shape this guards against.
- * </p>
+ * Guards the cost of one AE2 fluid storage bus poll. The bus asks for the tank list and
+ * then asks {@code drain} for a single unit once per tank, on a timer, so an untyped
+ * drain walking from index zero makes a poll cost the square of the tank count. Since
+ * the bus fixes how many calls a poll makes, the figure that matters is cost per tank:
+ * one that grows with the network is the quadratic shape this guards against.
  */
 public class Ae2FluidPollTest {
 
@@ -177,10 +166,6 @@ public class Ae2FluidPollTest {
 
     /**
      * Measures one whole poll and divides it by the number of tanks reported.
-     *
-     * @param drawers how many drawers the network spans
-     * @param fill    whether every tank starts populated
-     * @return nanoseconds per reported tank
      */
     private static long perTankNanos(int drawers, boolean fill) {
         DrawerFluidHandler forge = new DrawerFluidHandler(
@@ -191,8 +176,6 @@ public class Ae2FluidPollTest {
 
     /**
      * Reproduces one poll of AE2's fluid monitor.
-     *
-     * @param forge handler under test
      */
     private static void poll(DrawerFluidHandler forge) {
         int reported = forge.getTankInfo(SIDE).length;

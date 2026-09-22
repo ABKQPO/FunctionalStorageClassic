@@ -99,9 +99,6 @@ public class TestInventory implements IInventory {
 
     /**
      * Sums how many of one item this inventory holds across every slot.
-     *
-     * @param item item to total
-     * @return the summed amount
      */
     public int totalOf(Item item) {
         int total = 0;
@@ -115,8 +112,6 @@ public class TestInventory implements IInventory {
 
     /**
      * Counts how many slots currently hold anything.
-     *
-     * @return the number of populated slots
      */
     public int populatedSlots() {
         int count = 0;

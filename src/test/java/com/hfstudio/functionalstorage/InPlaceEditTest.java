@@ -18,24 +18,12 @@ import com.hfstudio.functionalstorage.support.StorageFixtures;
 import com.hfstudio.functionalstorage.support.VanillaBootstrap;
 
 /**
- * Pins how a caller's edits to a handed-out stack reach storage.
- *
- * <p>
- * Two styles exist in the game and both must work. A hopper reads a stack, edits
- * the returned object in place, and then either writes it back or simply moves on;
- * a generic inventory iterator reads a stack and writes a replacement through
- * {@code setInventorySlotContents}. Reading a slot records that the caller now holds
- * its stack, so an in-place edit is committed when that slot is next touched, when
- * the slot is written, or when the inventory is flushed by {@code markDirty}.
- * </p>
- *
- * <p>
- * Touching one slot deliberately does not commit the others. A caller may hold a
- * stack it was handed while it reads a further slot, and it may edit that first stack
- * afterwards; committing every outstanding slot on each read would discard the mark on
- * a stack the caller is still holding and the later edit would vanish. The edit is not
- * lost by the narrower rule, because the mark survives until that slot is committed.
- * </p>
+ * Pins how a caller's edits to a handed-out stack reach storage. Both in-game styles
+ * must work: a hopper edits the returned object in place, a generic iterator writes a
+ * replacement through {@code setInventorySlotContents}. Touching one slot deliberately
+ * does not commit the others, because a caller may hold a stack while it reads a further
+ * slot and edit that first stack afterwards; committing everything on each read would
+ * discard the mark on a stack the caller still holds.
  */
 public class InPlaceEditTest {
 

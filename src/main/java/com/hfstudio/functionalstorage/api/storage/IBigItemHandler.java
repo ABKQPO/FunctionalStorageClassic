@@ -9,24 +9,22 @@ import net.minecraft.item.ItemStack;
 
 /**
  * Forge item capability bridge for a generic long-capacity storage handler.
- * Business state is exposed only through {@link IStorageHandler}; the methods
- * below adapt that state to Forge's int-count API and retain item routing
- * semantics needed by the capability.
+ * Business state is exposed only through {@link IStorageHandler}; the methods below
+ * adapt that state to Forge's int-count API and retain item routing semantics needed by
+ * the capability.
  */
 public interface IBigItemHandler extends IStorageHandler<BigItemStack, ItemStorageKey> {
 
     /**
-     * Returns a memo the bridge may reuse across reads, or {@code null} for a
-     * handler that is cheap enough to walk on every question.
+     * A memo the bridge may reuse across reads, or {@code null} for a handler that is
+     * cheap enough to walk on every question.
      *
      * <p>
-     * These methods are asked once per virtual slot by Forge-style callers, so a
-     * handler spanning many indices should return a cache it invalidates on every
-     * change. Handlers that do not return one are aggregated on each call, which is
-     * correct and merely slower.
+     * These methods are asked once per virtual slot by Forge-style callers, so a handler
+     * spanning many indices should return a cache it invalidates on every change.
+     * Handlers that do not return one are aggregated on each call, which is correct and
+     * merely slower.
      * </p>
-     *
-     * @return this handler's memo, or {@code null} to aggregate per call
      */
     @Nullable
     default StorageViewCache getStorageViewCache() {
@@ -34,23 +32,18 @@ public interface IBigItemHandler extends IStorageHandler<BigItemStack, ItemStora
     }
 
     /**
-     * Exposes one virtual slot per stored item key and, when available, one
-     * leading empty insertion slot. Physical storage positions stay internal.
-     *
-     * @return the number of virtual slots
+     * Exposes one virtual slot per stored item key and, when available, one leading
+     * empty insertion slot. Physical storage positions stay internal.
      */
     default int getSlots() {
         return ItemStorageView.virtualSlots(this);
     }
 
     /**
-     * Returns the virtual empty slot or one aggregated item-key view. Empty
-     * physical slots are not shown as typed content; a zero-amount retained
-     * filter is exposed through the leading empty slot so automation can insert
-     * the matching type into a configured empty drawer.
-     *
-     * @param slot virtual slot index
-     * @return the visible stack, or {@code null}
+     * Returns the virtual empty slot or one aggregated item-key view. Empty physical
+     * slots are not shown as typed content; a zero-amount retained filter is exposed
+     * through the leading empty slot so automation can insert the matching type into a
+     * configured empty drawer.
      */
     default ItemStack getStackInSlot(int slot) {
         boolean hasEmpty = ItemStorageView.hasEmptyStorage(this);
@@ -70,14 +63,8 @@ public interface IBigItemHandler extends IStorageHandler<BigItemStack, ItemStora
     }
 
     /**
-     * Bridges Forge insertion directly to routed storage. The supplied slot
-     * is only a Forge compatibility argument and never selects a physical
-     * drawer.
-     *
-     * @param slot     virtual slot index
-     * @param stack    stack to insert
-     * @param simulate whether to only report the result
-     * @return the leftover stack, or {@code null} when everything fit
+     * The supplied slot is only a Forge compatibility argument and never selects a
+     * physical drawer.
      */
     default ItemStack insertItem(int slot, @Nonnull ItemStack stack, boolean simulate) {
         Objects.requireNonNull(stack, "stack");
@@ -98,13 +85,7 @@ public interface IBigItemHandler extends IStorageHandler<BigItemStack, ItemStora
     }
 
     /**
-     * Bridges Forge extraction directly to the routed key represented by the
-     * virtual slot. The physical drawer selected by the route is internal.
-     *
-     * @param slot     virtual slot index
-     * @param amount   requested amount
-     * @param simulate whether to only report the result
-     * @return the extracted stack, or {@code null}
+     * The physical drawer selected by the route is internal.
      */
     default ItemStack extractItem(int slot, int amount, boolean simulate) {
         if (amount <= 0) {
@@ -134,13 +115,6 @@ public interface IBigItemHandler extends IStorageHandler<BigItemStack, ItemStora
                 .toItemStack();
     }
 
-    /**
-     * Checks insertion validity through a side-effect-free generic simulation.
-     *
-     * @param slot  virtual slot index
-     * @param stack candidate stack
-     * @return whether at least one item would be accepted
-     */
     default boolean isItemValid(int slot, @Nonnull ItemStack stack) {
         if (stack.getItem() == null || !isValidSlot(slot)) {
             return false;
@@ -152,12 +126,9 @@ public interface IBigItemHandler extends IStorageHandler<BigItemStack, ItemStora
     }
 
     /**
-     * Reports whether one internal index can represent the virtual empty
-     * insertion slot. Aggregate handlers may override this to inspect the
-     * owning child instead of their own aggregate lock state.
-     *
-     * @param index internal storage index
-     * @return whether the index can accept an unconfigured insertion
+     * Whether one internal index can represent the virtual empty insertion slot.
+     * Aggregate handlers may override this to inspect the owning child instead of their
+     * own aggregate lock state.
      */
     default boolean isEmptyStorageAvailable(int index) {
         if (index < 0 || index >= Math.max(0, getStorageCount())) {
@@ -170,12 +141,8 @@ public interface IBigItemHandler extends IStorageHandler<BigItemStack, ItemStora
     }
 
     /**
-     * Routes insertion through matching configured indices and then empty
-     * indices. The generic index methods are the only state operations used.
-     *
-     * @param request requested resource and amount
-     * @param action  execute or simulate
-     * @return the routed result
+     * Routes insertion through matching configured indices and then empty indices. The
+     * generic index methods are the only state operations used.
      */
     @Nonnull
     default TransferResult<BigItemStack, ItemStorageKey> insertRouted(@Nonnull BigItemStack request,
@@ -190,8 +157,8 @@ public interface IBigItemHandler extends IStorageHandler<BigItemStack, ItemStora
         int count = Math.max(0, getStorageCount());
         // A storage that never treats different resources as interchangeable can only
         // accept into a slot already holding the exact type, so the middle pass could
-        // only ever discover that. Skipping it removes a full walk plus a probe per
-        // occupied index, which is most of the cost of storing a new type.
+        // only discover that. Skipping it removes a full walk plus a probe per occupied
+        // index, which is most of the cost of storing a new type.
         int passes = allowsEquivalentResources() ? 3 : 2;
         for (int pass = 0; pass < passes && processedTotal < requested; pass++) {
             for (int index = 0; index < count && processedTotal < requested; index++) {
@@ -230,10 +197,6 @@ public interface IBigItemHandler extends IStorageHandler<BigItemStack, ItemStora
 
     /**
      * Routes type-sensitive extraction through matching generic indices.
-     *
-     * @param request requested resource and amount
-     * @param action  execute or simulate
-     * @return the routed result
      */
     @Nonnull
     default TransferResult<BigItemStack, ItemStorageKey> extractRouted(@Nonnull BigItemStack request,

@@ -102,17 +102,11 @@ public interface IStorageHandler<S extends StorageSnapshot<S, K>, K extends Stor
     }
 
     /**
-     * Reports whether this storage already holds the requested resource type.
-     *
-     * <p>
-     * Callers that top up storage with whatever a player hands over, rather than
-     * targeting a slot, use this to decide whether they may write at all. An
-     * unfamiliar resource is refused, so such a caller never starts a new pile beside
-     * resources that are already stored. An index whose contents are full still
-     * answers {@code true}, because the type is known and a caller may legitimately
-     * deposit into a further index of the same drawer, while a retained filter counts
-     * for the same reason even though the index is empty.
-     * </p>
+     * Reports whether this storage already holds the requested resource type, so a
+     * caller topping up with whatever a player hands over never starts a new pile beside
+     * resources already stored. A full index still answers true, since the type is known
+     * and a caller may deposit into a further index of the same drawer; a retained filter
+     * counts for the same reason even though the index is empty.
      */
     default boolean hasMatchingResource(@Nonnull S request) {
         int count = Math.max(0, getStorageCount());
@@ -219,16 +213,10 @@ public interface IStorageHandler<S extends StorageSnapshot<S, K>, K extends Stor
     }
 
     /**
-     * Reports whether resources that are not exactly equal may still be
-     * interchangeable, such as two items sharing an ore dictionary entry.
-     *
-     * <p>
-     * Routing uses this to decide whether a compatibility probe is worth making: when
-     * only an exact match can be compatible, a probe against a slot holding a different
-     * resource is guaranteed to fail, so that walk is skipped. Reporting {@code false}
-     * while a subclass does accept equivalents would silently stop such resources from
-     * sharing a slot.
-     * </p>
+     * Whether resources that are not exactly equal may still be interchangeable, such as
+     * two items sharing an ore dictionary entry. Routing uses this to skip a
+     * compatibility probe that could never succeed, so reporting {@code false} while a
+     * subclass does accept equivalents would silently stop such resources sharing a slot.
      */
     default boolean allowsEquivalentResources() {
         return false;
