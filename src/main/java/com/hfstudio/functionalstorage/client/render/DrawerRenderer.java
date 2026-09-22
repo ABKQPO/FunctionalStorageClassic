@@ -99,6 +99,8 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
     private static final ResourceLocation LOCK_TEXTURE = new ResourceLocation(
         FunctionalStorage.MOD_ID,
         "textures/blocks/lock.png");
+    private static final ResourceLocation ITEM_GLINT_TEXTURE = new ResourceLocation(
+        "textures/misc/enchanted_item_glint.png");
     private ItemStack voidBadge;
 
     private final FloatBuffer modelView = BufferUtils.createFloatBuffer(16);
@@ -140,8 +142,6 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
                             (color & 0xFF) / 255F,
                             1F);
                     }
-                    GL11.glEnable(GL11.GL_POLYGON_OFFSET_FILL);
-                    GL11.glPolygonOffset(-1F, -1F);
                     GL11.glDisable(GL11.GL_LIGHTING);
                     // Item icons are opaque; blending them would let the sprite's
                     // soft edges mix with what is behind and read as translucent.
@@ -149,10 +149,44 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
                     GL11.glEnable(GL11.GL_ALPHA_TEST);
                     renderIcon(x, y, icon, 16, 16);
                     if (renderEffect && stack.hasEffect(pass)) {
-                        GL11.glDisable(GL11.GL_ALPHA_TEST);
                         renderEffect(textureManager, x, y);
                     }
-                    GL11.glDisable(GL11.GL_POLYGON_OFFSET_FILL);
+                }
+            } finally {
+                GL11.glPopAttrib();
+            }
+        }
+
+        @Override
+        public void renderEffect(TextureManager textureManager, int x, int y) {
+            GL11.glPushAttrib(
+                GL11.GL_ENABLE_BIT | GL11.GL_COLOR_BUFFER_BIT
+                    | GL11.GL_CURRENT_BIT
+                    | GL11.GL_DEPTH_BUFFER_BIT
+                    | GL11.GL_TEXTURE_BIT);
+            try {
+                GL11.glDepthFunc(GL11.GL_EQUAL);
+                GL11.glDepthMask(false);
+                GL11.glDisable(GL11.GL_LIGHTING);
+                GL11.glEnable(GL11.GL_ALPHA_TEST);
+                GL11.glEnable(GL11.GL_BLEND);
+                OpenGlHelper.glBlendFunc(GL11.GL_SRC_COLOR, GL11.GL_ONE, GL11.GL_ZERO, GL11.GL_ONE);
+                GL11.glColor4f(0.5F, 0.25F, 0.8F, 1F);
+                textureManager.bindTexture(ITEM_GLINT_TEXTURE);
+                long time = Minecraft.getSystemTime();
+                for (int pass = 0; pass < 2; pass++) {
+                    int period = 3000 + pass * 1873;
+                    float scroll = (time % period) / (float) period;
+                    float shear = pass == 0 ? 4F : -1F;
+                    float span = 16F / 256F;
+                    // Match renderIcon's vertices exactly; a larger quad loses GL_EQUAL precision in perspective.
+                    Tessellator tessellator = Tessellator.instance;
+                    tessellator.startDrawingQuads();
+                    tessellator.addVertexWithUV(x, y + 16, zLevel, scroll + span * shear, span);
+                    tessellator.addVertexWithUV(x + 16, y + 16, zLevel, scroll + span * (1F + shear), span);
+                    tessellator.addVertexWithUV(x + 16, y, zLevel, scroll + span, 0D);
+                    tessellator.addVertexWithUV(x, y, zLevel, scroll, 0D);
+                    tessellator.draw();
                 }
             } finally {
                 GL11.glPopAttrib();
@@ -161,38 +195,43 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
 
         private void renderBlockIntoGUI(TextureManager textureManager, ItemStack stack, int x, int y) {
             Block block = Block.getBlockFromItem(stack.getItem());
-            textureManager.bindTexture(TextureMap.locationBlocksTexture);
-            if (block.getRenderBlockPass() != 0) {
-                GL11.glAlphaFunc(GL11.GL_GREATER, 0.1F);
-                GL11.glEnable(GL11.GL_BLEND);
-                OpenGlHelper.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, 1, 0);
-            } else {
-                GL11.glAlphaFunc(GL11.GL_GREATER, 0.5F);
-                GL11.glDisable(GL11.GL_BLEND);
-            }
+            boolean previousTint = guiBlocks.useInventoryTint;
+            GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_COLOR_BUFFER_BIT | GL11.GL_POLYGON_BIT);
             GL11.glPushMatrix();
-            GL11.glTranslatef(x - 2F, y + 3F, zLevel - 3F);
-            GL11.glScalef(10F, 10F, 10F);
-            GL11.glTranslatef(1F, 0.5F, 1F);
-            GL11.glScalef(1F, 1F, -1F);
-            GL11.glRotatef(210F, 1F, 0F, 0F);
-            GL11.glRotatef(45F, 0F, 1F, 0F);
-            int color = stack.getItem()
-                .getColorFromItemStack(stack, 0);
-            if (renderWithColor) {
-                GL11.glColor4f((color >> 16 & 0xFF) / 255F, (color >> 8 & 0xFF) / 255F, (color & 0xFF) / 255F, 1F);
+            try {
+                textureManager.bindTexture(TextureMap.locationBlocksTexture);
+                GL11.glEnable(GL11.GL_ALPHA_TEST);
+                if (block.getRenderBlockPass() != 0) {
+                    GL11.glAlphaFunc(GL11.GL_GREATER, 0.1F);
+                    GL11.glEnable(GL11.GL_BLEND);
+                    OpenGlHelper.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, 1, 0);
+                } else {
+                    GL11.glAlphaFunc(GL11.GL_GREATER, 0.5F);
+                    GL11.glDisable(GL11.GL_BLEND);
+                    // Flattened opaque models must not let their rear faces compete at the silhouette.
+                    GL11.glEnable(GL11.GL_CULL_FACE);
+                    GL11.glCullFace(GL11.GL_BACK);
+                    GL11.glFrontFace(GL11.GL_CCW);
+                }
+                GL11.glTranslatef(x - 2F, y + 3F, zLevel - 3F);
+                GL11.glScalef(10F, 10F, 10F);
+                GL11.glTranslatef(1F, 0.5F, 1F);
+                GL11.glScalef(1F, 1F, -1F);
+                GL11.glRotatef(210F, 1F, 0F, 0F);
+                GL11.glRotatef(45F, 0F, 1F, 0F);
+                int color = stack.getItem()
+                    .getColorFromItemStack(stack, 0);
+                if (renderWithColor) {
+                    GL11.glColor4f((color >> 16 & 0xFF) / 255F, (color >> 8 & 0xFF) / 255F, (color & 0xFF) / 255F, 1F);
+                }
+                GL11.glRotatef(-90F, 0F, 1F, 0F);
+                guiBlocks.useInventoryTint = renderWithColor;
+                guiBlocks.renderBlockAsItem(block, stack.getItemDamage(), 1F);
+            } finally {
+                guiBlocks.useInventoryTint = previousTint;
+                GL11.glPopMatrix();
+                GL11.glPopAttrib();
             }
-            GL11.glRotatef(-90F, 0F, 1F, 0F);
-            GL11.glEnable(GL11.GL_POLYGON_OFFSET_FILL);
-            GL11.glPolygonOffset(-1F, -1F);
-            guiBlocks.useInventoryTint = renderWithColor;
-            guiBlocks.renderBlockAsItem(block, stack.getItemDamage(), 1F);
-            guiBlocks.useInventoryTint = true;
-            GL11.glDisable(GL11.GL_POLYGON_OFFSET_FILL);
-            if (block.getRenderBlockPass() == 0) {
-                GL11.glAlphaFunc(GL11.GL_GREATER, 0.1F);
-            }
-            GL11.glPopMatrix();
         }
     };
 
@@ -442,6 +481,9 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
         try {
             GL11.glEnable(GL12.GL_RESCALE_NORMAL);
             GL11.glEnable(GL11.GL_DEPTH_TEST);
+            GL11.glDepthFunc(GL11.GL_LEQUAL);
+            GL11.glDepthMask(true);
+            GL11.glDisable(GL11.GL_POLYGON_OFFSET_FILL);
             GL11.glDisable(GL11.GL_CULL_FACE);
             GL11.glColor4f(1F, 1F, 1F, 1F);
             Minecraft minecraft = Minecraft.getMinecraft();
