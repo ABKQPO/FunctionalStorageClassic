@@ -61,6 +61,7 @@ public abstract class ControllableDrawerTile extends TileEntity {
 
     private static final int STORAGE_UPGRADE_SLOTS = 4;
     private static final int UTILITY_UPGRADE_SLOTS = 3;
+    private static final long REPEAT_WINDOW_TICKS = 10L;
 
     private final ItemStack[] storageUpgrades = new ItemStack[STORAGE_UPGRADE_SLOTS];
     private final ItemStack[] utilityUpgrades = new ItemStack[UTILITY_UPGRADE_SLOTS];
@@ -739,14 +740,8 @@ public abstract class ControllableDrawerTile extends TileEntity {
         if (worldObj == null || worldObj.isRemote || handler == null || slot < 0 || slot >= handler.getStorageCount()) {
             return false;
         }
-        long tick = worldObj.getTotalWorldTime();
-        boolean repeated = player.getUniqueID()
-            .equals(lastInteractionPlayer) && slot == lastInteractionSlot
-            && tick >= lastInteractionTick
-            && tick - lastInteractionTick <= 6L;
-        lastInteractionPlayer = player.getUniqueID();
-        lastInteractionSlot = slot;
-        lastInteractionTick = tick;
+        boolean repeated = recordsInteraction(player, slot);
+        int target = depositTarget(slot);
         ItemStack held = player.getHeldItem();
         if (held != null && isLocked()
             && !handler.getSnapshot(slot)
@@ -755,18 +750,38 @@ public abstract class ControllableDrawerTile extends TileEntity {
             items.setSlotFilter(slot, new BigItemStack(held, 0L));
         }
         if (held != null) {
-            insertFromInventory(player, handler, slot, player.inventory.currentItem);
+            insertFromInventory(player, handler, target, player.inventory.currentItem);
         }
-        if (repeated && handler.getSnapshot(slot)
-            .hasTemplate()) {
+        if (repeated && acceptsDeposit(handler, slot)) {
             for (int inventorySlot = 0; inventorySlot < player.inventory.mainInventory.length; inventorySlot++) {
-                insertFromInventory(player, handler, slot, inventorySlot);
+                insertFromInventory(player, handler, target, inventorySlot);
             }
         }
         player.inventory.markDirty();
         player.inventoryContainer.detectAndSendChanges();
-        return held == null || handler.getSnapshot(slot)
-            .hasTemplate();
+        return held == null || acceptsDeposit(handler, slot);
+    }
+
+    protected final boolean recordsInteraction(EntityPlayer player, int slot) {
+        long tick = worldObj.getTotalWorldTime();
+        boolean repeated = player.getUniqueID()
+            .equals(lastInteractionPlayer) && slot == lastInteractionSlot
+            && tick >= lastInteractionTick
+            && tick - lastInteractionTick <= REPEAT_WINDOW_TICKS;
+        lastInteractionPlayer = player.getUniqueID();
+        lastInteractionSlot = slot;
+        lastInteractionTick = tick;
+        return repeated;
+    }
+
+    protected int depositTarget(int slot) {
+        return slot;
+    }
+
+    protected boolean acceptsDeposit(@Nonnull IBigItemHandler handler, int slot) {
+        return slot >= 0 && slot < handler.getStorageCount()
+            && handler.getSnapshot(slot)
+                .hasTemplate();
     }
 
     private void insertFromInventory(EntityPlayer player, IBigItemHandler handler, int slot, int inventorySlot) {
@@ -774,8 +789,11 @@ public abstract class ControllableDrawerTile extends TileEntity {
         if (stack == null || stack.stackSize <= 0) {
             return;
         }
-        long accepted = handler.insert(slot, new BigItemStack(stack, stack.stackSize), StorageAction.EXECUTE)
-            .getProcessedAmount();
+        BigItemStack request = new BigItemStack(stack, stack.stackSize);
+        long accepted = slot < 0 ? handler.insertRouted(request, StorageAction.EXECUTE)
+            .getProcessedAmount()
+            : handler.insert(slot, request, StorageAction.EXECUTE)
+                .getProcessedAmount();
         if (accepted > 0) {
             stack.stackSize -= (int) Math.min(stack.stackSize, accepted);
             player.inventory.setInventorySlotContents(inventorySlot, stack.stackSize == 0 ? null : stack);

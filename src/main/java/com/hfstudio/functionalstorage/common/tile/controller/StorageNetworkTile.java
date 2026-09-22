@@ -3,6 +3,8 @@ package com.hfstudio.functionalstorage.common.tile.controller;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.annotation.Nonnull;
+
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemStack;
@@ -15,6 +17,8 @@ import com.hfstudio.functionalstorage.api.upgrade.IStorageUpgrade;
 import com.hfstudio.functionalstorage.common.integration.Mods;
 import com.hfstudio.functionalstorage.common.integration.thaumcraft.DrawerEssentiaTransport;
 import com.hfstudio.functionalstorage.common.integration.thaumcraft.DrawerTransportAccess;
+import com.hfstudio.functionalstorage.common.integration.thaumcraft.EssentiaContainerRegistry;
+import com.hfstudio.functionalstorage.common.interaction.FluidContainerInteraction;
 import com.hfstudio.functionalstorage.common.inventory.AggregatedStorage;
 import com.hfstudio.functionalstorage.common.inventory.adapter.DrawerFluidAccess;
 import com.hfstudio.functionalstorage.common.inventory.adapter.DrawerFluidHandler;
@@ -32,6 +36,8 @@ import thaumcraft.api.aspects.IEssentiaTransport;
     modid = "Thaumcraft")
 public abstract class StorageNetworkTile extends ControllableDrawerTile
     implements DrawerInventoryAccess, DrawerFluidAccess, DrawerTransportAccess {
+
+    protected static final int ROUTED = -1;
 
     private final AggregatedStorage.Items items = new AggregatedStorage.Items();
     private final AggregatedStorage.Fluids fluids = new AggregatedStorage.Fluids();
@@ -157,16 +163,37 @@ public abstract class StorageNetworkTile extends ControllableDrawerTile
 
     @Override
     public boolean onSlotActivated(EntityPlayer player, int side, float x, float y, float z, int slot) {
+        if (worldObj == null || worldObj.isRemote) {
+            return false;
+        }
         ItemStack held = player.getHeldItem();
         if (held != null && !player.isSneaking()
             && !(held.getItem() instanceof LayeredToolItem)
             && !(held.getItem() instanceof IStorageUpgrade)) {
-            ItemStack remaining = getItemHandler().insertItem(0, held, false);
-            if (!player.capabilities.isCreativeMode)
-                player.inventory.setInventorySlotContents(player.inventory.currentItem, remaining);
-            player.inventory.markDirty();
-            return true;
+            IBigFluidHandler fluids = getFluidHandler();
+            if (fluids != null && fluids.getStorageCount() > 0
+                && FluidContainerInteraction.activate(player, fluids, ROUTED)) {
+                return true;
+            }
+            IBigAspectHandler aspects = getAspectHandler();
+            if (aspects != null && aspects.getStorageCount() > 0
+                && EssentiaContainerRegistry.activate(player, aspects, ROUTED)) {
+                return true;
+            }
         }
         return super.onSlotActivated(player, side, x, y, z, slot);
     }
+
+    @Override
+    protected int depositTarget(int slot) {
+        return ROUTED;
+    }
+
+    @Override
+    protected boolean acceptsDeposit(@Nonnull IBigItemHandler handler, int slot) {
+        return handler.getStorageCount() > 0;
+    }
+
+    @Override
+    public void onSlotClicked(@Nonnull EntityPlayer player, int slot) {}
 }

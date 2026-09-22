@@ -12,8 +12,14 @@ import com.hfstudio.functionalstorage.api.storage.BigFluidStack;
 import com.hfstudio.functionalstorage.api.storage.IBigFluidHandler;
 import com.hfstudio.functionalstorage.api.storage.StorageAction;
 
-/** Exchanges containers with exactly the tank clicked by the player. */
+/**
+ * Exchanges containers with one tank. A negative slot asks the storage to
+ * choose the tank itself, which is how a controller terminal serves a whole
+ * fluid network instead of a single face.
+ */
 public class FluidContainerInteraction {
+
+    public static final int ROUTED = -1;
 
     private FluidContainerInteraction() {}
 
@@ -36,20 +42,24 @@ public class FluidContainerInteraction {
     }
 
     public static boolean activate(ItemStack held, IBigFluidHandler handler, int slot, Consumer<ItemStack> exchange) {
-        if (held == null || slot < 0 || slot >= handler.getStorageCount()) {
+        if (held == null || handler.getStorageCount() <= 0) {
+            return false;
+        }
+        int tank = resolveTank(handler, held, slot);
+        if (tank < 0) {
             return false;
         }
         ItemStack single = held.copy();
         single.stackSize = 1;
         if (single.getItem() instanceof IFluidContainerItem container) {
-            return exchangeMutable(handler, slot, single, container, exchange);
+            return exchangeMutable(handler, tank, single, container, exchange);
         }
         FluidStack contained = FluidContainerRegistry.getFluidForFilledItem(single);
         if (contained != null) {
             BigFluidStack request = new BigFluidStack(contained, contained.amount);
-            if (handler.insert(slot, request, StorageAction.SIMULATE)
+            if (handler.insert(tank, request, StorageAction.SIMULATE)
                 .isComplete()) {
-                handler.insert(slot, request, StorageAction.EXECUTE);
+                handler.insert(tank, request, StorageAction.EXECUTE);
                 exchange.accept(FluidContainerRegistry.drainFluidContainer(single));
                 return true;
             }
@@ -58,19 +68,58 @@ public class FluidContainerInteraction {
         if (!FluidContainerRegistry.isEmptyContainer(single)) {
             return false;
         }
-        FluidStack available = handler.getSnapshot(slot)
+        FluidStack available = handler.getSnapshot(tank)
             .toFluidStack();
         ItemStack filled = available == null ? null : FluidContainerRegistry.fillFluidContainer(available, single);
         if (filled != null) {
             FluidStack content = FluidContainerRegistry.getFluidForFilledItem(filled);
-            if (content != null && handler.extract(slot, content.amount, StorageAction.SIMULATE)
+            if (content != null && handler.extract(tank, content.amount, StorageAction.SIMULATE)
                 .isComplete()) {
-                handler.extract(slot, content.amount, StorageAction.EXECUTE);
+                handler.extract(tank, content.amount, StorageAction.EXECUTE);
                 exchange.accept(filled);
                 return true;
             }
         }
         return false;
+    }
+
+    private static int resolveTank(IBigFluidHandler handler, ItemStack held, int slot) {
+        if (slot >= 0) {
+            return slot < handler.getStorageCount() ? slot : ROUTED;
+        }
+        ItemStack single = held.copy();
+        single.stackSize = 1;
+        if (single.getItem() instanceof IFluidContainerItem container) {
+            FluidStack contained = container.getFluid(single);
+            return contained != null && contained.amount > 0 ? firstAccepting(handler, contained)
+                : firstContaining(handler);
+        }
+        FluidStack filled = FluidContainerRegistry.getFluidForFilledItem(single);
+        if (filled != null) {
+            return firstAccepting(handler, filled);
+        }
+        return firstContaining(handler);
+    }
+
+    private static int firstAccepting(IBigFluidHandler handler, FluidStack fluid) {
+        BigFluidStack request = new BigFluidStack(fluid, Math.max(1, fluid.amount));
+        for (int index = 0; index < handler.getStorageCount(); index++) {
+            if (handler.insert(index, request, StorageAction.SIMULATE)
+                .getProcessedAmount() > 0L) {
+                return index;
+            }
+        }
+        return -1;
+    }
+
+    private static int firstContaining(IBigFluidHandler handler) {
+        for (int index = 0; index < handler.getStorageCount(); index++) {
+            if (!handler.getSnapshot(index)
+                .isEmpty()) {
+                return index;
+            }
+        }
+        return -1;
     }
 
     public static boolean isFluidContainer(ItemStack stack) {

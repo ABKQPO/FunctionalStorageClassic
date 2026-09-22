@@ -63,7 +63,11 @@ public class EssentiaContainerRegistry {
     }
 
     public static boolean activate(ItemStack held, IBigAspectHandler handler, int slot, Consumer<ItemStack> exchange) {
-        if (held == null || slot < 0 || slot >= handler.getStorageCount()) {
+        if (held == null || handler.getStorageCount() <= 0) {
+            return false;
+        }
+        int target = resolveContainer(handler, held, slot);
+        if (target < 0) {
             return false;
         }
         ContainerDefinition definition = CONTAINERS.get(held.getItem());
@@ -77,25 +81,55 @@ public class EssentiaContainerRegistry {
         if (content != null && content.size() == 1) {
             Aspect aspect = content.getAspects()[0];
             BigAspectStack request = new BigAspectStack(aspect, content.getAmount(aspect));
-            if (!request.isEmpty() && handler.insert(slot, request, StorageAction.SIMULATE)
+            if (!request.isEmpty() && handler.insert(target, request, StorageAction.SIMULATE)
                 .isComplete()) {
                 container.setAspects(result, new AspectList());
                 result.setItemDamage(definition.emptyMetadata());
-                handler.insert(slot, request, StorageAction.EXECUTE);
+                handler.insert(target, request, StorageAction.EXECUTE);
                 exchange.accept(result);
                 transferred = true;
             }
         } else if (content == null || content.size() == 0) {
-            BigAspectStack available = handler.getSnapshot(slot);
-            if (available.getAspect() != null && handler.extract(slot, definition.capacity(), StorageAction.SIMULATE)
+            BigAspectStack available = handler.getSnapshot(target);
+            if (available.getAspect() != null && handler.extract(target, definition.capacity(), StorageAction.SIMULATE)
                 .isComplete()) {
                 result.setItemDamage(definition.filledMetadata());
                 container.setAspects(result, new AspectList().add(available.getAspect(), definition.capacity()));
-                handler.extract(slot, definition.capacity(), StorageAction.EXECUTE);
+                handler.extract(target, definition.capacity(), StorageAction.EXECUTE);
                 exchange.accept(result);
                 transferred = true;
             }
         }
         return transferred;
+    }
+
+    public static int resolveContainer(IBigAspectHandler handler, ItemStack held, int slot) {
+        if (slot >= 0) {
+            return slot < handler.getStorageCount() ? slot : -1;
+        }
+        ItemStack single = held.copy();
+        single.stackSize = 1;
+        if (!(single.getItem() instanceof IEssentiaContainerItem container)) {
+            return -1;
+        }
+        AspectList content = container.getAspects(single);
+        if (content != null && content.size() == 1) {
+            Aspect aspect = content.getAspects()[0];
+            BigAspectStack request = new BigAspectStack(aspect, content.getAmount(aspect));
+            for (int index = 0; index < handler.getStorageCount(); index++) {
+                if (handler.insert(index, request, StorageAction.SIMULATE)
+                    .getProcessedAmount() > 0L) {
+                    return index;
+                }
+            }
+            return -1;
+        }
+        for (int index = 0; index < handler.getStorageCount(); index++) {
+            if (handler.getSnapshot(index)
+                .getAspect() != null) {
+                return index;
+            }
+        }
+        return -1;
     }
 }

@@ -26,6 +26,7 @@ public class DrawerItemInventory implements ISidedInventory {
     private final BitSet observed = new BitSet();
     private final int[] accessibleSlots;
     private boolean synchronizing;
+    private int stackLimit = Integer.MIN_VALUE;
 
     public DrawerItemInventory(@Nonnull IBigItemHandler handler, @Nonnull String name,
         @Nonnull Runnable changeListener) {
@@ -104,12 +105,41 @@ public class DrawerItemInventory implements ISidedInventory {
 
     @Override
     public int getInventoryStackLimit() {
-        return 64;
+        if (stackLimit == Integer.MIN_VALUE) {
+            stackLimit = calculateStackLimit();
+        }
+        return stackLimit;
+    }
+
+    private int calculateStackLimit() {
+        int count = Math.max(0, handler.getStorageCount());
+        if (count == 0) {
+            return 64;
+        }
+        long unit = Long.MAX_VALUE;
+        boolean measured = false;
+        for (int index = 0; index < count; index++) {
+            long capacity = Math.max(0L, handler.getCapacity(index));
+            if (capacity <= 0L) {
+                continue;
+            }
+            ItemStack template = handler.getSnapshot(index)
+                .getTemplate();
+            int stackSize = template == null ? 64 : Math.max(1, template.getMaxStackSize());
+            unit = Math.min(unit, capacity / stackSize);
+            measured = true;
+        }
+        if (!measured) {
+            return 64;
+        }
+        long limit = unit > Integer.MAX_VALUE / 64L ? Integer.MAX_VALUE : unit * 64L;
+        return (int) Math.min(Integer.MAX_VALUE, Math.max(1L, limit));
     }
 
     @Override
     public void markDirty() {
         flushChanges();
+        stackLimit = Integer.MIN_VALUE;
         changeListener.run();
     }
 
