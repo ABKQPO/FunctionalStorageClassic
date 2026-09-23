@@ -18,9 +18,9 @@ import gregtech.api.interfaces.metatileentity.IMetaTileEntity;
 import gregtech.api.metatileentity.MetaPipeEntity;
 import gregtech.common.blocks.BlockMachines;
 import gregtech.common.blocks.ItemMachines;
-import gregtech.common.render.IIconTexture;
 import gregtech.common.render.GTMultiTextureRender;
 import gregtech.common.render.GTSidedTextureRender;
+import gregtech.common.render.IIconTexture;
 
 @SideOnly(Side.CLIENT)
 public class GT5MachineTextureAdapter {
