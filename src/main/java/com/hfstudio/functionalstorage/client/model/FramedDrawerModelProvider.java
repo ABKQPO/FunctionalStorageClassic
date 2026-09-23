@@ -37,7 +37,9 @@ import com.gtnewhorizon.gtnhlib.client.renderer.cel.model.quad.ModelQuad;
 import com.gtnewhorizon.gtnhlib.client.renderer.cel.model.quad.ModelQuadView;
 import com.gtnewhorizon.gtnhlib.client.renderer.cel.model.quad.properties.ModelQuadFlags;
 import com.hfstudio.functionalstorage.FunctionalStorage;
+import com.hfstudio.functionalstorage.client.integration.GT5MachineTextureAdapter;
 import com.hfstudio.functionalstorage.common.block.FramedBlock;
+import com.hfstudio.functionalstorage.common.integration.Mods;
 import com.hfstudio.functionalstorage.common.storage.FramedDrawerStyle;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 
@@ -321,6 +323,10 @@ public class FramedDrawerModelProvider implements IBlockModelProvider, IBlockCol
         public static IIcon spriteFor(@Nullable ItemStack material, int side) {
             Block block = FramedDrawerStyle.materialBlock(material);
             if (block == null) return null;
+            if (Mods.GregTech.isModLoaded()) {
+                IIcon machineIcon = GT5MachineTextureAdapter.spriteFor(material, side);
+                if (machineIcon != null) return new MaterialIcon(machineIcon);
+            }
             try {
                 IIcon icon = block.getIcon(
                     side,

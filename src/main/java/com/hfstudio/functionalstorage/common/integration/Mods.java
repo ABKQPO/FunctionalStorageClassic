@@ -25,6 +25,7 @@ public enum Mods implements IMod, ITargetMod {
     Thaumcraft("Thaumcraft"),
     ThaumicEnergistics("thaumicenergistics"),
     Jabba("JABBA"),
+    GregTech("gregtech_nh"),
     OKBackpack("okbackpack"),
     Waila("Waila"),
     ;
