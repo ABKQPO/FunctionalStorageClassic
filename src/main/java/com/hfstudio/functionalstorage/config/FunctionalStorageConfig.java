@@ -294,5 +294,9 @@ public class FunctionalStorageConfig {
         @Config.Comment("Render installed upgrade icons on drawer faces by default")
         @Config.DefaultBoolean(true)
         public boolean defaultShowUpgrades = true;
+
+        @Config.Comment("Prioritize depositing filled fluid containers during controller and BogoSorter drop-off")
+        @Config.DefaultBoolean(true)
+        public boolean prioritizeFluidContainerDeposit = true;
     }
 }

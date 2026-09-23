@@ -36,6 +36,7 @@ import com.hfstudio.functionalstorage.api.upgrade.UpgradeState;
 import com.hfstudio.functionalstorage.common.block.base.DrawerBlock;
 import com.hfstudio.functionalstorage.common.integration.Mods;
 import com.hfstudio.functionalstorage.common.integration.ae2.DrawerExternalStorageHandler;
+import com.hfstudio.functionalstorage.common.interaction.FluidContainerInteraction;
 import com.hfstudio.functionalstorage.common.inventory.adapter.DrawerItemInventory;
 import com.hfstudio.functionalstorage.common.inventory.base.AbstractStorageHandler;
 import com.hfstudio.functionalstorage.common.inventory.base.BigItemHandler;
@@ -795,6 +796,9 @@ public abstract class ControllableDrawerTile extends TileEntity {
             insertFromInventory(player, handler, target, player.inventory.currentItem);
         }
         if (repeated && acceptsDeposit(handler, slot)) {
+            if (prioritizesFluidContainerDeposit()) {
+                FluidContainerInteraction.depositInventory(player, getFluidHandler());
+            }
             for (int inventorySlot = 0; inventorySlot < player.inventory.mainInventory.length; inventorySlot++) {
                 insertFromInventory(player, handler, target, inventorySlot);
             }
@@ -824,6 +828,10 @@ public abstract class ControllableDrawerTile extends TileEntity {
         return slot >= 0 && slot < handler.getStorageCount()
             && handler.getSnapshot(slot)
                 .hasTemplate();
+    }
+
+    protected boolean prioritizesFluidContainerDeposit() {
+        return false;
     }
 
     private void insertFromInventory(EntityPlayer player, IBigItemHandler handler, int slot, int inventorySlot) {

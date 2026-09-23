@@ -28,6 +28,7 @@ import com.hfstudio.functionalstorage.common.inventory.adapter.DrawerItemInvento
 import com.hfstudio.functionalstorage.common.item.ConfigurationToolItem.ConfigurationAction;
 import com.hfstudio.functionalstorage.common.item.LayeredToolItem;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
+import com.hfstudio.functionalstorage.config.FunctionalStorageConfig;
 
 import cpw.mods.fml.common.Optional;
 import thaumcraft.api.aspects.IEssentiaTransport;
@@ -228,6 +229,11 @@ public abstract class StorageNetworkTile extends ControllableDrawerTile
     @Override
     protected boolean acceptsDeposit(@Nonnull IBigItemHandler handler, int slot) {
         return handler.getStorageCount() > 0;
+    }
+
+    @Override
+    protected boolean prioritizesFluidContainerDeposit() {
+        return FunctionalStorageConfig.CLIENT.prioritizeFluidContainerDeposit;
     }
 
     @Override
