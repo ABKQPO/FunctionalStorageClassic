@@ -45,9 +45,12 @@ import com.hfstudio.functionalstorage.common.options.DrawerOptions;
 import com.hfstudio.functionalstorage.common.storage.DrawerLayout;
 import com.hfstudio.functionalstorage.common.storage.FramedDrawerStyle;
 import com.hfstudio.functionalstorage.common.tile.controller.DrawerControllerTile;
+import com.hfstudio.functionalstorage.config.FunctionalStorageConfig;
 import com.hfstudio.functionalstorage.misc.GuiHandler;
 import com.hfstudio.functionalstorage.misc.RegistrationHandler;
 
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
 import lombok.Getter;
 
 /** Owns upgrades, display options, locking, and the active storage subscription. */
@@ -731,9 +734,16 @@ public abstract class ControllableDrawerTile extends TileEntity {
         super.invalidate();
     }
 
+    @SideOnly(Side.CLIENT)
     @Override
     public AxisAlignedBB getRenderBoundingBox() {
         return INFINITE_EXTENT_AABB;
+    }
+
+    @SideOnly(Side.CLIENT)
+    @Override
+    public double getMaxRenderDistanceSquared() {
+        return FunctionalStorageConfig.CLIENT.drawerRenderRange * FunctionalStorageConfig.CLIENT.drawerRenderRange;
     }
 
     @Override
