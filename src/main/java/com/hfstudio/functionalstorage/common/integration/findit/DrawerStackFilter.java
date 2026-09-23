@@ -93,6 +93,5 @@ public class DrawerStackFilter implements Predicate<DrawerStackFilter.Query> {
         return false;
     }
 
-    public record Query(@Nullable ItemStack item, @Nullable FluidStack fluid,
-        boolean matchesAspects) {}
+    public record Query(@Nullable ItemStack item, @Nullable FluidStack fluid, boolean matchesAspects) {}
 }

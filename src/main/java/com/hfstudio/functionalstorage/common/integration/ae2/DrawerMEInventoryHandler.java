@@ -72,19 +72,21 @@ public class DrawerMEInventoryHandler implements IStorageBusMonitor<IAEItemStack
     @Optional.Method(modid = "appliedenergistics2")
     private void onStorageChange(@Nonnull StorageChange<BigItemStack, ItemStorageKey> change) {
         if (!change.isDelta()) {
-            publishReset();
+            // A reset states only that nothing about the previous contents may
+            // be trusted and carries no amounts to diff against, so the drawer is
+            // re-read and its whole inventory is republished instead.
+            republishWholeInventory();
+            flush();
             return;
         }
         for (StorageChange.Entry<BigItemStack, ItemStorageKey> entry : change.getEntries()) {
             accumulate(entry.getBefore(), entry.getAfter());
         }
+        flush();
     }
 
     @Optional.Method(modid = "appliedenergistics2")
-    private void publishReset() {
-        // A reset states that nothing about the previous contents may be
-        // trusted, so every key the drawer currently holds is re-published and
-        // AE2 reconciles the rest of the inventory itself.
+    private void republishWholeInventory() {
         for (IAEItemStack current : availableItemsList()) {
             pendingChanges.put(current, current);
         }
@@ -92,15 +94,8 @@ public class DrawerMEInventoryHandler implements IStorageBusMonitor<IAEItemStack
 
     @Optional.Method(modid = "appliedenergistics2")
     private void accumulate(@Nonnull BigItemStack before, @Nonnull BigItemStack after) {
-        if (!before.hasTemplate() && !after.hasTemplate()) {
-            return;
-        }
         if (before.hasTemplate() && after.hasTemplate() && before.isSameType(after.getTemplate())) {
-            long delta = after.getAmount() - before.getAmount();
-            if (delta == 0L) {
-                return;
-            }
-            accumulateDelta(toAEStack(after.getTemplate()), delta);
+            accumulateDelta(toAEStack(after.getTemplate()), after.getAmount() - before.getAmount());
             return;
         }
         if (before.hasTemplate()) {
@@ -254,13 +249,19 @@ public class DrawerMEInventoryHandler implements IStorageBusMonitor<IAEItemStack
     @Override
     @Optional.Method(modid = "appliedenergistics2")
     public TickRateModulation onTick() {
-        if (pendingChanges.isEmpty()) {
-            return TickRateModulation.SLEEP;
+        flush();
+        return TickRateModulation.SLEEP;
+    }
+
+    @Optional.Method(modid = "appliedenergistics2")
+    private void flush() {
+        if (pendingChanges.isEmpty() || listeners.isEmpty()) {
+            pendingChanges.clear();
+            return;
         }
         List<IAEItemStack> changes = new ArrayList<>(pendingChanges.values());
         pendingChanges.clear();
         postChanges(changes);
-        return TickRateModulation.SLEEP;
     }
 
     @Override

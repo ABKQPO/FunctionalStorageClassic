@@ -438,3 +438,7 @@ functionalstorage.gui.config.compatibility.enablethaumcraftcompatibility=启用�
 functionalstorage.gui.config.compatibility.enablethaumcraftcompatibility.tooltip=启用神秘时代源质存储与源质抽屉。
 functionalstorage.gui.config.compatibility.enablewailacompatibility=启用 Waila
 functionalstorage.gui.config.compatibility.enablewailacompatibility.tooltip=启用抽屉与控制器的 Waila 集成。
+functionalstorage.gui.config.compatibility.enablefinditcompatibility=启用 FindIt
+functionalstorage.gui.config.compatibility.enablefinditcompatibility.tooltip=允许 FindIt 搜索命中存储控制器时同时查找相连抽屉中的物品。
+functionalstorage.gui.config.compatibility.highlightlinkeddrawersonfind=高亮相连抽屉
+functionalstorage.gui.config.compatibility.highlightlinkeddrawersonfind.tooltip=为 FindIt 命中的相连抽屉绘制描边高亮。

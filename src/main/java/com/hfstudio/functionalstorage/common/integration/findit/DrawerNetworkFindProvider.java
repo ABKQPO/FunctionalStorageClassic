@@ -3,19 +3,19 @@ package com.hfstudio.functionalstorage.common.integration.findit;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.item.ItemStack;
+import net.minecraft.tileentity.TileEntity;
+import net.minecraft.world.World;
+
 import com.gtnh.findit.FindIt;
 import com.gtnh.findit.IStackFilter;
 import com.gtnh.findit.service.itemfinder.FindItemRequest;
 import com.hfstudio.functionalstorage.api.storage.ConnectedDrawerScope;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.item.ItemStack;
-import net.minecraft.tileentity.TileEntity;
-
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 import com.hfstudio.functionalstorage.common.tile.controller.DrawerControllerTile;
 
 import cpw.mods.fml.common.Optional;
-import net.minecraft.world.World;
 
 @Optional.Interface(iface = "com.gtnh.findit.IStackFilter$IStackFilterProvider", modid = "findit", striprefs = true)
 public class DrawerNetworkFindProvider implements IStackFilter.IStackFilterProvider {

@@ -1,7 +1,7 @@
 package com.hfstudio.functionalstorage.common.integration.findit;
 
-import com.hfstudio.functionalstorage.FunctionalStorage;
 import com.hfstudio.functionalstorage.client.integration.findit.DrawerNetworkHighlightOverlay;
+
 import cpw.mods.fml.common.Optional;
 
 public class FindItIntegration {

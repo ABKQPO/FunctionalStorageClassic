@@ -1,9 +1,7 @@
 package com.hfstudio.functionalstorage.client.integration.findit;
 
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.ChunkPosition;
@@ -31,6 +29,7 @@ public class DrawerNetworkHighlightOverlay {
     private static DrawerNetworkHighlightOverlay instance;
 
     private final BlockHighlighter highlighter = new BlockHighlighter();
+    private final List<ChunkPosition> controllers = new ArrayList<>();
     private final List<ChunkPosition> visible = new ArrayList<>();
 
     private long expiresAtMillis;
@@ -60,21 +59,24 @@ public class DrawerNetworkHighlightOverlay {
             return;
         }
         long now = System.currentTimeMillis();
-        long remaining = expiresAtMillis - now;
-        if (remaining <= 0L) {
+        if (expiresAtMillis - now <= 0L) {
             // A fresh result starts the clock; a second controller found by the
             // same search extends the set without restarting it.
             expiresAtMillis = now + FindItConfig.BLOCK_HIGHLIGHTING_DURATION * 1000L;
+            controllers.clear();
             visible.clear();
         }
+        if (!controllers.contains(position)) {
+            controllers.add(position);
+        }
         List<ChunkPosition> positions = new ArrayList<>();
-        positions.add(position);
         appendLinkedDrawers(world, position, positions);
         for (ChunkPosition candidate : positions) {
             if (!visible.contains(candidate)) {
                 visible.add(candidate);
             }
         }
+        apply(world, visible);
         nextRefreshTick = Long.MIN_VALUE;
     }
 
@@ -109,28 +111,35 @@ public class DrawerNetworkHighlightOverlay {
      * Drops drawers that no longer exist and re-issues the surviving set.
      */
     private void refresh(World world) {
-        List<ChunkPosition> positions = new ArrayList<>(visible.size());
-        for (ChunkPosition position : visible) {
-            if (!world.blockExists(position.chunkPosX, position.chunkPosY, position.chunkPosZ)) {
-                continue;
-            }
-            if (!(world.getTileEntity(
-                position.chunkPosX,
-                position.chunkPosY,
-                position.chunkPosZ) instanceof ControllableDrawerTile)) {
-                continue;
-            }
-            if (!positions.contains(position)) {
-                positions.add(position);
+        List<ChunkPosition> positions = new ArrayList<>();
+        for (ChunkPosition controller : controllers) {
+            if (isController(world, controller)) {
+                appendLinkedDrawers(world, controller, positions);
             }
         }
         if (positions.isEmpty()) {
             clear();
             return;
         }
+        if (positions.equals(visible)) {
+            rearm();
+            return;
+        }
         visible.clear();
         visible.addAll(positions);
         apply(world, positions);
+    }
+
+    @Optional.Method(modid = "findit")
+    private void rearm() {
+        if (!FindItConfig.USE_PARTICLE_HIGHLIGHTER) {
+            highlighter.highlightBlocks(visible, expiresAtMillis);
+        }
+    }
+
+    private static boolean isController(World world, ChunkPosition position) {
+        return world
+            .getTileEntity(position.chunkPosX, position.chunkPosY, position.chunkPosZ) instanceof DrawerControllerTile;
     }
 
     @Optional.Method(modid = "findit")
@@ -143,18 +152,23 @@ public class DrawerNetworkHighlightOverlay {
     }
 
     private static void appendLinkedDrawers(World world, ChunkPosition controller, List<ChunkPosition> target) {
+        if (!target.contains(controller)) {
+            target.add(controller);
+        }
         ConnectedDrawerScope scope = ConnectedDrawerLookup
             .controllerScope(world, controller.chunkPosX, controller.chunkPosY, controller.chunkPosZ, -1);
         if (scope.isEmpty()) {
             return;
         }
-        Set<Long> seen = new LinkedHashSet<>(scope.getPositions());
-        for (long packed : seen) {
+        for (long packed : scope.getPositions()) {
             int x = ConnectedDrawerScope.unpackX(packed);
             int y = ConnectedDrawerScope.unpackY(packed);
             int z = ConnectedDrawerScope.unpackZ(packed);
             if (world.blockExists(x, y, z) && world.getTileEntity(x, y, z) instanceof ControllableDrawerTile) {
-                target.add(new ChunkPosition(x, y, z));
+                ChunkPosition position = new ChunkPosition(x, y, z);
+                if (!target.contains(position)) {
+                    target.add(position);
+                }
             }
         }
     }

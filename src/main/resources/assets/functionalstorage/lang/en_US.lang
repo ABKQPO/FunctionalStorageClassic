@@ -438,3 +438,7 @@ functionalstorage.gui.config.compatibility.enablethaumcraftcompatibility=Enable 
 functionalstorage.gui.config.compatibility.enablethaumcraftcompatibility.tooltip=Enable Thaumcraft essentia storage and the essentia drawer.
 functionalstorage.gui.config.compatibility.enablewailacompatibility=Enable Waila
 functionalstorage.gui.config.compatibility.enablewailacompatibility.tooltip=Enable the Waila integration for drawers and controllers.
+functionalstorage.gui.config.compatibility.enablefinditcompatibility=Enable FindIt
+functionalstorage.gui.config.compatibility.enablefinditcompatibility.tooltip=Let a FindIt search reach the drawers linked to a found storage controller.
+functionalstorage.gui.config.compatibility.highlightlinkeddrawersonfind=Highlight Linked Drawers
+functionalstorage.gui.config.compatibility.highlightlinkeddrawersonfind.tooltip=Draw an outline around every linked drawer a FindIt search matched.

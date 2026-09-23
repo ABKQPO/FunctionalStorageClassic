@@ -3,9 +3,10 @@ package com.hfstudio.functionalstorage.common.integration.findit;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import com.gtnh.findit.service.itemfinder.FindItemRequest;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.fluids.FluidStack;
+
+import com.gtnh.findit.service.itemfinder.FindItemRequest;
 
 import codechicken.nei.recipe.StackInfo;
 import cpw.mods.fml.common.Optional;
