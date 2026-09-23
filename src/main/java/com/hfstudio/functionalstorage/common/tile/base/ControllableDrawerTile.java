@@ -34,6 +34,8 @@ import com.hfstudio.functionalstorage.api.upgrade.StorageFeature;
 import com.hfstudio.functionalstorage.api.upgrade.UpgradeAttribute;
 import com.hfstudio.functionalstorage.api.upgrade.UpgradeState;
 import com.hfstudio.functionalstorage.common.block.base.DrawerBlock;
+import com.hfstudio.functionalstorage.common.integration.Mods;
+import com.hfstudio.functionalstorage.common.integration.ae2.DrawerExternalStorageHandler;
 import com.hfstudio.functionalstorage.common.inventory.adapter.DrawerItemInventory;
 import com.hfstudio.functionalstorage.common.inventory.base.AbstractStorageHandler;
 import com.hfstudio.functionalstorage.common.inventory.base.BigItemHandler;
@@ -736,16 +738,6 @@ public abstract class ControllableDrawerTile extends TileEntity {
         super.invalidate();
     }
 
-    /**
-     * Releases any external storage bridge that attached itself to this drawer.
-     *
-     * <p>
-     * A bridge caches a monitor per drawer and that monitor subscribes to this
-     * drawer's storage, so a cache entry surviving removal would keep reporting
-     * the contents of a drawer that no longer exists. The bridge is named only
-     * when its mod is loaded, so a vanilla-only install never resolves it.
-     * </p>
-     */
     protected void releaseStorageBridges() {
         if (Mods.AE2.isModLoaded()) {
             DrawerExternalStorageHandler.invalidate(this);
