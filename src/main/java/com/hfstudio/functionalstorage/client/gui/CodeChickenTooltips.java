@@ -14,7 +14,7 @@ import net.minecraft.util.StatCollector;
 
 import com.hfstudio.functionalstorage.client.gui.DrawerTooltipData.Entry;
 import com.hfstudio.functionalstorage.client.gui.DrawerTooltipData.Section;
-import com.hfstudio.functionalstorage.core.Mods;
+import com.hfstudio.functionalstorage.common.integration.Mods;
 
 import codechicken.lib.gui.GuiDraw;
 import cpw.mods.fml.common.Optional;
@@ -25,7 +25,7 @@ import cpw.mods.fml.relauncher.SideOnly;
 public class CodeChickenTooltips {
 
     public static boolean isAvailable() {
-        return Mods.CODE_CHICKEN_CORE.isModLoaded();
+        return Mods.CodeChickenCore.isModLoaded();
     }
 
     public static void appendPlaceholderIfAbsent(ItemStack stack, List<String> tooltip) {

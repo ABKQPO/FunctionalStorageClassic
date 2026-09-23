@@ -5,6 +5,7 @@ import net.minecraftforge.common.MinecraftForge;
 import com.hfstudio.functionalstorage.common.integration.Mods;
 import com.hfstudio.functionalstorage.common.integration.ae2.AE2Integration;
 import com.hfstudio.functionalstorage.common.integration.bogosorter.BogoSorterIntegration;
+import com.hfstudio.functionalstorage.common.integration.jabba.JabbaIntegration;
 import com.hfstudio.functionalstorage.common.integration.thaumcraft.ThaumcraftIntegration;
 import com.hfstudio.functionalstorage.common.integration.waila.WailaIntegration;
 import com.hfstudio.functionalstorage.common.interaction.DrawerClickHandler;
@@ -43,6 +44,9 @@ public class CommonProxy {
             if (FunctionalStorageConfig.COMPATIBILITY.enableAE2Compatibility && Mods.ThaumicEnergistics.isModLoaded()) {
                 AE2Integration.registerEssentiaTransport();
             }
+        }
+        if (Mods.Jabba.isModLoaded()) {
+            JabbaIntegration.register();
         }
     }
 

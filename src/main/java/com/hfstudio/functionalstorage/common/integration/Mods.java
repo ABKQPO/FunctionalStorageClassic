@@ -3,21 +3,28 @@ package com.hfstudio.functionalstorage.common.integration;
 import java.util.Locale;
 import java.util.function.Supplier;
 
+import org.jetbrains.annotations.NotNull;
+
 import com.gtnewhorizon.gtnhlib.util.data.IMod;
+import com.gtnewhorizon.gtnhmixins.builders.ITargetMod;
+import com.gtnewhorizon.gtnhmixins.builders.TargetModBuilder;
 
 import cpw.mods.fml.common.Loader;
 
-public enum Mods implements IMod {
+public enum Mods implements IMod, ITargetMod {
 
     // spotless:off
     AE2("appliedenergistics2"),
     Etfuturum("etfuturum"),
     InventoryBogoSorter("bogosorter"),
     MouseTweaks("MouseTweaks"),
+    CodeChickenCore("CodeChickenCore"),
     NotEnoughItems("NotEnoughItems"),
     ServerUtilities("serverutilities"),
     Thaumcraft("Thaumcraft"),
     ThaumicEnergistics("thaumicenergistics"),
+    Jabba("JABBA"),
+    OKBackpack("okbackpack"),
     Waila("Waila"),
     ;
     // spotless:on
@@ -25,20 +32,29 @@ public enum Mods implements IMod {
     public final String modid;
     public final String resourceDomain;
     private final Supplier<Boolean> supplier;
+    private final TargetModBuilder targetBuilder;
     private Boolean loaded;
 
     Mods(String modid) {
-        this(modid, null);
+        this(modid, null, null);
     }
 
     Mods(Supplier<Boolean> supplier) {
-        this(null, supplier);
+        this(null, supplier, null);
     }
 
-    Mods(String modid, Supplier<Boolean> supplier) {
+    Mods(String modid, Supplier<Boolean> supplier, String coreModClass) {
         this.modid = modid;
         this.resourceDomain = modid != null ? modid.toLowerCase(Locale.ENGLISH) : null;
         this.supplier = supplier;
+        this.targetBuilder = new TargetModBuilder().setModId(modid)
+            .setCoreModClass(coreModClass);
+    }
+
+    @NotNull
+    @Override
+    public TargetModBuilder getBuilder() {
+        return targetBuilder;
     }
 
     @Override

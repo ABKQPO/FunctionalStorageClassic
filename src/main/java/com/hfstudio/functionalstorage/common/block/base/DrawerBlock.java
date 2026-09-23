@@ -138,6 +138,35 @@ public abstract class DrawerBlock extends BlockContainer implements IBlockModelP
     }
 
     @Override
+    public ForgeDirection[] getValidRotations(World world, int x, int y, int z) {
+        return ForgeDirection.VALID_DIRECTIONS;
+    }
+
+    @Override
+    public boolean rotateBlock(World world, int x, int y, int z, ForgeDirection axis) {
+        if (axis == null || axis == ForgeDirection.UNKNOWN) {
+            return false;
+        }
+        int metadata = world.getBlockMetadata(x, y, z);
+        DrawerAttachment updatedAttachment;
+        ForgeDirection updatedFacing = getHorizontalFacing(metadata);
+        if (axis == ForgeDirection.UP) {
+            updatedAttachment = DrawerAttachment.FLOOR;
+        } else if (axis == ForgeDirection.DOWN) {
+            updatedAttachment = DrawerAttachment.CEILING;
+        } else {
+            updatedAttachment = DrawerAttachment.WALL;
+            updatedFacing = axis;
+        }
+        int updated = getMetadata(updatedAttachment, updatedFacing);
+        if (updated == metadata) {
+            return false;
+        }
+        world.setBlockMetadataWithNotify(x, y, z, updated, 3);
+        return true;
+    }
+
+    @Override
     @SideOnly(Side.CLIENT)
     public int getRenderType() {
         return ModelISBRH.JSON_ISBRH_ID;
