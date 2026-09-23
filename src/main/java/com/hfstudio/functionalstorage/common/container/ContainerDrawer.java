@@ -33,7 +33,7 @@ import com.hfstudio.functionalstorage.misc.GuiHandler;
 import lombok.Getter;
 
 /** Physical storage and upgrade slots backed by the owning drawer. */
-public class ContainerDrawer extends Container implements MenuSettingsReceiver, StorageTransferMenu {
+public class ContainerDrawer extends Container implements MenuSettingsReceiver, StorageTransferMenu, GhostFilterMenu {
 
     private static final int PLAYER_ROWS = 3;
     private static final int PLAYER_COLUMNS = 9;
@@ -122,6 +122,12 @@ public class ContainerDrawer extends Container implements MenuSettingsReceiver, 
     @Override
     public void applySettings(EntityPlayer player, int value, String text) {
         if (!(tile instanceof StorageNetworkTile) && canInteractWith(player)) tile.setPriority(value);
+    }
+
+    @Override
+    public void applyFilter(EntityPlayer player, int slot, ItemStack template) {
+        if (canInteractWith(player) && slot >= 0 && slot < storageSlotCount && tile.setItemFilter(slot, template))
+            detectAndSendChanges();
     }
 
     @Override

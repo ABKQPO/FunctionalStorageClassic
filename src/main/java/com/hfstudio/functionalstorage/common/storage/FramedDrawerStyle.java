@@ -3,9 +3,13 @@ package com.hfstudio.functionalstorage.common.storage;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import net.minecraft.item.ItemBlock;
+import net.minecraft.block.Block;
+import net.minecraft.init.Blocks;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
+
+import com.hfstudio.functionalstorage.common.block.base.DrawerBlock;
 
 /**
  * Immutable material selection for the three visible parts of a framed drawer:
@@ -62,6 +66,14 @@ public class FramedDrawerStyle {
 
     public boolean isConfigured() {
         return exterior != null && front != null;
+    }
+
+    /** Resolves material items consistently for crafting, placement, and rendering. */
+    @Nullable
+    public static Block materialBlock(@Nullable ItemStack stack) {
+        if (stack == null || stack.getItem() == null) return null;
+        Block block = Block.getBlockFromItem(stack.getItem());
+        return block == null || block == Blocks.air || block instanceof DrawerBlock ? null : block;
     }
 
     @Nullable
@@ -135,7 +147,7 @@ public class FramedDrawerStyle {
 
     @Nullable
     private static ItemStack normalize(@Nullable ItemStack stack) {
-        if (stack == null || stack.getItem() == null || !(stack.getItem() instanceof ItemBlock)) {
+        if (materialBlock(stack) == null) {
             return null;
         }
         ItemStack copy = stack.copy();
@@ -169,8 +181,7 @@ public class FramedDrawerStyle {
             return "none";
         }
         NBTTagCompound tag = stack.getTagCompound();
-        return stack.getItem()
-            .getUnlocalizedName() + '@'
+        return Item.itemRegistry.getNameForObject(stack.getItem()) + '@'
             + stack.getItemDamage()
             + (tag == null ? "" : tag.toString());
     }

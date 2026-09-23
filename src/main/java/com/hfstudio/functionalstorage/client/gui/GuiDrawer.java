@@ -24,6 +24,7 @@ import com.hfstudio.functionalstorage.api.storage.BigFluidStack;
 import com.hfstudio.functionalstorage.api.storage.BigItemStack;
 import com.hfstudio.functionalstorage.client.gui.DrawerTooltipData.AspectIcon;
 import com.hfstudio.functionalstorage.client.gui.DrawerTooltipData.Entry;
+import com.hfstudio.functionalstorage.client.integration.NEIGuiIntegration;
 import com.hfstudio.functionalstorage.client.integration.StorageShortcutScreen;
 import com.hfstudio.functionalstorage.common.block.base.DrawerBlock;
 import com.hfstudio.functionalstorage.common.container.ContainerDrawer;
@@ -47,6 +48,8 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
     private final DrawerGuiLayout layout;
     private final DrawerInfoPanel info;
     private final StorageTooltipPainter previews = StorageTooltipPainter.INSTANCE;
+    private int consumedMouseButtons;
+    private int pendingUpgradeSlot = -1;
 
     public GuiDrawer(@Nonnull EntityPlayer player, @Nonnull ControllableDrawerTile tile) {
         super(new ContainerDrawer(tile, player));
@@ -90,6 +93,12 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
             if (func_146978_c(slot.xDisplayPosition, slot.yDisplayPosition, 16, 16, mouseX, mouseY)) return slot;
         }
         return null;
+    }
+
+    public int getFilterSlotAt(int mouseX, int mouseY) {
+        if (!tile.isLocked() || tile.getItemHandler() == null) return -1;
+        Slot slot = storageSlotAt(mouseX, mouseY);
+        return slot == null ? -1 : slot.getSlotIndex();
     }
 
     @Override
@@ -280,24 +289,73 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
     @Override
     protected void mouseClicked(int mouseX, int mouseY, int button) {
         if (priority.getVisible()) priority.mouseClicked(mouseX, mouseY, button);
-        if (priority.isFocused()) return;
-        if (button == 1 && mc.thePlayer.inventory.getItemStack() == null) {
-            for (int slot = 0; slot < tile.getUtilityUpgradeSlots(); slot++) {
-                int x = guiLeft + 114 + slot * 18;
-                int y = guiTop + layout.upgradeY();
-                ItemStack stack = tile.getUtilityUpgrade(slot);
-                if (mouseX >= x && mouseX < x + 16
-                    && mouseY >= y
-                    && mouseY < y + 16
-                    && stack != null
-                    && (stack.getItem() instanceof AutomationUpgradeItem
-                        || stack.getItem() instanceof RedstoneUpgradeItem)) {
-                    mc.playerController.sendEnchantPacket(inventorySlots.windowId, GuiHandler.GUI_UPGRADE_BASE + slot);
-                    return;
-                }
+        if (priority.isFocused()) {
+            consumeMouseButton(button);
+            return;
+        }
+        if (button == 1 && mc.thePlayer.inventory.getItemStack() == null
+            && !(Mods.NotEnoughItems.isModLoaded() && NEIGuiIntegration.isDragging())) {
+            int slot = upgradeSlotAt(mouseX, mouseY);
+            if (slot >= 0) {
+                consumeMouseButton(button);
+                pendingUpgradeSlot = slot;
+                return;
             }
         }
         super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    private int upgradeSlotAt(int mouseX, int mouseY) {
+        for (int slot = 0; slot < tile.getUtilityUpgradeSlots(); slot++) {
+            int x = guiLeft + 114 + slot * 18;
+            int y = guiTop + layout.upgradeY();
+            ItemStack stack = tile.getUtilityUpgrade(slot);
+            if (mouseX >= x && mouseX < x + 16
+                && mouseY >= y
+                && mouseY < y + 16
+                && stack != null
+                && (stack.getItem() instanceof AutomationUpgradeItem
+                    || stack.getItem() instanceof RedstoneUpgradeItem)) {
+                return slot;
+            }
+        }
+        return -1;
+    }
+
+    private void consumeMouseButton(int button) {
+        consumedMouseButtons |= 1 << button;
+        field_147007_t = false;
+        field_147008_s.clear();
+    }
+
+    @Override
+    protected void mouseClickMove(int x, int y, int button, long heldTime) {
+        if ((consumedMouseButtons & 1 << button) == 0) super.mouseClickMove(x, y, button, heldTime);
+    }
+
+    @Override
+    protected void mouseMovedOrUp(int x, int y, int button) {
+        if (button >= 0) {
+            boolean nei = Mods.NotEnoughItems.isModLoaded();
+            boolean dropped = nei && NEIGuiIntegration.dropDraggedStack(this, x, y, button);
+            if ((consumedMouseButtons & 1 << button) != 0 || dropped) {
+                consumedMouseButtons &= ~(1 << button);
+                field_147007_t = false;
+                field_147008_s.clear();
+                if (nei) NEIGuiIntegration.releaseMouse(this, x, y, button);
+                if (button == 1) {
+                    int slot = pendingUpgradeSlot;
+                    pendingUpgradeSlot = -1;
+                    if (slot >= 0 && slot == upgradeSlotAt(x, y) && mc.thePlayer.inventory.getItemStack() == null) {
+                        // Open after release so the new screen cannot inherit this right-click.
+                        mc.playerController
+                            .sendEnchantPacket(inventorySlots.windowId, GuiHandler.GUI_UPGRADE_BASE + slot);
+                    }
+                }
+                return;
+            }
+        }
+        super.mouseMovedOrUp(x, y, button);
     }
 
     private int contentX(int slot) {

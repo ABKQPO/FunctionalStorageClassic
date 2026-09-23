@@ -10,7 +10,11 @@ public enum Mixins implements IMixins {
         .setPhase(Phase.LATE)),
     OK_BACKPACK_DEPOSIT(new MixinBuilder().addCommonMixins("okbackpack.MixinInventoryInteractionHelpers")
         .addRequiredMod(Mods.OK_BACKPACK)
-        .setPhase(Phase.LATE));
+        .setPhase(Phase.LATE)),
+    THAUMIC_ENERGISTICS_TRANSPORT(
+        new MixinBuilder().addCommonMixins("thaumicenergistics.MixinEssentiaTileContainerHelper")
+            .addRequiredMod(Mods.THAUMIC_ENERGISTICS)
+            .setPhase(Phase.LATE));
 
     private final MixinBuilder builder;
 

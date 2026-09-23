@@ -54,6 +54,15 @@ public abstract class StorageNetworkTile extends ControllableDrawerTile
 
     protected abstract List<ControllableDrawerTile> connectedDrawers();
 
+    @Override
+    public void updateEntity() {
+        // Cached external handlers must observe invalidations without another tile lookup.
+        if (worldObj != null && !worldObj.isRemote && checkedAt == Long.MIN_VALUE) {
+            refreshNetwork();
+        }
+        super.updateEntity();
+    }
+
     public void invalidateNetwork() {
         if (inventory instanceof DrawerItemInventory view) {
             view.flushChanges();

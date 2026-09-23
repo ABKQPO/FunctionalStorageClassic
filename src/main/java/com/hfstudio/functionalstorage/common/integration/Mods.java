@@ -17,6 +17,7 @@ public enum Mods implements IMod {
     NotEnoughItems("NotEnoughItems"),
     ServerUtilities("serverutilities"),
     Thaumcraft("Thaumcraft"),
+    ThaumicEnergistics("thaumicenergistics"),
     Waila("Waila"),
     ;
     // spotless:on

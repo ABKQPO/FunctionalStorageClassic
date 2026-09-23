@@ -6,7 +6,6 @@ import java.util.List;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
@@ -80,6 +79,16 @@ public class FramedDrawerBlock extends DrawerBlock implements IBlockModelProvide
         return FramedModelHolder.model(context);
     }
 
+    @Override
+    public boolean canRenderInPass(int pass) {
+        return pass == 0 || pass == 1;
+    }
+
+    @Override
+    public int getRenderBlockPass() {
+        return 1;
+    }
+
     /**
      * Applies a material to a placed framed drawer.
      *
@@ -94,7 +103,7 @@ public class FramedDrawerBlock extends DrawerBlock implements IBlockModelProvide
     public boolean applyMaterial(@Nonnull World world, int x, int y, int z, @Nonnull ItemStack material,
         boolean front) {
         TileEntity tile = world.getTileEntity(x, y, z);
-        if (!(tile instanceof FramedDrawerTile) || !(material.getItem() instanceof ItemBlock)) {
+        if (!(tile instanceof FramedDrawerTile) || FramedDrawerStyle.materialBlock(material) == null) {
             return false;
         }
         return ((FramedDrawerTile) tile).applyMaterial(material, front);
@@ -114,8 +123,8 @@ public class FramedDrawerBlock extends DrawerBlock implements IBlockModelProvide
         if (grid == null || grid.length != RECIPE_GRID_SIZE || drawer == null || drawer.getItem() == null) {
             return null;
         }
-        for (ItemStack cell : grid) {
-            if (!isStyleMaterial(cell)) {
+        for (int index = 0; index < grid.length; index++) {
+            if ((index != 3 || grid[index] != null) && !isStyleMaterial(grid[index])) {
                 return null;
             }
         }
@@ -133,7 +142,6 @@ public class FramedDrawerBlock extends DrawerBlock implements IBlockModelProvide
     }
 
     private static boolean isStyleMaterial(@Nullable ItemStack stack) {
-        return stack != null && stack.getItem() instanceof ItemBlock item
-            && !(item.field_150939_a instanceof DrawerBlock);
+        return FramedDrawerStyle.materialBlock(stack) != null;
     }
 }

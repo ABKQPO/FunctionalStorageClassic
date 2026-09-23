@@ -54,6 +54,21 @@ public class CompactingDrawerTile extends ControllableDrawerTile implements Draw
     }
 
     @Override
+    public boolean setItemFilter(int slot, @Nonnull ItemStack template) {
+        if (worldObj == null || worldObj.isRemote || !isLocked() || slot < 0 || slot >= handler.getStorageCount())
+            return false;
+        if (handler.getStoredBaseAmount() > 0L) {
+            return handler.getSnapshot(slot)
+                .isSameType(new BigItemStack(template, 0L));
+        }
+        List<CompactingTier> results = CompactingUtil
+            .anchoredResults(worldObj, template, handler.getStorageCount(), slot);
+        if (results.isEmpty()) return false;
+        handler.configureTiers(results);
+        return true;
+    }
+
+    @Override
     public void updateEntity() {
         super.updateEntity();
         if (worldObj == null || worldObj.isRemote || recipesChecked) {

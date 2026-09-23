@@ -27,12 +27,18 @@ import thaumcraft.api.aspects.Aspect;
 import thaumcraft.api.aspects.AspectList;
 import thaumcraft.api.aspects.IAspectContainer;
 import thaumcraft.api.aspects.IEssentiaTransport;
+import thaumicenergistics.api.storage.IAspectStorage;
 
 /** Adapts long-capacity essentia storage to Thaumcraft containers and tubes. */
 @Optional.InterfaceList({
     @Optional.Interface(iface = "thaumcraft.api.aspects.IAspectContainer", modid = "Thaumcraft", striprefs = true),
-    @Optional.Interface(iface = "thaumcraft.api.aspects.IEssentiaTransport", modid = "Thaumcraft", striprefs = true) })
-public class EssentiaDrawerTile extends ControllableDrawerTile implements IAspectContainer, IEssentiaTransport {
+    @Optional.Interface(iface = "thaumcraft.api.aspects.IEssentiaTransport", modid = "Thaumcraft", striprefs = true),
+    @Optional.Interface(
+        iface = "thaumicenergistics.api.storage.IAspectStorage",
+        modid = "thaumicenergistics",
+        striprefs = true) })
+public class EssentiaDrawerTile extends ControllableDrawerTile
+    implements IAspectContainer, IEssentiaTransport, IAspectStorage {
 
     private static final String KEY_ASPECTS = "Aspects";
 
@@ -177,19 +183,24 @@ public class EssentiaDrawerTile extends ControllableDrawerTile implements IAspec
     @Override
     @Optional.Method(modid = "Thaumcraft")
     public boolean doesContainerAccept(Aspect aspect) {
-        if (aspect == null) {
-            return false;
-        }
+        return aspect != null && handler.insertRouted(new BigAspectStack(aspect, 1L), StorageAction.SIMULATE)
+            .isComplete();
+    }
+
+    @Override
+    @Optional.Method(modid = "thaumicenergistics")
+    public int getContainerCapacity() {
+        long capacity = 0L;
         for (int index = 0; index < handler.getStorageCount(); index++) {
-            if (!handler.supportsAspect(index, aspect)) {
-                continue;
-            }
-            BigAspectStack snapshot = handler.getSnapshot(index);
-            if (snapshot.isEmpty() || snapshot.isSameType(aspect)) {
-                return true;
-            }
+            capacity += Math.min(Integer.MAX_VALUE - capacity, handler.getCapacity(index));
         }
-        return false;
+        return (int) capacity;
+    }
+
+    @Override
+    @Optional.Method(modid = "thaumicenergistics")
+    public boolean doesShareCapacity() {
+        return true;
     }
 
     @Override

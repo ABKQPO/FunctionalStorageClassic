@@ -18,7 +18,7 @@ import com.hfstudio.functionalstorage.misc.RegistrationHandler;
 
 import lombok.Getter;
 
-public class ContainerUpgrade extends Container {
+public class ContainerUpgrade extends Container implements GhostFilterMenu {
 
     @Getter
     private final ControllableDrawerTile tile;
@@ -127,6 +127,15 @@ public class ContainerUpgrade extends Container {
         }
         tile.markOptionsDirty();
         return true;
+    }
+
+    @Override
+    public void applyFilter(EntityPlayer player, int slot, ItemStack template) {
+        if (!canInteractWith(player) || tile.getItemHandler() == null
+            || slot < 0
+            || slot >= UpgradeSettings.FILTER_SLOTS) return;
+        UpgradeSettings.setFilter(upgradeStack, slot, template);
+        tile.markOptionsDirty();
     }
 
     private void cycle(String key, int max) {

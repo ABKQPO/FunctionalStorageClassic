@@ -7,6 +7,7 @@ import com.gtnewhorizon.gtnhlib.config.ConfigException;
 import com.hfstudio.functionalstorage.api.storage.IWoodType;
 import com.hfstudio.functionalstorage.api.storage.WoodTypeRegistry;
 import com.hfstudio.functionalstorage.common.network.ArmorySearchMessage;
+import com.hfstudio.functionalstorage.common.network.GhostFilterMessage;
 import com.hfstudio.functionalstorage.common.network.MenuSettingsMessage;
 import com.hfstudio.functionalstorage.common.network.StorageTransferMessage;
 import com.hfstudio.functionalstorage.common.storage.DrawerWoodType;
@@ -30,7 +31,7 @@ import cpw.mods.fml.relauncher.Side;
     modid = Tags.MODID,
     version = Tags.VERSION,
     name = Tags.MODNAME,
-    dependencies = "required-after:gtnhlib@[0.11.46,);after:etfuturum",
+    dependencies = "required-after:gtnhlib@[0.11.46,);after:etfuturum;after:appliedenergistics2;before:thaumicenergistics",
     guiFactory = "com.hfstudio.functionalstorage.misc.ConfigGuiFactory",
     acceptableRemoteVersions = "*",
     acceptedMinecraftVersions = "[1.7.10]")
@@ -62,6 +63,7 @@ public class FunctionalStorage {
         network.registerMessage(MenuSettingsMessage.Handler.class, MenuSettingsMessage.class, 0, Side.SERVER);
         network.registerMessage(ArmorySearchMessage.Handler.class, ArmorySearchMessage.class, 1, Side.SERVER);
         network.registerMessage(StorageTransferMessage.Handler.class, StorageTransferMessage.class, 2, Side.SERVER);
+        network.registerMessage(GhostFilterMessage.Handler.class, GhostFilterMessage.class, 3, Side.SERVER);
         NetworkRegistry.INSTANCE.registerGuiHandler(this, new GuiHandler());
         DrawerWoodType.registerBuiltIns();
         proxy.preInit(event);

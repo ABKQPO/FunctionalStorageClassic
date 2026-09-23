@@ -15,6 +15,7 @@ public enum Mods implements IMod, ITargetMod {
 
     INVENTORY_BOGO_SORTER("bogosorter"),
     OK_BACKPACK("okbackpack"),
+    THAUMIC_ENERGISTICS("thaumicenergistics"),
     CODE_CHICKEN_CORE("CodeChickenCore"),
     NOT_ENOUGH_ITEMS("NotEnoughItems");
 

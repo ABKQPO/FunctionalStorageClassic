@@ -29,6 +29,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.gtnewhorizon.gtnhlib.client.model.ItemContext;
 import com.gtnewhorizon.gtnhlib.client.model.baked.BakedModel;
+import com.gtnewhorizon.gtnhlib.client.model.color.BlockColor;
 import com.gtnewhorizon.gtnhlib.client.model.loading.ModelRegistry;
 import com.gtnewhorizon.gtnhlib.client.renderer.cel.model.quad.ModelQuadView;
 import com.gtnewhorizon.gtnhlib.client.renderer.cel.model.quad.properties.ModelQuadFacing;
@@ -90,13 +91,25 @@ public class DrawerGuiTextures extends Gui implements IResourceManagerReloadList
         GL11.glDisable(GL11.GL_CULL_FACE);
         Tessellator tessellator = Tessellator.instance;
         tessellator.startDrawingQuads();
-        for (ModelQuadView quad : quads) for (int vertex = 0; vertex < 4; vertex++) {
-            tessellator.addVertexWithUV(
-                x + (1 - quad.getX(vertex)) * 48,
-                y + (1 - quad.getY(vertex)) * 48,
-                zLevel,
-                quad.getTexU(vertex),
-                quad.getTexV(vertex));
+        for (ModelQuadView quad : quads) {
+            int color = quad.getColorIndex() < 0 ? 0xFFFFFF
+                : BlockColor.getColor(
+                    tile.getBlockType(),
+                    tile.getWorldObj(),
+                    tile.xCoord,
+                    tile.yCoord,
+                    tile.zCoord,
+                    tile.getBlockMetadata(),
+                    quad.getColorIndex());
+            tessellator.setColorOpaque_I(color);
+            for (int vertex = 0; vertex < 4; vertex++) {
+                tessellator.addVertexWithUV(
+                    x + (1 - quad.getX(vertex)) * 48,
+                    y + (1 - quad.getY(vertex)) * 48,
+                    zLevel,
+                    quad.getTexU(vertex),
+                    quad.getTexV(vertex));
+            }
         }
         tessellator.draw();
     }

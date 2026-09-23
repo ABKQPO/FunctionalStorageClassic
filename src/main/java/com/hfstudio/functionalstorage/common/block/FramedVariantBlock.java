@@ -48,4 +48,14 @@ public class FramedVariantBlock extends DrawerBlock implements FramedBlock {
     public BakedModel getModel(BakedModelQuadContext context) {
         return FramedModelHolder.model(context);
     }
+
+    @Override
+    public boolean canRenderInPass(int pass) {
+        return pass == 0 || pass == 1;
+    }
+
+    @Override
+    public int getRenderBlockPass() {
+        return 1;
+    }
 }

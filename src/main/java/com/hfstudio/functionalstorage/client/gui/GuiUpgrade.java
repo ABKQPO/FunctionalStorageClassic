@@ -16,7 +16,9 @@ import org.lwjgl.opengl.GL11;
 
 import com.hfstudio.functionalstorage.FunctionalStorage;
 import com.hfstudio.functionalstorage.client.gui.DrawerTooltipData.Entry;
+import com.hfstudio.functionalstorage.client.integration.NEIGuiIntegration;
 import com.hfstudio.functionalstorage.common.container.ContainerUpgrade;
+import com.hfstudio.functionalstorage.common.integration.Mods;
 import com.hfstudio.functionalstorage.common.item.upgrade.AutomationUpgradeItem;
 import com.hfstudio.functionalstorage.common.item.upgrade.BreakerUpgradeItem;
 import com.hfstudio.functionalstorage.common.item.upgrade.RefillUpgradeItem;
@@ -37,6 +39,8 @@ public class GuiUpgrade extends GuiContainer {
     private final boolean itemFilters;
     private final StorageTooltipPainter previews = StorageTooltipPainter.INSTANCE;
     private boolean filtersOpen;
+    private int consumedMouseButtons;
+    private GuiButton pressedButton;
 
     public GuiUpgrade(EntityPlayer player, ControllableDrawerTile tile, int upgradeSlot) {
         super(new ContainerUpgrade(tile, player, upgradeSlot));
@@ -168,7 +172,7 @@ public class GuiUpgrade extends GuiContainer {
         fontRendererObj.drawString(text("container.inventory"), 8, 92, 0x404040);
     }
 
-    private int filterSlot(int x, int y) {
+    public int getFilterSlotAt(int x, int y) {
         if (!filtersOpen) return -1;
         int rx = x - guiLeft - xSize - 6;
         int ry = y - guiTop - 18;
@@ -198,24 +202,81 @@ public class GuiUpgrade extends GuiContainer {
 
     @Override
     protected void mouseClicked(int x, int y, int button) {
-        int filter = filterSlot(x, y);
+        int filter = getFilterSlotAt(x, y);
         if (filter >= 0) {
+            consumeMouseButton(button);
+            if (Mods.NotEnoughItems.isModLoaded() && NEIGuiIntegration.dropDraggedStack(this, x, y, button)) return;
             if (button == 0 || button == 1) send((button == 0 ? 40 : 49) + filter);
             return;
         }
         int control = control(x, y);
         if (control >= 0) {
+            consumeMouseButton(button);
             if (control == 1) filtersOpen = !filtersOpen;
             else send(control == 0 && button == 1 ? 7 : control);
             return;
         }
         int slot = drawer.slotAt(x - guiLeft - 44, y - guiTop - 28);
         if (slot >= 0) {
+            consumeMouseButton(button);
             if (button == 0) send(20 + slot);
             return;
         }
-        if (overlapsFilterPanel(x, y, 1, 1)) return;
+        if (overlapsFilterPanel(x, y, 1, 1)) {
+            consumeMouseButton(button);
+            return;
+        }
+        if (button == 0) {
+            for (GuiButton guiButton : buttonList) {
+                if (guiButton.mousePressed(mc, x, y)) {
+                    consumeMouseButton(button);
+                    pressedButton = guiButton;
+                    guiButton.func_146113_a(mc.getSoundHandler());
+                    return;
+                }
+            }
+        }
         super.mouseClicked(x, y, button);
+    }
+
+    private void consumeMouseButton(int button) {
+        // A custom control owns the whole gesture, even when released outside its bounds.
+        consumedMouseButtons |= 1 << button;
+        field_147007_t = false;
+        field_147008_s.clear();
+    }
+
+    @Override
+    protected void mouseClickMove(int x, int y, int button, long heldTime) {
+        if ((consumedMouseButtons & 1 << button) == 0) super.mouseClickMove(x, y, button, heldTime);
+    }
+
+    @Override
+    protected void mouseMovedOrUp(int x, int y, int button) {
+        if (button >= 0) {
+            boolean nei = Mods.NotEnoughItems.isModLoaded();
+            boolean dropped = nei && NEIGuiIntegration.dropDraggedStack(this, x, y, button);
+            boolean consumed = (consumedMouseButtons & 1 << button) != 0;
+            if (consumed || dropped || overlapsFilterPanel(x, y, 1, 1)) {
+                int filter = getFilterSlotAt(x, y);
+                if (!consumed && !dropped
+                    && button == 0
+                    && filter >= 0
+                    && mc.thePlayer.inventory.getItemStack() != null) send(40 + filter);
+                consumedMouseButtons &= ~(1 << button);
+                field_147007_t = false;
+                field_147008_s.clear();
+                if (nei) NEIGuiIntegration.releaseMouse(this, x, y, button);
+                if (button == 0 && pressedButton != null) {
+                    GuiButton released = pressedButton;
+                    pressedButton = null;
+                    released.mouseReleased(x, y);
+                    if (released.mousePressed(mc, x, y)) actionPerformed(released);
+                }
+                return;
+            }
+        }
+        super.mouseMovedOrUp(x, y, button);
     }
 
     @Override
@@ -228,7 +289,7 @@ public class GuiUpgrade extends GuiContainer {
     public void handleMouseInput() {
         super.handleMouseInput();
         int wheel = Mouse.getEventDWheel();
-        int slot = filterSlot(
+        int slot = getFilterSlotAt(
             Mouse.getEventX() * width / mc.displayWidth,
             height - Mouse.getEventY() * height / mc.displayHeight - 1);
         if (wheel != 0 && slot >= 0) send((wheel > 0 ? 60 : 69) + slot);
@@ -239,7 +300,7 @@ public class GuiUpgrade extends GuiContainer {
         super.drawScreen(x, y, partial);
         ItemStack stack = container.getUpgradeStack();
         List<String> lines = new ArrayList<>();
-        int filter = filterSlot(x, y);
+        int filter = getFilterSlotAt(x, y);
         if (filter >= 0) {
             ItemStack item = UpgradeSettings.getFilter(stack, filter);
             String ore = UpgradeSettings.filterOre(stack, filter);

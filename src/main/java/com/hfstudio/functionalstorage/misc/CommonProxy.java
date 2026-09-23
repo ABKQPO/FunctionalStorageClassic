@@ -21,6 +21,10 @@ import cpw.mods.fml.common.event.FMLServerStartingEvent;
 public class CommonProxy {
 
     public void preInit(FMLPreInitializationEvent event) {
+        if (FunctionalStorageConfig.COMPATIBILITY.enableAE2Compatibility && Mods.AE2.isModLoaded()) {
+            // Register before Thaumic Energistics' generic aspect-container handler.
+            AE2Integration.register();
+        }
         RegistrationHandler.registerBlocks();
         RegistrationHandler.registerItems();
         RegistrationHandler.registerTileEntities();
@@ -34,11 +38,11 @@ public class CommonProxy {
 
     public void postInit(FMLPostInitializationEvent event) {
         if (Mods.InventoryBogoSorter.isModLoaded()) BogoSorterIntegration.register();
-        if (FunctionalStorageConfig.COMPATIBILITY.enableAE2Compatibility && Mods.AE2.isModLoaded()) {
-            AE2Integration.register();
-        }
         if (FunctionalStorageConfig.COMPATIBILITY.enableThaumcraftCompatibility && Mods.Thaumcraft.isModLoaded()) {
             ThaumcraftIntegration.register();
+            if (FunctionalStorageConfig.COMPATIBILITY.enableAE2Compatibility && Mods.ThaumicEnergistics.isModLoaded()) {
+                AE2Integration.registerEssentiaTransport();
+            }
         }
     }
 

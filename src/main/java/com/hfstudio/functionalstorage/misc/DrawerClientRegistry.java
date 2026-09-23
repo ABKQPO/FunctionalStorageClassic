@@ -3,11 +3,15 @@ package com.hfstudio.functionalstorage.misc;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.IReloadableResourceManager;
 
+import com.gtnewhorizon.gtnhlib.client.model.color.BlockColor;
 import com.gtnewhorizon.gtnhlib.client.model.loading.ModelRegistry;
 import com.hfstudio.functionalstorage.FunctionalStorage;
 import com.hfstudio.functionalstorage.client.model.DrawerModelProvider;
+import com.hfstudio.functionalstorage.client.model.FramedModelHolder;
 import com.hfstudio.functionalstorage.client.render.DrawerItemRenderer;
 import com.hfstudio.functionalstorage.client.render.DrawerRenderer;
+import com.hfstudio.functionalstorage.common.block.FramedBlock;
+import com.hfstudio.functionalstorage.common.block.base.DrawerBlock;
 import com.hfstudio.functionalstorage.common.integration.Mods;
 import com.hfstudio.functionalstorage.common.tile.EnderDrawerTile;
 import com.hfstudio.functionalstorage.common.tile.EssentiaDrawerTile;
@@ -58,6 +62,10 @@ public class DrawerClientRegistry {
         }
     }
 
-    /** Reserved for block tint registration. */
-    public static void registerBlockColors() {}
+    /** Registers per-part material colors for world and item rendering. */
+    public static void registerBlockColors() {
+        for (DrawerBlock block : RegistrationHandler.allDrawerBlocks()) {
+            if (block instanceof FramedBlock) BlockColor.registerBlockColors(FramedModelHolder.provider(), block);
+        }
+    }
 }

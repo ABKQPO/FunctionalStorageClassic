@@ -7,18 +7,31 @@ import net.minecraft.item.crafting.IRecipe;
 import net.minecraft.world.World;
 
 import com.hfstudio.functionalstorage.common.block.FramedBlock;
-import com.hfstudio.functionalstorage.common.block.base.DrawerBlock;
 import com.hfstudio.functionalstorage.common.storage.FramedDrawerStyle;
 
 public class FramedDrawerStyleRecipe implements IRecipe {
 
     @Override
     public boolean matches(InventoryCrafting inventory, World world) {
-        return getCraftingResult(inventory) != null;
+        return findPattern(inventory) >= 0;
     }
 
     @Override
     public ItemStack getCraftingResult(InventoryCrafting inventory) {
+        int anchor = findPattern(inventory);
+        if (anchor < 0) return null;
+        int width = inventory.getSizeInventory() == 4 ? 2 : 3;
+        ItemStack result = inventory.getStackInSlot(anchor + width)
+            .copy();
+        result.stackSize = 1;
+        new FramedDrawerStyle(
+            inventory.getStackInSlot(anchor),
+            inventory.getStackInSlot(anchor + 1),
+            inventory.getStackInSlot(anchor + width + 1)).applyDrawerStyle(result);
+        return result;
+    }
+
+    private static int findPattern(InventoryCrafting inventory) {
         int width = inventory.getSizeInventory() == 4 ? 2 : inventory.getSizeInventory() == 9 ? 3 : 0;
         for (int top = 0; top < width - 1; top++) {
             for (int left = 0; left < width - 1; left++) {
@@ -41,14 +54,11 @@ public class FramedDrawerStyleRecipe implements IRecipe {
                     }
                 }
                 if (!extra) {
-                    ItemStack result = drawer.copy();
-                    result.stackSize = 1;
-                    new FramedDrawerStyle(exterior, front, divider).applyDrawerStyle(result);
-                    return result;
+                    return left + top * width;
                 }
             }
         }
-        return null;
+        return -1;
     }
 
     @Override
@@ -62,8 +72,7 @@ public class FramedDrawerStyleRecipe implements IRecipe {
     }
 
     private static boolean isMaterial(ItemStack stack) {
-        return stack != null && stack.getItem() instanceof ItemBlock item
-            && !(item.field_150939_a instanceof DrawerBlock);
+        return FramedDrawerStyle.materialBlock(stack) != null;
     }
 
     private static boolean isFramedDrawer(ItemStack stack) {

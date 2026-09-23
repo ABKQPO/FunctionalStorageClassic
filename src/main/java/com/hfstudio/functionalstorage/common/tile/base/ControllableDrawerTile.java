@@ -93,6 +93,14 @@ public abstract class ControllableDrawerTile extends TileEntity {
         return null;
     }
 
+    /** Sets a locked drawer's retained template without inserting any items. */
+    public boolean setItemFilter(int slot, @Nonnull ItemStack template) {
+        return worldObj != null && !worldObj.isRemote
+            && isLocked()
+            && getItemHandler() instanceof BigItemHandler handler
+            && handler.setSlotFilter(slot, new BigItemStack(template, 0L));
+    }
+
     @Nullable
     public IBigFluidHandler getFluidHandler() {
         return null;
