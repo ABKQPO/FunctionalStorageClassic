@@ -182,21 +182,29 @@ public class TransferUtil {
                 continue;
             }
             ItemStack existing = inventory.getStackInSlot(slot);
-            int limit = Math.min(inventory.getInventoryStackLimit(), remaining.getMaxStackSize());
             if (existing == null || existing.getItem() == null) {
+                int limit = Math.min(inventory.getInventoryStackLimit(), remaining.getMaxStackSize());
                 int moved = Math.min(limit, remaining.stackSize);
+                if (moved <= 0) {
+                    continue;
+                }
                 ItemStack placed = remaining.copy();
                 placed.stackSize = moved;
                 inventory.setInventorySlotContents(slot, placed);
                 remaining.stackSize -= moved;
             } else if (ItemUtil.areItemStacksEqual(existing, remaining)) {
+                int limit = Math.min(inventory.getInventoryStackLimit(), remaining.getMaxStackSize());
                 int space = limit - existing.stackSize;
                 if (space <= 0) {
                     continue;
                 }
                 int moved = Math.min(space, remaining.stackSize);
-                existing.stackSize += moved;
-                inventory.setInventorySlotContents(slot, existing);
+                // Mutate a copy: the exposed stack is the inventory's own state, and
+                // editing it in place before handing it back would make the inventory
+                // compare the stack against itself and miss the change entirely.
+                ItemStack updated = existing.copy();
+                updated.stackSize += moved;
+                inventory.setInventorySlotContents(slot, updated);
                 remaining.stackSize -= moved;
             }
         }

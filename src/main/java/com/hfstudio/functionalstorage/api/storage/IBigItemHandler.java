@@ -101,7 +101,7 @@ public interface IBigItemHandler extends IStorageHandler<BigItemStack, ItemStora
         if (template == null) {
             return null;
         }
-        long requested = Math.min(amount, Math.max(0, template.getMaxStackSize()));
+        long requested = amount;
         if (requested <= 0L) {
             return null;
         }
