@@ -35,6 +35,7 @@ import com.gtnewhorizon.gtnhlib.client.model.loading.ModelDeserializer.Position;
 import com.gtnewhorizon.gtnhlib.client.model.loading.ModelRegistry;
 import com.gtnewhorizon.gtnhlib.client.renderer.cel.model.quad.ModelQuad;
 import com.gtnewhorizon.gtnhlib.client.renderer.cel.model.quad.ModelQuadView;
+import com.gtnewhorizon.gtnhlib.client.renderer.cel.model.quad.properties.ModelQuadFlags;
 import com.hfstudio.functionalstorage.FunctionalStorage;
 import com.hfstudio.functionalstorage.common.block.FramedBlock;
 import com.hfstudio.functionalstorage.common.storage.FramedDrawerStyle;
@@ -187,7 +188,7 @@ public class FramedDrawerModelProvider implements IBlockModelProvider, IBlockCol
      */
     @Nonnull
     public static ModelQuad retexture(@Nonnull ModelQuadView quad, @Nonnull IIcon marker, @Nonnull IIcon replacement) {
-        ModelQuad copy = new ModelQuad(quad);
+        ModelQuad copy = copyQuad(quad);
         float markerWidth = marker.getMaxU() - marker.getMinU();
         float markerHeight = marker.getMaxV() - marker.getMinV();
         for (int vertex = 0; vertex < 4; vertex++) {
@@ -199,8 +200,18 @@ public class FramedDrawerModelProvider implements IBlockModelProvider, IBlockCol
         copy.setSprite(
             replacement instanceof MaterialIcon icon ? icon.getSprite()
                 : replacement instanceof TextureAtlasSprite ? replacement : new MaterialIcon(replacement).getSprite());
-        // Retexturing invalidates cached opacity and trusted-sprite flags.
-        copy.setFlags(0);
+        // Invalidate sprite-derived flags while preserving geometry and shading flags.
+        copy.setFlags(
+            quad.getFlags() & ~(ModelQuadFlags.IS_TRUSTED_SPRITE | ModelQuadFlags.IS_PASS_OPTIMIZABLE
+                | ModelQuadFlags.IS_POPULATED));
+        return copy;
+    }
+
+    private static ModelQuad copyQuad(ModelQuadView quad) {
+        ModelQuad copy = new ModelQuad(quad);
+        // GTNHLib 0.11.48 does not copy these lighting properties.
+        copy.setDirectionalShading(quad.hasDirectionalShading());
+        copy.setEmissiveness(quad.getEmissiveness());
         return copy;
     }
 
@@ -371,7 +382,7 @@ public class FramedDrawerModelProvider implements IBlockModelProvider, IBlockCol
             List<ModelQuadView> translucent = new ArrayList<>();
             for (ModelQuadView quad : original) {
                 ModelQuadView replaced = retextureQuad(quad);
-                if (parent.isDynamic() && replaced == quad) replaced = new ModelQuad(quad);
+                if (parent.isDynamic() && replaced == quad) replaced = copyQuad(quad);
                 retextured.add(replaced);
                 (replaced.isTransparent() ? translucent : opaque).add(replaced);
             }
