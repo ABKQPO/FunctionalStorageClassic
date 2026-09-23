@@ -1,5 +1,8 @@
 package com.hfstudio.functionalstorage.common.integration.ae2;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
 import net.minecraft.tileentity.TileEntity;
 import net.minecraftforge.common.util.ForgeDirection;
 
@@ -16,8 +19,14 @@ import thaumicenergistics.common.storage.AEEssentiaStackType;
 
 /**
  * Lets an AE2 storage bus read and write a drawer without the drawer being an
- * AE2 grid host. Handlers are created on demand and never retained, so a stale
- * bus never keeps a broken drawer alive.
+ * AE2 grid host.
+ *
+ * <p>
+ * The monitors themselves are held by {@link DrawerBridgeCache}, which hands one
+ * monitor per drawer to every bus that reads it. A fresh monitor per request
+ * would instead leave an abandoned subscription behind on every bus rebuild,
+ * each still delivering events to a discarded object.
+ * </p>
  */
 @Optional.Interface(
     iface = "appeng.api.storage.IExternalStorageHandler",
@@ -38,8 +47,7 @@ public class DrawerExternalStorageHandler implements IExternalStorageHandler {
         if (!canHandle(te, d, channel, src)) {
             return null;
         }
-        ControllableDrawerTile drawer = (ControllableDrawerTile) te;
-        return new DrawerMEInventoryHandler(drawer.getItemHandler(), drawer.getStorageUpgradeSlots());
+        return DrawerBridgeCache.itemMonitor((ControllableDrawerTile) te);
     }
 
     @Override
@@ -61,9 +69,16 @@ public class DrawerExternalStorageHandler implements IExternalStorageHandler {
             return null;
         }
         ControllableDrawerTile drawer = (ControllableDrawerTile) te;
-        if (type == AEItemStackType.ITEM_STACK_TYPE) {
-            return new DrawerMEInventoryHandler(drawer.getItemHandler(), drawer.getStorageUpgradeSlots());
-        }
-        return new DrawerMEEssentiaInventoryHandler(drawer.getAspectHandler(), drawer.getStorageUpgradeSlots());
+        return type == AEItemStackType.ITEM_STACK_TYPE ? DrawerBridgeCache.itemMonitor(drawer)
+            : DrawerBridgeCache.aspectMonitor(drawer);
+    }
+
+    public static void invalidate(@Nonnull ControllableDrawerTile drawer) {
+        DrawerBridgeCache.invalidate(drawer);
+    }
+
+    @Nullable
+    public static DrawerMEInventoryHandler itemMonitorOf(@Nonnull ControllableDrawerTile drawer) {
+        return DrawerBridgeCache.itemMonitorOf(drawer);
     }
 }

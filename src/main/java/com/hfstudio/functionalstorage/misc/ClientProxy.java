@@ -53,6 +53,11 @@ public class ClientProxy extends CommonProxy {
     }
 
     @Override
+    public boolean isClientSide() {
+        return true;
+    }
+
+    @Override
     public void postInit(FMLPostInitializationEvent event) {
         super.postInit(event);
     }

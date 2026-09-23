@@ -6,6 +6,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
 import net.minecraft.item.ItemStack;
 
 import com.hfstudio.functionalstorage.api.storage.BigItemStack;
@@ -13,6 +16,8 @@ import com.hfstudio.functionalstorage.api.storage.IBigItemHandler;
 import com.hfstudio.functionalstorage.api.storage.ItemStorageKey;
 import com.hfstudio.functionalstorage.api.storage.ItemStorageView;
 import com.hfstudio.functionalstorage.api.storage.StorageAction;
+import com.hfstudio.functionalstorage.api.storage.StorageChange;
+import com.hfstudio.functionalstorage.api.storage.StorageSubscription;
 import com.hfstudio.functionalstorage.api.storage.TransferResult;
 
 import appeng.api.AEApi;
@@ -21,7 +26,7 @@ import appeng.api.config.Actionable;
 import appeng.api.config.StorageFilter;
 import appeng.api.networking.security.BaseActionSource;
 import appeng.api.networking.ticking.TickRateModulation;
-import appeng.api.storage.IMEInventory;
+import appeng.api.storage.IMEMonitor;
 import appeng.api.storage.IMEMonitorHandlerReceiver;
 import appeng.api.storage.IStorageBusMonitor;
 import appeng.api.storage.StorageChannel;
@@ -39,11 +44,14 @@ import lombok.Getter;
 @Optional.Interface(iface = "appeng.api.storage.IStorageBusMonitor", modid = "appliedenergistics2", striprefs = true)
 public class DrawerMEInventoryHandler implements IStorageBusMonitor<IAEItemStack> {
 
+    private final Map<IMEMonitorHandlerReceiver, Object> listeners = new HashMap<>();
+    private final Map<IAEItemStack, IAEItemStack> pendingChanges = new HashMap<>();
+
     @Getter
     private final IBigItemHandler handler;
     private final int priority;
-    private final Map<IMEMonitorHandlerReceiver, Object> listeners = new HashMap<>();
-    private IItemList<IAEItemStack> snapshot;
+    private final StorageSubscription subscription;
+
     private BaseActionSource actionSource;
 
     public DrawerMEInventoryHandler(IBigItemHandler handler) {
@@ -53,11 +61,78 @@ public class DrawerMEInventoryHandler implements IStorageBusMonitor<IAEItemStack
     public DrawerMEInventoryHandler(IBigItemHandler handler, int priority) {
         this.handler = handler;
         this.priority = priority;
+        this.subscription = handler.subscribe(this::onStorageChange);
     }
 
     @Optional.Method(modid = "appliedenergistics2")
     public static StorageAction actionOf(Actionable type) {
         return type == Actionable.SIMULATE ? StorageAction.SIMULATE : StorageAction.EXECUTE;
+    }
+
+    @Optional.Method(modid = "appliedenergistics2")
+    private void onStorageChange(@Nonnull StorageChange<BigItemStack, ItemStorageKey> change) {
+        if (!change.isDelta()) {
+            publishReset();
+            return;
+        }
+        for (StorageChange.Entry<BigItemStack, ItemStorageKey> entry : change.getEntries()) {
+            accumulate(entry.getBefore(), entry.getAfter());
+        }
+    }
+
+    @Optional.Method(modid = "appliedenergistics2")
+    private void publishReset() {
+        // A reset states that nothing about the previous contents may be
+        // trusted, so every key the drawer currently holds is re-published and
+        // AE2 reconciles the rest of the inventory itself.
+        for (IAEItemStack current : availableItemsList()) {
+            pendingChanges.put(current, current);
+        }
+    }
+
+    @Optional.Method(modid = "appliedenergistics2")
+    private void accumulate(@Nonnull BigItemStack before, @Nonnull BigItemStack after) {
+        if (!before.hasTemplate() && !after.hasTemplate()) {
+            return;
+        }
+        if (before.hasTemplate() && after.hasTemplate() && before.isSameType(after.getTemplate())) {
+            long delta = after.getAmount() - before.getAmount();
+            if (delta == 0L) {
+                return;
+            }
+            accumulateDelta(toAEStack(after.getTemplate()), delta);
+            return;
+        }
+        if (before.hasTemplate()) {
+            accumulateDelta(toAEStack(before.getTemplate()), -before.getAmount());
+        }
+        if (after.hasTemplate()) {
+            accumulateDelta(toAEStack(after.getTemplate()), after.getAmount());
+        }
+    }
+
+    @Optional.Method(modid = "appliedenergistics2")
+    private void accumulateDelta(@Nullable IAEItemStack stack, long delta) {
+        if (stack == null || delta == 0L) {
+            return;
+        }
+        IAEItemStack previous = pendingChanges.get(stack);
+        long total = delta + (previous == null ? 0L : previous.getStackSize());
+        if (total == 0L) {
+            pendingChanges.remove(stack);
+            return;
+        }
+        stack.setStackSize(total);
+        pendingChanges.put(stack, stack);
+    }
+
+    @Optional.Method(modid = "appliedenergistics2")
+    @Nullable
+    private IAEItemStack toAEStack(@Nullable ItemStack template) {
+        return template == null ? null
+            : AEApi.instance()
+                .storage()
+                .createItemStack(template);
     }
 
     @Override
@@ -104,9 +179,7 @@ public class DrawerMEInventoryHandler implements IStorageBusMonitor<IAEItemStack
             if (template == null) {
                 continue;
             }
-            IAEItemStack stack = AEApi.instance()
-                .storage()
-                .createItemStack(template);
+            IAEItemStack stack = toAEStack(template);
             if (stack == null) {
                 continue;
             }
@@ -162,12 +235,8 @@ public class DrawerMEInventoryHandler implements IStorageBusMonitor<IAEItemStack
     }
 
     @Optional.Method(modid = "appliedenergistics2")
-    public IMEInventory<IAEItemStack> asInventory() {
+    public IMEMonitor<IAEItemStack> asMonitor() {
         return this;
-    }
-
-    public List<ItemStorageView> getViews() {
-        return ItemStorageView.storages(handler);
     }
 
     @Override
@@ -185,18 +254,13 @@ public class DrawerMEInventoryHandler implements IStorageBusMonitor<IAEItemStack
     @Override
     @Optional.Method(modid = "appliedenergistics2")
     public TickRateModulation onTick() {
-        IItemList<IAEItemStack> current = availableItems();
-        if (snapshot == null) {
-            snapshot = current;
-            return TickRateModulation.SLOWER;
+        if (pendingChanges.isEmpty()) {
+            return TickRateModulation.SLEEP;
         }
-        List<IAEItemStack> changes = changesBetween(snapshot, current);
-        snapshot = current;
-        if (changes.isEmpty()) {
-            return TickRateModulation.SLOWER;
-        }
+        List<IAEItemStack> changes = new ArrayList<>(pendingChanges.values());
+        pendingChanges.clear();
         postChanges(changes);
-        return TickRateModulation.URGENT;
+        return TickRateModulation.SLEEP;
     }
 
     @Override
@@ -212,45 +276,30 @@ public class DrawerMEInventoryHandler implements IStorageBusMonitor<IAEItemStack
     @Override
     @Optional.Method(modid = "appliedenergistics2")
     public IItemList<IAEItemStack> getStorageList() {
-        if (snapshot == null) {
-            snapshot = availableItems();
-        }
-        return snapshot;
+        return availableItemsList();
+    }
+
+    public void close() {
+        subscription.close();
+        pendingChanges.clear();
+        listeners.clear();
     }
 
     @Optional.Method(modid = "appliedenergistics2")
-    private IItemList<IAEItemStack> availableItems() {
+    private IItemList<IAEItemStack> availableItemsList() {
         return getAvailableItems(
             AEApi.instance()
                 .storage()
-                .createItemList());
-    }
-
-    @Optional.Method(modid = "appliedenergistics2")
-    private List<IAEItemStack> changesBetween(IItemList<IAEItemStack> previous, IItemList<IAEItemStack> current) {
-        IItemList<IAEItemStack> difference = AEApi.instance()
-            .storage()
-            .createItemList();
-        for (IAEItemStack stack : previous) {
-            IAEItemStack removed = stack.copy();
-            removed.setStackSize(-removed.getStackSize());
-            difference.add(removed);
-        }
-        for (IAEItemStack stack : current) {
-            difference.add(stack.copy());
-        }
-        List<IAEItemStack> changes = new ArrayList<>();
-        for (IAEItemStack stack : difference) {
-            if (stack.getStackSize() != 0L) {
-                changes.add(stack);
-            }
-        }
-        return changes;
+                .createItemList(),
+            0);
     }
 
     @Optional.Method(modid = "appliedenergistics2")
     @SuppressWarnings({ "unchecked", "rawtypes" })
     private void postChanges(List<IAEItemStack> changes) {
+        if (changes.isEmpty() || listeners.isEmpty()) {
+            return;
+        }
         Iterator<Map.Entry<IMEMonitorHandlerReceiver, Object>> iterator = listeners.entrySet()
             .iterator();
         while (iterator.hasNext()) {

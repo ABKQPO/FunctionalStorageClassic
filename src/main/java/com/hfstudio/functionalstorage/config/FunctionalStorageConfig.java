@@ -261,6 +261,15 @@ public class FunctionalStorageConfig {
         @Config.DefaultBoolean(true)
         @Config.RequiresMcRestart
         public boolean enableThaumcraftCompatibility = true;
+
+        @Config.Comment("Let a FindIt search reach the drawers linked to a found storage controller")
+        @Config.DefaultBoolean(true)
+        @Config.RequiresMcRestart
+        public boolean enableFindItCompatibility = true;
+
+        @Config.Comment("Draw an outline around every linked drawer a FindIt search matched")
+        @Config.DefaultBoolean(true)
+        public boolean highlightLinkedDrawersOnFind = true;
     }
 
     public static class Client {

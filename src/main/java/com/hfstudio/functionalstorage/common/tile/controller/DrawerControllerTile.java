@@ -3,11 +3,13 @@ package com.hfstudio.functionalstorage.common.tile.controller;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
@@ -15,6 +17,7 @@ import net.minecraft.network.NetworkManager;
 import net.minecraft.network.Packet;
 import net.minecraft.network.play.server.S35PacketUpdateTileEntity;
 
+import com.hfstudio.functionalstorage.api.storage.ConnectedDrawerScope;
 import com.hfstudio.functionalstorage.api.upgrade.UpgradeAttribute;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 import com.hfstudio.functionalstorage.config.FunctionalStorageConfig;
@@ -124,6 +127,43 @@ public class DrawerControllerTile extends StorageNetworkTile {
             (int) calculateModifier(
                 UpgradeAttribute.CONTROLLER_RANGE,
                 FunctionalStorageConfig.GENERAL.drawerControllerLinkingRange));
+    }
+
+    @Nonnull
+    public ConnectedDrawerScope connectedScope(int maxRadius) {
+        if (worldObj == null || drawers.isEmpty()) {
+            return ConnectedDrawerScope.empty();
+        }
+        Set<Long> members = new HashSet<>(drawers.size());
+        long radius = maxRadius < 0 ? Long.MAX_VALUE : maxRadius;
+        for (long position : drawers) {
+            if (linkedDrawerAt(position, radius) != null) {
+                members.add(position);
+            }
+        }
+        return ConnectedDrawerScope.of(members);
+    }
+
+    @Nullable
+    private ControllableDrawerTile linkedDrawerAt(long position, long radius) {
+        int x = ConnectedDrawerScope.unpackX(position);
+        int y = ConnectedDrawerScope.unpackY(position);
+        int z = ConnectedDrawerScope.unpackZ(position);
+        if (Math.abs(x - xCoord) > radius || Math.abs(y - yCoord) > radius || Math.abs(z - zCoord) > radius) {
+            return null;
+        }
+        if (!worldObj.blockExists(x, y, z)) {
+            return null;
+        }
+        if (!(worldObj.getTileEntity(x, y, z) instanceof ControllableDrawerTile drawer)) {
+            return null;
+        }
+        // An extension owns no storage of its own, so a second controller's
+        // extension must never be counted as a drawer of this network.
+        if (drawer instanceof StorageNetworkTile && !(drawer instanceof ControllerExtensionTile)) {
+            return null;
+        }
+        return drawer.isLinkedTo(xCoord, yCoord, zCoord) ? drawer : null;
     }
 
     @Override

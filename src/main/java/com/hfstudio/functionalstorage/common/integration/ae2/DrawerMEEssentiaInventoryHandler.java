@@ -169,6 +169,20 @@ public class DrawerMEEssentiaInventoryHandler implements IStorageBusMonitor<AEEs
         return AEEssentiaStackType.ESSENTIA_STACK_TYPE;
     }
 
+    /**
+     * Releases the listener list of a monitor whose drawer is leaving the world.
+     *
+     * <p>
+     * Essentia changes are published from this monitor's own injection and
+     * extraction and from {@link #onTick()}, so closing only has to drop the
+     * listeners rather than unsubscribe from the drawer.
+     * </p>
+     */
+    public void close() {
+        listeners.clear();
+        observed = AspectSummary.empty();
+    }
+
     @Override
     @Optional.Method(modid = "thaumicenergistics")
     public AccessRestriction getAccess() {
