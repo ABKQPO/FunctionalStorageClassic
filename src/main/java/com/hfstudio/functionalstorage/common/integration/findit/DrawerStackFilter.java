@@ -58,7 +58,10 @@ public class DrawerStackFilter implements Predicate<DrawerStackFilter.Query> {
         if (fluids != null && query.fluid() != null && holdsFluid(query.fluid())) {
             return true;
         }
-        return aspects != null && query.matchesAspects() && holdsAspect();
+        if (aspects == null || !query.matchesAspects()) {
+            return false;
+        }
+        return Mods.Thaumcraft.isModLoaded() && holdsAspect();
     }
 
     private boolean holdsItem(@Nonnull ItemStack target) {
