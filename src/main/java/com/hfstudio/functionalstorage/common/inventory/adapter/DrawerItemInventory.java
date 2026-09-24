@@ -362,8 +362,7 @@ public class DrawerItemInventory implements ISidedInventory {
         if (stack == null) {
             return null;
         }
-        int limit = Math.min(stack.getMaxStackSize(), getInventoryStackLimit());
-        int visibleLimit = Math.max(1, limit);
+        int visibleLimit = Math.max(1, getInventoryStackLimit());
         stack.stackSize = (int) Math.min(snapshot.getAmount(), visibleLimit);
         return stack;
     }
