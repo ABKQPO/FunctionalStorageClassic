@@ -441,4 +441,4 @@ functionalstorage.gui.config.compatibility.enablewailacompatibility.tooltip=启�
 functionalstorage.gui.config.compatibility.enablefinditcompatibility=启用 FindIt
 functionalstorage.gui.config.compatibility.enablefinditcompatibility.tooltip=允许 FindIt 搜索命中存储控制器时同时查找相连抽屉中的物品。
 functionalstorage.gui.config.compatibility.highlightlinkeddrawersonfind=高亮相连抽屉
-functionalstorage.gui.config.compatibility.highlightlinkeddrawersonfind.tooltip=为 FindIt 命中的相连抽屉绘制描边高亮。
+functionalstorage.gui.config.compatibility.highlightlinkeddrawersonfind.tooltip=仅高亮实际存有 FindIt 搜索物品的相连抽屉。

@@ -441,4 +441,4 @@ functionalstorage.gui.config.compatibility.enablewailacompatibility.tooltip=Enab
 functionalstorage.gui.config.compatibility.enablefinditcompatibility=Enable FindIt
 functionalstorage.gui.config.compatibility.enablefinditcompatibility.tooltip=Let a FindIt search reach the drawers linked to a found storage controller.
 functionalstorage.gui.config.compatibility.highlightlinkeddrawersonfind=Highlight Linked Drawers
-functionalstorage.gui.config.compatibility.highlightlinkeddrawersonfind.tooltip=Draw an outline around every linked drawer a FindIt search matched.
+functionalstorage.gui.config.compatibility.highlightlinkeddrawersonfind.tooltip=Highlight linked drawers that contain the item found by FindIt.

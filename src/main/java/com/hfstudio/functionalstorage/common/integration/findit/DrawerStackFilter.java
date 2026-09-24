@@ -78,7 +78,7 @@ public class DrawerStackFilter implements Predicate<DrawerStackFilter.Query> {
         for (int index = 0; index < fluids.getStorageCount(); index++) {
             BigFluidStack snapshot = fluids.getSnapshot(index);
             FluidStack template = snapshot.getTemplate();
-            if (template != null && target.isFluidEqual(template)) {
+            if (snapshot.getAmount() > 0L && template != null && target.isFluidEqual(template)) {
                 return true;
             }
         }
@@ -89,7 +89,7 @@ public class DrawerStackFilter implements Predicate<DrawerStackFilter.Query> {
     private boolean holdsAspect() {
         for (int index = 0; index < aspects.getStorageCount(); index++) {
             BigAspectStack snapshot = aspects.getSnapshot(index);
-            if (snapshot.getAspect() != null) {
+            if (snapshot.getAmount() > 0L && snapshot.getAspect() != null) {
                 return true;
             }
         }

@@ -19,9 +19,10 @@ public enum Mixins implements IMixins {
     JABBA_DRAWER_DOLLY(new MixinBuilder().addCommonMixins("jabba.MixinItemBarrelMover")
         .addRequiredMod(Mods.Jabba)
         .setPhase(Phase.LATE)),
-    FINDIT_DRAWER_NETWORK(new MixinBuilder().addClientMixins("findit.MixinClientBlockFindService")
-        .addRequiredMod(Mods.FindIt)
-        .setPhase(Phase.LATE));
+    FINDIT_DRAWER_NETWORK(
+        new MixinBuilder().addClientMixins("findit.MixinClientBlockFindService", "findit.MixinClientItemFindService")
+            .addRequiredMod(Mods.FindIt)
+            .setPhase(Phase.LATE));
 
     private final MixinBuilder builder;
 

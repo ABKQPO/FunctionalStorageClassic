@@ -24,15 +24,10 @@ public class MixinClientBlockFindService {
             return;
         }
         List<ChunkPosition> positions = response.getPositions();
-        if (positions == null || positions.isEmpty()) {
-            return;
-        }
         DrawerNetworkHighlightOverlay overlay = DrawerNetworkHighlightOverlay.active();
         if (overlay == null) {
             return;
         }
-        for (ChunkPosition position : positions) {
-            overlay.extend(player.worldObj, position);
-        }
+        overlay.stage(player.worldObj, positions);
     }
 }

@@ -267,7 +267,7 @@ public class FunctionalStorageConfig {
         @Config.RequiresMcRestart
         public boolean enableFindItCompatibility = true;
 
-        @Config.Comment("Draw an outline around every linked drawer a FindIt search matched")
+        @Config.Comment("Highlight only linked drawers containing the item found by a FindIt search")
         @Config.DefaultBoolean(true)
         public boolean highlightLinkedDrawersOnFind = true;
     }
