@@ -40,6 +40,10 @@ public class DrawerClientRegistry {
 
     public static void registerRenderers() {
         DrawerRenderer renderer = new DrawerRenderer();
+        if (Minecraft.getMinecraft()
+            .getResourceManager() instanceof IReloadableResourceManager manager) {
+            manager.registerReloadListener(renderer);
+        }
         ClientRegistry.bindTileEntitySpecialRenderer(WoodDrawerTile.class, renderer);
         ClientRegistry.bindTileEntitySpecialRenderer(FramedDrawerTile.class, renderer);
         ClientRegistry.bindTileEntitySpecialRenderer(FluidDrawerTile.class, renderer);

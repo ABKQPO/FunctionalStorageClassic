@@ -1,6 +1,7 @@
 package com.hfstudio.functionalstorage.client.render;
 
 import java.nio.FloatBuffer;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.WeakHashMap;
 
@@ -10,6 +11,7 @@ import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
+import net.minecraft.client.renderer.GLAllocation;
 import net.minecraft.client.renderer.OpenGlHelper;
 import net.minecraft.client.renderer.RenderBlocks;
 import net.minecraft.client.renderer.RenderHelper;
@@ -18,6 +20,9 @@ import net.minecraft.client.renderer.entity.RenderItem;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.client.renderer.tileentity.TileEntitySpecialRenderer;
+import net.minecraft.client.resources.IResourceManager;
+import net.minecraft.client.resources.IResourceManagerReloadListener;
+import net.minecraft.init.Blocks;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
@@ -60,7 +65,7 @@ import cpw.mods.fml.relauncher.SideOnly;
 import thaumcraft.api.aspects.Aspect;
 
 @SideOnly(Side.CLIENT)
-public class DrawerRenderer extends TileEntitySpecialRenderer {
+public class DrawerRenderer extends TileEntitySpecialRenderer implements IResourceManagerReloadListener {
 
     /**
      * Face-plane offsets along the block's depth axis. The face transform negates
@@ -96,6 +101,7 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
     private static final float LOCK_HALF = 0.5F / 16F;
     private static final float LOCK_CENTER_Y = LOCK_HALF;
     private static final float Z_LOCK = 0.006F;
+    private static final int MAX_CACHED_BLOCK_MODELS = 256;
     private static final ResourceLocation LOCK_TEXTURE = new ResourceLocation(
         FunctionalStorage.MOD_ID,
         "textures/blocks/lock.png");
@@ -106,6 +112,11 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
     private final FloatBuffer modelView = BufferUtils.createFloatBuffer(16);
     private final RenderBlocks inventoryBlocks = new RenderBlocks();
     private final Map<ControllableDrawerTile, FluidRenderState> fluidRenderStates = new WeakHashMap<>();
+    private final Map<BlockModelKey, Integer> blockModelLists = new LinkedHashMap<>(32, 0.75F, true);
+    private final BigItemStack[] itemSnapshots = new BigItemStack[DrawerFaceLayout.X_4.getSlotCount()];
+    private final SimpleIconBatch simpleIcons = new SimpleIconBatch();
+    private final TextLabel[] textLabels = new TextLabel[DrawerFaceLayout.X_4.getSlotCount()];
+    private int textLabelCount;
     private final RenderItem renderer = new RenderItem() {
 
         private final RenderBlocks guiBlocks = new RenderBlocks();
@@ -270,6 +281,8 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
         try {
             GL11.glTranslated(x, y, z);
             applyFaceTransform(DrawerBlock.getAttachment(metadata), DrawerBlock.getHorizontalFacing(metadata));
+            simpleIcons.clear();
+            textLabelCount = 0;
 
             DrawerFaceLayout layout = block.getFaceLayout();
             IBigItemHandler itemHandler = drawer.getItemHandler();
@@ -285,17 +298,20 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
             if (options.isShowUpgrades()) {
                 renderUpgrades(drawer);
             }
-            if (drawer.isLocked()) {
-                renderLockBadge();
-            }
+            simpleIcons.flush();
             if (drawer instanceof EnderDrawerTile ender && ender.getFrequency() != null) {
                 int index = 0;
                 for (ItemStack symbol : DrawerTooltipData.frequencyDisplay(
                     ender.getFrequency()
                         .toString())) {
-                    renderItem(symbol, 0.3F + index++ * 0.1F, 0.12F, 0.08F, false);
+                    renderFlatStack(symbol, 0.3F + index++ * 0.1F, 0.12F, 0.08F);
                 }
+                simpleIcons.flush();
             }
+            if (drawer.isLocked()) {
+                renderLockBadge();
+            }
+            renderTextLabels();
 
         } finally {
             GL11.glPopMatrix();
@@ -304,10 +320,16 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
         }
     }
 
+    @Override
+    public void onResourceManagerReload(IResourceManager resourceManager) {
+        clearBlockModelLists();
+    }
+
     private void renderItemSlots(@Nonnull IBigItemHandler handler, @Nonnull DrawerFaceLayout layout,
         @Nonnull DrawerOptions options) {
-        for (int slot = 0; slot < Math.min(layout.getSlotCount(), handler.getStorageCount()); slot++) {
-            BigItemStack snapshot = handler.getSnapshot(slot);
+        int slotCount = Math.min(layout.getSlotCount(), handler.getStorageCount());
+        for (int slot = 0; slot < slotCount; slot++) {
+            BigItemStack snapshot = itemSnapshots[slot] = handler.getSnapshot(slot);
             if (!snapshot.hasTemplate()) {
                 continue;
             }
@@ -316,6 +338,15 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
             if (options.isShowItemRender()) {
                 renderStack(snapshot.getTemplate(), centerX, centerY, iconScale(layout));
             }
+        }
+        simpleIcons.flush();
+        for (int slot = 0; slot < slotCount; slot++) {
+            BigItemStack snapshot = itemSnapshots[slot];
+            if (!snapshot.hasTemplate()) {
+                continue;
+            }
+            float centerX = layout.getSlotX(slot);
+            float centerY = layout.getSlotY(slot);
             if (options.isShowItemCount()) {
                 renderText(
                     NumberFormatUtil.formatNumberCompact(snapshot.getAmount()),
@@ -447,7 +478,10 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
     }
 
     private void renderStack(ItemStack stack, float centerX, float centerY, float scale) {
-        renderItem(stack, centerX, centerY, scale, FunctionalStorageConfig.CLIENT.threeDimensionalBlockDisplay);
+        if (!simpleIcons.tryAdd(stack, centerX, centerY, scale)) {
+            simpleIcons.flush();
+            renderItem(stack, centerX, centerY, scale, FunctionalStorageConfig.CLIENT.threeDimensionalBlockDisplay);
+        }
     }
 
     private void renderUpgrades(ControllableDrawerTile drawer) {
@@ -455,11 +489,18 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
         for (int slot = 0; slot < count; slot++) {
             ItemStack stack = slot < drawer.getStorageUpgradeSlots() ? drawer.getStorageUpgrade(slot)
                 : drawer.getUtilityUpgrade(slot - drawer.getStorageUpgradeSlots());
-            renderItem(stack, 0.12F + slot * 0.1F, 0.91F, 0.085F, false);
+            renderFlatStack(stack, 0.12F + slot * 0.1F, 0.91F, 0.085F);
         }
         if (drawer instanceof EnderDrawerTile && drawer.voidsOverflow()) {
             if (voidBadge == null) voidBadge = new ItemStack(RegistrationHandler.voidUpgrade);
-            renderItem(voidBadge, 0.88F, 0.91F, 0.085F, false);
+            renderFlatStack(voidBadge, 0.88F, 0.91F, 0.085F);
+        }
+    }
+
+    private void renderFlatStack(ItemStack stack, float centerX, float centerY, float scale) {
+        if (!simpleIcons.tryAdd(stack, centerX, centerY, scale)) {
+            simpleIcons.flush();
+            renderItem(stack, centerX, centerY, scale, false);
         }
     }
 
@@ -492,8 +533,10 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
                 GL11.glTranslatef(x, y, 0.002F - scale / 3f);
                 GL11.glScalef(scale / 1.4f, -scale / 1.4f, -scale / 1.4f);
                 RenderHelper.enableStandardItemLighting();
-                minecraft.entityRenderer.itemRenderer
-                    .renderItem(minecraft.thePlayer, stack, 0, IItemRenderer.ItemRenderType.EQUIPPED);
+                if (!renderCachedBlock(stack, minecraft)) {
+                    minecraft.entityRenderer.itemRenderer
+                        .renderItem(minecraft.thePlayer, stack, 0, IItemRenderer.ItemRenderType.EQUIPPED);
+                }
             } else {
                 GL11.glTranslatef(x, y, Z_ICON_2D);
                 GL11.glScalef(scale / 16F, scale / 16F, 0.0001F);
@@ -517,6 +560,125 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
         }
     }
 
+    private boolean renderCachedBlock(ItemStack stack, Minecraft minecraft) {
+        if (!isCacheableBlock(stack)) {
+            return false;
+        }
+        Block block = Block.getBlockFromItem(stack.getItem());
+        int damage = stack.getItemDamage();
+        BlockModelKey key = new BlockModelKey(block, damage);
+        Integer list = blockModelLists.get(key);
+        if (list == null) {
+            if (blockModelLists.size() >= MAX_CACHED_BLOCK_MODELS) {
+                BlockModelKey oldest = blockModelLists.keySet()
+                    .iterator()
+                    .next();
+                GLAllocation.deleteDisplayLists(blockModelLists.remove(oldest));
+            }
+            list = compileBlockModel(block, damage);
+            blockModelLists.put(key, list);
+        }
+        TextureManager textureManager = minecraft.getTextureManager();
+        textureManager.bindTexture(TextureMap.locationBlocksTexture);
+        boolean translucent = block.getRenderBlockPass() != 0;
+        if (translucent) {
+            GL11.glEnable(GL11.GL_BLEND);
+            GL11.glEnable(GL11.GL_CULL_FACE);
+            OpenGlHelper.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, 1, 0);
+            GL11.glDepthMask(false);
+        }
+        GL11.glCallList(list);
+        if (translucent) {
+            GL11.glDepthMask(true);
+            GL11.glDisable(GL11.GL_BLEND);
+            GL11.glDisable(GL11.GL_CULL_FACE);
+        }
+        return true;
+    }
+
+    private boolean isCacheableBlock(ItemStack stack) {
+        if (stack.hasTagCompound() || !(stack.getItem() instanceof ItemBlock) || stack.getItemSpriteNumber() != 0) {
+            return false;
+        }
+        Block block = Block.getBlockFromItem(stack.getItem());
+        return RenderBlocks.renderItemIn3d(block.getRenderType())
+            && MinecraftForgeClient.getItemRenderer(stack, IItemRenderer.ItemRenderType.EQUIPPED) == null;
+    }
+
+    private int compileBlockModel(Block block, int damage) {
+        int list = GLAllocation.generateDisplayLists(1);
+        boolean compiled = false;
+        GL11.glNewList(list, GL11.GL_COMPILE);
+        try {
+            if (block.getRenderType() == 0) {
+                compileCube(block, damage);
+            } else {
+                inventoryBlocks.renderBlockAsItem(block, damage, 1F);
+            }
+            compiled = true;
+        } finally {
+            GL11.glEndList();
+            if (!compiled) {
+                GLAllocation.deleteDisplayLists(list);
+            }
+        }
+        return list;
+    }
+
+    private void compileCube(Block block, int damage) {
+        if (block == Blocks.dispenser || block == Blocks.dropper || block == Blocks.furnace) {
+            damage = 3;
+        }
+        block.setBlockBoundsForItemRender();
+        inventoryBlocks.setRenderBoundsFromBlock(block);
+        GL11.glRotatef(90F, 0F, 1F, 0F);
+        GL11.glTranslatef(-0.5F, -0.5F, -0.5F);
+        GL11.glColor4f(1F, 1F, 1F, 1F);
+        Tessellator tessellator = Tessellator.instance;
+        tessellator.startDrawingQuads();
+        int tint = block.getRenderColor(damage);
+        // Per-vertex normals and tint keep all six faces in a single VAO draw.
+        for (int side = 0; side < 6; side++) {
+            tessellator.setColorOpaque_I(block == Blocks.grass && side != 1 ? 0xFFFFFF : tint);
+            IIcon icon = inventoryBlocks.getBlockIconFromSideAndMetadata(block, side, damage);
+            switch (side) {
+                case 0 -> {
+                    tessellator.setNormal(0F, -1F, 0F);
+                    inventoryBlocks.renderFaceYNeg(block, 0D, 0D, 0D, icon);
+                }
+                case 1 -> {
+                    tessellator.setNormal(0F, 1F, 0F);
+                    inventoryBlocks.renderFaceYPos(block, 0D, 0D, 0D, icon);
+                }
+                case 2 -> {
+                    tessellator.setNormal(0F, 0F, -1F);
+                    inventoryBlocks.renderFaceZNeg(block, 0D, 0D, 0D, icon);
+                }
+                case 3 -> {
+                    tessellator.setNormal(0F, 0F, 1F);
+                    inventoryBlocks.renderFaceZPos(block, 0D, 0D, 0D, icon);
+                }
+                case 4 -> {
+                    tessellator.setNormal(-1F, 0F, 0F);
+                    inventoryBlocks.renderFaceXNeg(block, 0D, 0D, 0D, icon);
+                }
+                case 5 -> {
+                    tessellator.setNormal(1F, 0F, 0F);
+                    inventoryBlocks.renderFaceXPos(block, 0D, 0D, 0D, icon);
+                }
+            }
+        }
+        tessellator.draw();
+        GL11.glTranslatef(0.5F, 0.5F, 0.5F);
+    }
+
+    private void clearBlockModelLists() {
+        for (Integer list : blockModelLists.values()) {
+            GLAllocation.deleteDisplayLists(list);
+        }
+        blockModelLists.clear();
+    }
+
     private void renderGuiItem(Minecraft minecraft, ItemStack stack) {
         float previousDepth = renderer.zLevel;
         try {
@@ -536,6 +698,174 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
             renderer.zLevel = previousDepth;
         }
     }
+
+    private class SimpleIconBatch {
+
+        private FlatIcon[] entries = new FlatIcon[16];
+        private int size;
+
+        private void clear() {
+            size = 0;
+        }
+
+        private boolean tryAdd(ItemStack stack, float centerX, float centerY, float scale) {
+            if (stack == null || stack.getItem() == null) {
+                return true;
+            }
+            if (stack.getItem()
+                .getRenderPasses(stack.getItemDamage()) != 1) {
+                return false;
+            }
+            Item item = stack.getItem();
+            if (item.requiresMultipleRenderPasses()
+                || MinecraftForgeClient.getItemRenderer(stack, IItemRenderer.ItemRenderType.INVENTORY) != null) {
+                return false;
+            }
+            int spriteNumber = stack.getItemSpriteNumber();
+            if (spriteNumber == 0 && RenderBlocks.renderItemIn3d(
+                Block.getBlockFromItem(item)
+                    .getRenderType())) {
+                return false;
+            }
+            IIcon icon = stack.getIconIndex();
+            if (icon == null) {
+                return false;
+            }
+            if (size == entries.length) {
+                FlatIcon[] expanded = new FlatIcon[entries.length * 2];
+                System.arraycopy(entries, 0, expanded, 0, entries.length);
+                entries = expanded;
+            }
+            FlatIcon entry = entries[size];
+            if (entry == null) {
+                entry = entries[size] = new FlatIcon();
+            }
+            entry.texture = Minecraft.getMinecraft()
+                .getTextureManager()
+                .getResourceLocation(spriteNumber);
+            entry.icon = icon;
+            entry.color = item.getColorFromItemStack(stack, 0);
+            entry.centerX = centerX;
+            entry.centerY = centerY;
+            entry.scale = scale;
+            entry.glint = stack.hasEffect(0);
+            size++;
+            return true;
+        }
+
+        private void flush() {
+            if (size == 0) {
+                return;
+            }
+            TextureManager textureManager = Minecraft.getMinecraft()
+                .getTextureManager();
+            GL11.glPushAttrib(
+                GL11.GL_ENABLE_BIT | GL11.GL_COLOR_BUFFER_BIT | GL11.GL_CURRENT_BIT | GL11.GL_DEPTH_BUFFER_BIT);
+            try {
+                GL11.glDisable(GL11.GL_LIGHTING);
+                GL11.glDisable(GL11.GL_BLEND);
+                GL11.glEnable(GL11.GL_ALPHA_TEST);
+                GL11.glEnable(GL11.GL_DEPTH_TEST);
+                GL11.glDepthFunc(GL11.GL_LEQUAL);
+                GL11.glDepthMask(true);
+                GL11.glColor4f(1F, 1F, 1F, 1F);
+                for (int index = 0; index < size; index++) {
+                    if (entries[index].texture == null) {
+                        continue;
+                    }
+                    ResourceLocation texture = entries[index].texture;
+                    textureManager.bindTexture(texture);
+                    Tessellator tessellator = Tessellator.instance;
+                    tessellator.startDrawingQuads();
+                    for (int entryIndex = index; entryIndex < size; entryIndex++) {
+                        FlatIcon entry = entries[entryIndex];
+                        if (!texture.equals(entry.texture)) {
+                            continue;
+                        }
+                        addIcon(tessellator, entry);
+                    }
+                    tessellator.draw();
+                    for (int next = index + 1; next < size; next++) {
+                        if (texture.equals(entries[next].texture)) {
+                            entries[next].texture = null;
+                        }
+                    }
+                }
+                renderGlint(textureManager);
+            } finally {
+                GL11.glPopAttrib();
+                size = 0;
+            }
+        }
+
+        private void renderGlint(TextureManager textureManager) {
+            boolean hasGlint = false;
+            for (int index = 0; index < size; index++) {
+                hasGlint |= entries[index].glint;
+            }
+            if (!hasGlint) {
+                return;
+            }
+            GL11.glDepthFunc(GL11.GL_EQUAL);
+            GL11.glDepthMask(false);
+            GL11.glEnable(GL11.GL_BLEND);
+            OpenGlHelper.glBlendFunc(GL11.GL_SRC_COLOR, GL11.GL_ONE, GL11.GL_ZERO, GL11.GL_ONE);
+            textureManager.bindTexture(ITEM_GLINT_TEXTURE);
+            long time = Minecraft.getSystemTime();
+            for (int pass = 0; pass < 2; pass++) {
+                int period = 3000 + pass * 1873;
+                float scroll = (time % period) / (float) period;
+                float shear = pass == 0 ? 4F : -1F;
+                float span = 16F / 256F;
+                Tessellator tessellator = Tessellator.instance;
+                tessellator.startDrawingQuads();
+                tessellator.setColorRGBA_F(0.5F, 0.25F, 0.8F, 1F);
+                for (int index = 0; index < size; index++) {
+                    FlatIcon entry = entries[index];
+                    if (!entry.glint) {
+                        continue;
+                    }
+                    float half = entry.scale / 2F;
+                    float left = entry.centerX - half;
+                    float right = entry.centerX + half;
+                    float top = entry.centerY - half;
+                    float bottom = entry.centerY + half;
+                    tessellator.addVertexWithUV(left, bottom, Z_ICON_2D, scroll + span * shear, span);
+                    tessellator.addVertexWithUV(right, bottom, Z_ICON_2D, scroll + span * (1F + shear), span);
+                    tessellator.addVertexWithUV(right, top, Z_ICON_2D, scroll + span, 0D);
+                    tessellator.addVertexWithUV(left, top, Z_ICON_2D, scroll, 0D);
+                }
+                tessellator.draw();
+            }
+        }
+
+        private void addIcon(Tessellator tessellator, FlatIcon entry) {
+            tessellator.setColorOpaque_I(entry.color);
+            float half = entry.scale / 2F;
+            float left = entry.centerX - half;
+            float right = entry.centerX + half;
+            float top = entry.centerY - half;
+            float bottom = entry.centerY + half;
+            IIcon icon = entry.icon;
+            tessellator.addVertexWithUV(left, bottom, Z_ICON_2D, icon.getMinU(), icon.getMaxV());
+            tessellator.addVertexWithUV(right, bottom, Z_ICON_2D, icon.getMaxU(), icon.getMaxV());
+            tessellator.addVertexWithUV(right, top, Z_ICON_2D, icon.getMaxU(), icon.getMinV());
+            tessellator.addVertexWithUV(left, top, Z_ICON_2D, icon.getMinU(), icon.getMinV());
+        }
+    }
+
+    private static class FlatIcon {
+
+        private ResourceLocation texture;
+        private IIcon icon;
+        private int color;
+        private float centerX;
+        private float centerY;
+        private float scale;
+        private boolean glint;
+    }
+
+    private record BlockModelKey(Block block, int damage) {}
 
     /**
      * Resolves the inner cavity region one fluid slot occupies, as
@@ -800,45 +1130,59 @@ public class DrawerRenderer extends TileEntitySpecialRenderer {
     }
 
     private void renderLockBadge() {
-        GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_LIGHTING_BIT | GL11.GL_COLOR_BUFFER_BIT);
-        GL11.glPushMatrix();
-        try {
-            GL11.glTranslatef(0.5F, LOCK_CENTER_Y, Z_LOCK);
-            GL11.glDisable(GL11.GL_LIGHTING);
-            GL11.glEnable(GL11.GL_BLEND);
-            GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-            Minecraft.getMinecraft()
-                .getTextureManager()
-                .bindTexture(LOCK_TEXTURE);
-            GL11.glColor4f(1F, 1F, 1F, 1F);
-            Tessellator tessellator = Tessellator.instance;
-            tessellator.startDrawingQuads();
-            tessellator.addVertexWithUV(-LOCK_HALF, LOCK_HALF, 0D, 0D, 1D);
-            tessellator.addVertexWithUV(LOCK_HALF, LOCK_HALF, 0D, 1D, 1D);
-            tessellator.addVertexWithUV(LOCK_HALF, -LOCK_HALF, 0D, 1D, 0D);
-            tessellator.addVertexWithUV(-LOCK_HALF, -LOCK_HALF, 0D, 0D, 0D);
-            tessellator.draw();
-        } finally {
-            GL11.glPopMatrix();
-            GL11.glPopAttrib();
-        }
+        // Only text labels follow; the enclosing drawer render restores GL state.
+        GL11.glDisable(GL11.GL_LIGHTING);
+        GL11.glEnable(GL11.GL_BLEND);
+        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+        Minecraft.getMinecraft()
+            .getTextureManager()
+            .bindTexture(LOCK_TEXTURE);
+        GL11.glColor4f(1F, 1F, 1F, 1F);
+        Tessellator tessellator = Tessellator.instance;
+        tessellator.startDrawingQuads();
+        tessellator.addVertexWithUV(0.5F - LOCK_HALF, LOCK_CENTER_Y + LOCK_HALF, Z_LOCK, 0D, 1D);
+        tessellator.addVertexWithUV(0.5F + LOCK_HALF, LOCK_CENTER_Y + LOCK_HALF, Z_LOCK, 1D, 1D);
+        tessellator.addVertexWithUV(0.5F + LOCK_HALF, LOCK_CENTER_Y - LOCK_HALF, Z_LOCK, 1D, 0D);
+        tessellator.addVertexWithUV(0.5F - LOCK_HALF, LOCK_CENTER_Y - LOCK_HALF, Z_LOCK, 0D, 0D);
+        tessellator.draw();
     }
 
     private void renderText(String text, float centerX, float centerY, float iconScale) {
-        FontRenderer font = Minecraft.getMinecraft().fontRenderer;
-        int width = font.getStringWidth(text);
-        GL11.glPushAttrib(GL11.GL_DEPTH_BUFFER_BIT | GL11.GL_LIGHTING_BIT | GL11.GL_ENABLE_BIT);
-        GL11.glPushMatrix();
-        try {
-            GL11.glTranslatef(centerX, centerY + (iconScale > 0.25F ? 0.30F : 0.1F), Z_TEXT);
-            GL11.glScalef(TEXT_SCALE, TEXT_SCALE, 1F);
-            GL11.glDisable(GL11.GL_LIGHTING);
-            GL11.glDepthMask(false);
-            font.drawStringWithShadow(text, -width / 2, 0, 0xFFFFFF);
-        } finally {
-            GL11.glPopMatrix();
-            GL11.glPopAttrib();
+        TextLabel label = textLabels[textLabelCount];
+        if (label == null) {
+            label = textLabels[textLabelCount] = new TextLabel();
         }
+        label.text = text;
+        label.x = centerX;
+        label.y = centerY + (iconScale > 0.25F ? 0.30F : 0.1F);
+        textLabelCount++;
+    }
+
+    private void renderTextLabels() {
+        if (textLabelCount == 0) {
+            return;
+        }
+        FontRenderer font = Minecraft.getMinecraft().fontRenderer;
+        GL11.glDisable(GL11.GL_LIGHTING);
+        GL11.glDepthMask(false);
+        for (int index = 0; index < textLabelCount; index++) {
+            TextLabel label = textLabels[index];
+            GL11.glPushMatrix();
+            try {
+                GL11.glTranslatef(label.x, label.y, Z_TEXT);
+                GL11.glScalef(TEXT_SCALE, TEXT_SCALE, 1F);
+                font.drawStringWithShadow(label.text, -font.getStringWidth(label.text) / 2, 0, 0xFFFFFF);
+            } finally {
+                GL11.glPopMatrix();
+            }
+        }
+    }
+
+    private static class TextLabel {
+
+        private String text;
+        private float x;
+        private float y;
     }
 
     private void renderIndicator(float centerX, float centerY, float iconScale, float fill, DrawerOptions options) {

@@ -32,7 +32,6 @@ public class FunctionalStorageConfig {
     public static final Compatibility COMPATIBILITY = new Compatibility();
 
     @Config.Comment("Client side behaviour")
-    @Config.RequiresMcRestart
     public static final Client CLIENT = new Client();
 
     public static class General {
