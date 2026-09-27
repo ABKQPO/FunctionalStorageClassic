@@ -182,9 +182,8 @@ public class DrawerItemInventory implements ISidedInventory {
                 1,
                 handler.getSnapshot(index)
                     .getTemplateStackSize());
-            long normalizedCapacity = capacity > Long.MAX_VALUE / STACK_UNIT ? Long.MAX_VALUE
-                : capacity * STACK_UNIT / stackSize;
-            smallestUnit = Math.min(smallestUnit, normalizedCapacity);
+            long stackUnits = capacity / stackSize;
+            smallestUnit = Math.min(smallestUnit, stackUnits);
             measured = true;
         }
         if (!measured) {
@@ -279,11 +278,8 @@ public class DrawerItemInventory implements ISidedInventory {
         if (!valid(index) || stack.getItem() == null || stack.stackSize <= 0) {
             return false;
         }
-        if (valid(index)) {
-            handedOut.set(index);
-        }
-        ItemStack current = valid(index) ? handler.getSnapshot(index)
-            .toItemStack() : null;
+        ItemStack current = handler.getSnapshot(index)
+            .toItemStack();
         if (current != null && !sameType(current, stack)) {
             return false;
         }
@@ -304,7 +300,11 @@ public class DrawerItemInventory implements ISidedInventory {
 
     @Override
     public boolean canExtractItem(int index, @Nonnull ItemStack stack, int side) {
-        return valid(index);
+        if (!valid(index) || stack == null || stack.getItem() == null || stack.stackSize <= 0) {
+            return false;
+        }
+        BigItemStack current = handler.getSnapshot(index);
+        return current.getAmount() > 0L && current.isSameType(stack);
     }
 
     @Nonnull
