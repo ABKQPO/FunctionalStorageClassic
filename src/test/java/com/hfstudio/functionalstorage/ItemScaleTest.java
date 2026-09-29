@@ -15,12 +15,12 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import com.gtnewhorizon.gtnhlib.item.FastImmutableItemStack;
-import com.gtnewhorizon.gtnhlib.item.InventoryItemSink;
 import com.gtnewhorizon.gtnhlib.item.InventoryItemSource;
 import com.hfstudio.functionalstorage.api.storage.BigItemStack;
 import com.hfstudio.functionalstorage.api.storage.StorageAction;
 import com.hfstudio.functionalstorage.api.storage.TransferResult;
 import com.hfstudio.functionalstorage.common.inventory.adapter.DrawerItemInventory;
+import com.hfstudio.functionalstorage.common.inventory.adapter.DrawerItemSink;
 import com.hfstudio.functionalstorage.common.inventory.base.BigItemHandler;
 import com.hfstudio.functionalstorage.support.StorageFixtures;
 import com.hfstudio.functionalstorage.support.VanillaBootstrap;
@@ -52,8 +52,7 @@ public class ItemScaleTest {
     @DisplayName("two thousand types each keep their own slot and amount")
     void thousandsOfTypesStayDistinct() {
         BigItemHandler handler = StorageFixtures.handler(TYPES);
-        IInventory view = new DrawerItemInventory(handler, "drawer", () -> {});
-        InventoryItemSink sink = new InventoryItemSink(view, SIDE);
+        DrawerItemSink sink = new DrawerItemSink(() -> handler);
         Item[] items = newItemArray(TYPES);
 
         for (int index = 0; index < TYPES; index++) {
@@ -74,8 +73,7 @@ public class ItemScaleTest {
     @DisplayName("a full network accepts hundreds of thousands of items without loss")
     void highVolumeInsertionConservesItems() {
         BigItemHandler handler = StorageFixtures.handler(SLOTS);
-        IInventory view = new DrawerItemInventory(handler, "drawer", () -> {});
-        InventoryItemSink sink = new InventoryItemSink(view, SIDE);
+        DrawerItemSink sink = new DrawerItemSink(() -> handler);
         Item item = StorageFixtures.newItem();
 
         long capacity = StorageFixtures.capacityOf(item) * SLOTS;
@@ -115,7 +113,7 @@ public class ItemScaleTest {
             Item item = items[kind];
 
             if (random.nextInt(10) < 8) {
-                InventoryItemSink sink = new InventoryItemSink(view, SIDE);
+                DrawerItemSink sink = new DrawerItemSink(() -> handler);
                 int rejected = sink.store(new FastImmutableItemStack(StorageFixtures.stack(item, amount)));
                 expected[kind] += amount - rejected;
             } else {
@@ -151,7 +149,7 @@ public class ItemScaleTest {
         assertTrue(capacity > Integer.MAX_VALUE, "the fixture must exceed the int boundary, was " + capacity);
 
         int limit = view.getInventoryStackLimit();
-        assertTrue(limit > 64, "the bridge must expose room beyond one stack, was " + limit);
+        assertEquals(64, limit, "the inventory bridge must not overstate what one write can commit");
 
         TransferResult<BigItemStack, ?> filled = handler
             .insertRouted(new BigItemStack(StorageFixtures.one(item), capacity), StorageAction.EXECUTE);
@@ -170,7 +168,7 @@ public class ItemScaleTest {
     void drainingOneTypeLeavesOthersIntact() {
         BigItemHandler handler = StorageFixtures.handler(TYPES);
         IInventory view = new DrawerItemInventory(handler, "drawer", () -> {});
-        InventoryItemSink sink = new InventoryItemSink(view, SIDE);
+        DrawerItemSink sink = new DrawerItemSink(() -> handler);
         Item[] items = newItemArray(TYPES);
 
         for (int index = 0; index < TYPES; index++) {

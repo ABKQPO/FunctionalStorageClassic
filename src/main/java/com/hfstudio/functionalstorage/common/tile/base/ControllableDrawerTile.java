@@ -19,7 +19,10 @@ import net.minecraft.network.play.server.S35PacketUpdateTileEntity;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.world.World;
+import net.minecraftforge.common.util.ForgeDirection;
 
+import com.gtnewhorizon.gtnhlib.capability.CapabilityProvider;
+import com.gtnewhorizon.gtnhlib.capability.item.ItemSink;
 import com.hfstudio.functionalstorage.FunctionalStorage;
 import com.hfstudio.functionalstorage.api.storage.BigItemStack;
 import com.hfstudio.functionalstorage.api.storage.IBigAspectHandler;
@@ -38,6 +41,7 @@ import com.hfstudio.functionalstorage.common.integration.Mods;
 import com.hfstudio.functionalstorage.common.integration.ae2.DrawerExternalStorageHandler;
 import com.hfstudio.functionalstorage.common.interaction.FluidContainerInteraction;
 import com.hfstudio.functionalstorage.common.inventory.adapter.DrawerItemInventory;
+import com.hfstudio.functionalstorage.common.inventory.adapter.DrawerItemSink;
 import com.hfstudio.functionalstorage.common.inventory.base.AbstractStorageHandler;
 import com.hfstudio.functionalstorage.common.inventory.base.BigItemHandler;
 import com.hfstudio.functionalstorage.common.item.ConfigurationToolItem.ConfigurationAction;
@@ -57,7 +61,7 @@ import cpw.mods.fml.relauncher.SideOnly;
 import lombok.Getter;
 
 /** Owns upgrades, display options, locking, and the active storage subscription. */
-public abstract class ControllableDrawerTile extends TileEntity {
+public abstract class ControllableDrawerTile extends TileEntity implements CapabilityProvider {
 
     private static final String KEY_STORAGE_UPGRADES = "StorageUpgrades";
     private static final String KEY_UTILITY_UPGRADES = "UtilityUpgrades";
@@ -89,6 +93,7 @@ public abstract class ControllableDrawerTile extends TileEntity {
     private boolean pendingUpdatePacket;
     private boolean layoutValidated;
     private IInventory inventoryView;
+    private final ItemSink itemSink = new DrawerItemSink(this::getItemHandler);
     private UUID lastInteractionPlayer;
     private long lastInteractionTick = Long.MIN_VALUE;
     private int lastInteractionSlot = -1;
@@ -97,6 +102,12 @@ public abstract class ControllableDrawerTile extends TileEntity {
     @Nullable
     public IBigItemHandler getItemHandler() {
         return null;
+    }
+
+    @Nullable
+    @Override
+    public <T> T getCapability(@Nonnull Class<T> capability, @Nonnull ForgeDirection side) {
+        return capability == ItemSink.class && getItemHandler() != null ? capability.cast(itemSink) : null;
     }
 
     /** Sets a locked drawer's retained template without inserting any items. */
@@ -941,10 +952,8 @@ public abstract class ControllableDrawerTile extends TileEntity {
      *
      * <p>
      * A linked drawer also drops the limit of the controller aggregating it. The
-     * aggregate is the smallest per-item capacity of its drawers, so a drawer whose
-     * capacity fell would otherwise leave the controller reporting room that no
-     * longer exists, and a caller that trusts that figure loses whatever it believed
-     * it had handed over.
+     * legacy inventory limit is at most one stack and no larger than the smallest
+     * positive capacity, so it must be recomputed when a linked drawer changes.
      * </p>
      */
     protected final void invalidateStorageLimit() {

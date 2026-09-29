@@ -191,34 +191,18 @@ public class DrawerItemInventory implements ISidedInventory {
     @Override
     public int getInventoryStackLimit() {
         if (stackLimit == Integer.MIN_VALUE) {
-            stackLimit = calculateStackLimit();
+            long smallest = STACK_UNIT;
+            for (int index = 0, count = handler.getStorageCount(); index < count; index++) {
+                long capacity = handler.getCapacity(index);
+                if (capacity > 0L) {
+                    long safeLimit = capacity < STACK_UNIT && !handler.getSnapshot(index)
+                        .hasTemplate() ? 1L : capacity;
+                    smallest = Math.min(smallest, safeLimit);
+                }
+            }
+            stackLimit = (int) smallest;
         }
         return stackLimit;
-    }
-
-    private int calculateStackLimit() {
-        long smallestUnit = Long.MAX_VALUE;
-        int count = Math.max(0, handler.getStorageCount());
-        boolean measured = false;
-        for (int index = 0; index < count; index++) {
-            long capacity = Math.max(0L, handler.getCapacity(index));
-            if (capacity <= 0L) {
-                continue;
-            }
-            int stackSize = Math.max(
-                1,
-                handler.getSnapshot(index)
-                    .getTemplateStackSize());
-            long stackUnits = Math.max(1L, capacity / stackSize);
-            smallestUnit = Math.min(smallestUnit, stackUnits);
-            measured = true;
-        }
-        if (!measured) {
-            return STACK_UNIT;
-        }
-        long limit = smallestUnit > Integer.MAX_VALUE / (long) STACK_UNIT ? Integer.MAX_VALUE
-            : smallestUnit * STACK_UNIT;
-        return (int) Math.min(Integer.MAX_VALUE, Math.max(1L, limit));
     }
 
     @Override

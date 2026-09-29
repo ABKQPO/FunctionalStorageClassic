@@ -15,9 +15,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import com.gtnewhorizon.gtnhlib.item.FastImmutableItemStack;
-import com.gtnewhorizon.gtnhlib.item.InventoryItemSink;
 import com.gtnewhorizon.gtnhlib.item.InventoryItemSource;
 import com.hfstudio.functionalstorage.common.inventory.adapter.DrawerItemInventory;
+import com.hfstudio.functionalstorage.common.inventory.adapter.DrawerItemSink;
 import com.hfstudio.functionalstorage.common.inventory.base.BigItemHandler;
 import com.hfstudio.functionalstorage.support.StorageFixtures;
 import com.hfstudio.functionalstorage.support.VanillaBootstrap;
@@ -26,8 +26,8 @@ import com.hfstudio.functionalstorage.support.VanillaBootstrap;
  * Conservation checks under sustained random logistics traffic.
  *
  * <p>
- * Every scenario drives the real GTNHLib sink and source, which are the paths
- * GT5U buses and vanilla hoppers use, and asserts that the amount of an item
+ * Every scenario drives the GTNHLib sink capability and inventory source, and
+ * asserts that the amount of an item
  * leaving a source equals the amount arriving in a sink. A drawer reports its
  * stored amount through an int-counted inventory, so any mismatch between the
  * reported figure and the physically committed amount shows up here as created or
@@ -48,13 +48,12 @@ public class LogisticsConservationTest {
     @DisplayName("a drawn-down drawer never loses or duplicates items across many transfers")
     void repeatedTransfersConserveItems() {
         BigItemHandler drawer = StorageFixtures.handler(SLOTS);
-        IInventory view = new DrawerItemInventory(drawer, "drawer", () -> {});
         Item item = StorageFixtures.newItem();
         long capacity = StorageFixtures.capacityOf(item) * SLOTS;
 
         long stored = 0L;
         for (int round = 0; round < 400; round++) {
-            InventoryItemSink sink = new InventoryItemSink(view, SIDE);
+            DrawerItemSink sink = new DrawerItemSink(() -> drawer);
             int request = 1 + round % 97;
             int rejected = sink.store(new FastImmutableItemStack(StorageFixtures.stack(item, request)));
             stored += request - rejected;
@@ -77,7 +76,7 @@ public class LogisticsConservationTest {
         Item item = StorageFixtures.newItem();
         long capacity = StorageFixtures.capacityOf(item) * SLOTS;
 
-        InventoryItemSink sink = new InventoryItemSink(view, SIDE);
+        DrawerItemSink sink = new DrawerItemSink(() -> drawer);
         sink.store(new FastImmutableItemStack(StorageFixtures.stack(item, (int) capacity)));
         assertEquals(capacity, StorageFixtures.total(drawer, item), "the drawer must fill to capacity");
 
@@ -122,7 +121,7 @@ public class LogisticsConservationTest {
             int amount = 1 + random.nextInt(80);
 
             if (inserting) {
-                InventoryItemSink sink = new InventoryItemSink(view, SIDE);
+                DrawerItemSink sink = new DrawerItemSink(() -> drawer);
                 int rejected = sink.store(new FastImmutableItemStack(StorageFixtures.stack(item, amount)));
                 expected = Math.min(capacity, expected + (amount - rejected));
             } else {
@@ -142,11 +141,9 @@ public class LogisticsConservationTest {
     @DisplayName("distinct items never share a slot, so none is overwritten")
     void distinctItemsStayInTheirOwnSlots() {
         BigItemHandler drawer = StorageFixtures.handler(SLOTS);
-        IInventory view = new DrawerItemInventory(drawer, "drawer", () -> {});
-
         for (int index = 0; index < SLOTS; index++) {
             Item item = StorageFixtures.newItem();
-            InventoryItemSink sink = new InventoryItemSink(view, SIDE);
+            DrawerItemSink sink = new DrawerItemSink(() -> drawer);
             sink.store(new FastImmutableItemStack(StorageFixtures.stack(item, 300 + index)));
         }
 
