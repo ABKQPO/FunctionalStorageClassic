@@ -356,8 +356,8 @@ public class DrawerItemInventory implements ISidedInventory {
         if (current != null && !sameType(current, stack)) {
             return false;
         }
-        return handler.insert(index, new BigItemStack(stack, stack.stackSize), StorageAction.SIMULATE)
-            .getProcessedAmount() == stack.stackSize;
+        return handler.insert(index, new BigItemStack(stack, 1L), StorageAction.SIMULATE)
+            .getProcessedAmount() > 0L;
     }
 
     @Override
