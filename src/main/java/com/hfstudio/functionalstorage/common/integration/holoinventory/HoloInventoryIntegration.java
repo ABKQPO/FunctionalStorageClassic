@@ -29,15 +29,12 @@ public class HoloInventoryIntegration {
                 }
                 for (int slot = 0; slot < handler.getStorageCount(); slot++) {
                     BigItemStack snapshot = handler.getSnapshot(slot);
-                    if (snapshot.isEmpty()) {
+                    if (!snapshot.hasTemplate() || (snapshot.getAmount() == 0L && !handler.isLocked(slot))) {
                         continue;
                     }
-                    ItemStack stack = snapshot.toItemStack();
-                    if (stack == null) {
-                        continue;
-                    }
+                    ItemStack stack = snapshot.getTemplate();
                     NBTTagCompound tag = stack.writeToNBT(new NBTTagCompound());
-                    tag.setInteger(NBTKeys.NBT_KEY_COUNT, stack.stackSize);
+                    tag.setInteger(NBTKeys.NBT_KEY_COUNT, (int) Math.min(snapshot.getAmount(), Integer.MAX_VALUE));
                     result.appendTag(tag);
                 }
                 return result;
