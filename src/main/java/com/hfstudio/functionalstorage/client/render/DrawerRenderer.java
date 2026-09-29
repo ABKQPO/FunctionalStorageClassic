@@ -48,9 +48,11 @@ import com.hfstudio.functionalstorage.api.storage.IBigAspectHandler;
 import com.hfstudio.functionalstorage.api.storage.IBigFluidHandler;
 import com.hfstudio.functionalstorage.api.storage.IBigItemHandler;
 import com.hfstudio.functionalstorage.client.gui.DrawerTooltipData;
+import com.hfstudio.functionalstorage.client.integration.AngelicaFontBatch;
 import com.hfstudio.functionalstorage.common.block.DrawerAttachment;
 import com.hfstudio.functionalstorage.common.block.DrawerFaceLayout;
 import com.hfstudio.functionalstorage.common.block.base.DrawerBlock;
+import com.hfstudio.functionalstorage.common.integration.Mods;
 import com.hfstudio.functionalstorage.common.item.ConfigurationToolItem;
 import com.hfstudio.functionalstorage.common.options.DrawerOptions;
 import com.hfstudio.functionalstorage.common.tile.EnderDrawerTile;
@@ -1165,16 +1167,25 @@ public class DrawerRenderer extends TileEntitySpecialRenderer implements IResour
         FontRenderer font = Minecraft.getMinecraft().fontRenderer;
         GL11.glDisable(GL11.GL_LIGHTING);
         GL11.glDepthMask(false);
-        for (int index = 0; index < textLabelCount; index++) {
-            TextLabel label = textLabels[index];
-            GL11.glPushMatrix();
+        GL11.glPushMatrix();
+        try {
+            GL11.glTranslatef(0F, 0F, Z_TEXT);
+            GL11.glScalef(TEXT_SCALE, TEXT_SCALE, 1F);
+            boolean batched = textLabelCount > 1 && Mods.Angelica.isModLoaded() && AngelicaFontBatch.begin(font);
             try {
-                GL11.glTranslatef(label.x, label.y, Z_TEXT);
-                GL11.glScalef(TEXT_SCALE, TEXT_SCALE, 1F);
-                font.drawStringWithShadow(label.text, -font.getStringWidth(label.text) / 2, 0, 0xFFFFFF);
+                for (int index = 0; index < textLabelCount; index++) {
+                    TextLabel label = textLabels[index];
+                    int x = Math.round(label.x / TEXT_SCALE) - font.getStringWidth(label.text) / 2;
+                    int y = Math.round(label.y / TEXT_SCALE);
+                    font.drawStringWithShadow(label.text, x, y, 0xFFFFFF);
+                }
             } finally {
-                GL11.glPopMatrix();
+                if (batched) {
+                    AngelicaFontBatch.end(font);
+                }
             }
+        } finally {
+            GL11.glPopMatrix();
         }
     }
 

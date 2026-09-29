@@ -15,6 +15,7 @@ public enum Mods implements IMod, ITargetMod {
 
     // spotless:off
     AE2("appliedenergistics2"),
+    Angelica("angelica"),
     Etfuturum("etfuturum"),
     FindIt("findit"),
     InventoryBogoSorter("bogosorter"),
