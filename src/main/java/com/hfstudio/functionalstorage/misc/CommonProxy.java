@@ -6,6 +6,7 @@ import com.hfstudio.functionalstorage.common.integration.Mods;
 import com.hfstudio.functionalstorage.common.integration.ae2.AE2Integration;
 import com.hfstudio.functionalstorage.common.integration.bogosorter.BogoSorterIntegration;
 import com.hfstudio.functionalstorage.common.integration.findit.FindItIntegration;
+import com.hfstudio.functionalstorage.common.integration.holoinventory.HoloInventoryIntegration;
 import com.hfstudio.functionalstorage.common.integration.jabba.JabbaIntegration;
 import com.hfstudio.functionalstorage.common.integration.thaumcraft.ThaumcraftIntegration;
 import com.hfstudio.functionalstorage.common.integration.waila.WailaIntegration;
@@ -36,6 +37,7 @@ public class CommonProxy {
     public void init(FMLInitializationEvent event) {
         MinecraftForge.EVENT_BUS.register(new DrawerClickHandler());
         if (Mods.Waila.isModLoaded()) WailaIntegration.register();
+        if (Mods.HoloInventory.isModLoaded()) HoloInventoryIntegration.register();
         if (Mods.FindIt.isModLoaded() && FunctionalStorageConfig.COMPATIBILITY.enableFindItCompatibility) {
             FindItIntegration.register(isClientSide());
         }

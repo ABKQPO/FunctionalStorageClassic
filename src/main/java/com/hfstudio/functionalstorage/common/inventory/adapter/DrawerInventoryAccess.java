@@ -2,9 +2,10 @@ package com.hfstudio.functionalstorage.common.inventory.adapter;
 
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.IInventory;
+import net.minecraft.inventory.ISidedInventory;
 import net.minecraft.item.ItemStack;
 
-public interface DrawerInventoryAccess extends IInventory {
+public interface DrawerInventoryAccess extends ISidedInventory {
 
     IInventory getInventoryView();
 
@@ -66,5 +67,20 @@ public interface DrawerInventoryAccess extends IInventory {
     @Override
     default boolean isItemValidForSlot(int slot, ItemStack stack) {
         return getInventoryView().isItemValidForSlot(slot, stack);
+    }
+
+    @Override
+    default int[] getAccessibleSlotsFromSide(int side) {
+        return ((ISidedInventory) getInventoryView()).getAccessibleSlotsFromSide(side);
+    }
+
+    @Override
+    default boolean canInsertItem(int slot, ItemStack stack, int side) {
+        return ((ISidedInventory) getInventoryView()).canInsertItem(slot, stack, side);
+    }
+
+    @Override
+    default boolean canExtractItem(int slot, ItemStack stack, int side) {
+        return ((ISidedInventory) getInventoryView()).canExtractItem(slot, stack, side);
     }
 }

@@ -108,7 +108,10 @@ public abstract class StorageNetworkTile extends ControllableDrawerTile
             if (drawer.getFluidHandler() != null) fluidHandlers.add(drawer.getFluidHandler());
             if (drawer.getAspectHandler() != null) aspectHandlers.add(drawer.getAspectHandler());
         }
-        if (items.rebuild(itemHandlers)) inventory = null;
+        if (items.rebuild(itemHandlers)) {
+            if (inventory instanceof DrawerItemInventory view) view.invalidateSlots();
+            inventory = null;
+        }
         fluids.rebuild(fluidHandlers);
         if (aspects != null) aspects.rebuild(aspectHandlers);
     }

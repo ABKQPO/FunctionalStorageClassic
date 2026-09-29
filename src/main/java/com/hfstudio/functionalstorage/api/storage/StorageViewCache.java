@@ -66,7 +66,7 @@ public class StorageViewCache {
     public int virtualSlots(@Nonnull IBigItemHandler handler) {
         int cached = virtualSlots;
         if (cached < 0) {
-            cached = views(handler).size() + (hasEmptyStorage(handler) ? 1 : 0);
+            cached = views(handler).size() + (handler.getStorageCount() > 0 ? 1 : 0);
             virtualSlots = cached;
         }
         return cached;

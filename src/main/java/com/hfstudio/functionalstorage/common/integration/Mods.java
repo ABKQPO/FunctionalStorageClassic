@@ -18,6 +18,7 @@ public enum Mods implements IMod, ITargetMod {
     Angelica("angelica"),
     Etfuturum("etfuturum"),
     FindIt("findit"),
+    HoloInventory("holoinventory"),
     InventoryBogoSorter("bogosorter"),
     MouseTweaks("MouseTweaks"),
     CodeChickenCore("CodeChickenCore"),

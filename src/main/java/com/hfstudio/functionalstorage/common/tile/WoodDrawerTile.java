@@ -4,6 +4,7 @@ import javax.annotation.Nonnull;
 
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.IInventory;
+import net.minecraft.inventory.ISidedInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 
@@ -15,8 +16,8 @@ import com.hfstudio.functionalstorage.common.storage.DrawerLayout;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 import com.hfstudio.functionalstorage.config.FunctionalStorageConfig;
 
-/** Exposes physical item slots directly through vanilla IInventory for hopper compatibility. */
-public class WoodDrawerTile extends ControllableDrawerTile implements IInventory {
+/** Exposes physical item slots through the sided inventory adapter for automation. */
+public class WoodDrawerTile extends ControllableDrawerTile implements ISidedInventory {
 
     private static final String KEY_ITEMS = "Items";
 
@@ -168,6 +169,21 @@ public class WoodDrawerTile extends ControllableDrawerTile implements IInventory
     @Override
     public boolean isItemValidForSlot(int index, ItemStack stack) {
         return view().isItemValidForSlot(index, stack);
+    }
+
+    @Override
+    public int[] getAccessibleSlotsFromSide(int side) {
+        return ((ISidedInventory) view()).getAccessibleSlotsFromSide(side);
+    }
+
+    @Override
+    public boolean canInsertItem(int index, ItemStack stack, int side) {
+        return ((ISidedInventory) view()).canInsertItem(index, stack, side);
+    }
+
+    @Override
+    public boolean canExtractItem(int index, ItemStack stack, int side) {
+        return ((ISidedInventory) view()).canExtractItem(index, stack, side);
     }
 
     @Nonnull

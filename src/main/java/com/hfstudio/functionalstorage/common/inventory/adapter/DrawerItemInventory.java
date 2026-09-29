@@ -23,13 +23,15 @@ public class DrawerItemInventory implements ISidedInventory {
     private final IBigItemHandler handler;
     private final String name;
     private final Runnable changeListener;
-    private final ItemStack[] exposed;
-    private final ItemStack[] baseline;
-    private final ItemStack[] rollbackStacks;
-    private final long[] rollbackAmounts;
+    private ItemStack[] exposed;
+    private ItemStack[] baseline;
+    private ItemStack[] inputExposed;
+    private ItemStack[] inputBaseline;
+    private ItemStack[] rollbackStacks;
+    private long[] rollbackAmounts;
     private final BitSet handedOut = new BitSet();
-    private final int inputSlot;
-    private final int[] accessibleSlots;
+    private final BitSet inputHandedOut = new BitSet();
+    private int[] accessibleSlots;
     private boolean synchronizing;
     private int stackLimit = Integer.MIN_VALUE;
 
@@ -40,24 +42,31 @@ public class DrawerItemInventory implements ISidedInventory {
         this.changeListener = changeListener;
         exposed = new ItemStack[handler.getStorageCount()];
         baseline = new ItemStack[exposed.length];
+        inputExposed = new ItemStack[exposed.length];
+        inputBaseline = new ItemStack[exposed.length];
         rollbackStacks = new ItemStack[exposed.length];
         rollbackAmounts = new long[exposed.length];
-        inputSlot = exposed.length;
-        accessibleSlots = new int[inputSlot + 1];
+        accessibleSlots = new int[exposed.length * 2];
         for (int index = 0; index < accessibleSlots.length; index++) accessibleSlots[index] = index;
     }
 
     @Override
     public int getSizeInventory() {
+        syncSlots();
         return accessibleSlots.length;
     }
 
     @Nullable
     @Override
     public ItemStack getStackInSlot(int index) {
+        syncSlots();
         if (isInputSlot(index)) {
-            return null;
+            commitInput(index);
+            refreshInput(index);
+            inputHandedOut.set(index);
+            return inputExposed[index];
         }
+        index -= exposed.length;
         commitSlot(index);
         if (!valid(index)) {
             return null;
@@ -70,10 +79,12 @@ public class DrawerItemInventory implements ISidedInventory {
 
     @Override
     public void setInventorySlotContents(int index, @Nullable ItemStack stack) {
+        syncSlots();
         if (isInputSlot(index)) {
-            insertInput(stack);
+            setInput(index, stack);
             return;
         }
+        index -= exposed.length;
         if (!valid(index)) {
             return;
         }
@@ -100,11 +111,22 @@ public class DrawerItemInventory implements ISidedInventory {
         commitSlot(index);
     }
 
-    private void insertInput(@Nullable ItemStack stack) {
-        if (!acceptsInput(stack)) {
+    private void setInput(int index, @Nullable ItemStack stack) {
+        boolean returnedStack = stack != null && stack == inputExposed[index] && inputHandedOut.get(index);
+        commitInput(index);
+        if (returnedStack) {
             return;
         }
-        handler.insertRouted(new BigItemStack(stack, stack.stackSize), StorageAction.EXECUTE);
+        if (stack == null || stack.getItem() == null || stack.stackSize <= 0) {
+            refreshInput(index);
+            return;
+        }
+        ItemStack before = inputBaseline[index];
+        int amount = sameType(before, stack) ? stack.stackSize - count(before) : stack.stackSize;
+        if (amount > 0) {
+            insertExactly(index, stack, amount);
+        }
+        refreshInput(index);
     }
 
     private void removeDisplayedStack(int index) {
@@ -123,6 +145,11 @@ public class DrawerItemInventory implements ISidedInventory {
     @Nullable
     @Override
     public ItemStack decrStackSize(int index, int count) {
+        syncSlots();
+        if (isInputSlot(index)) {
+            return null;
+        }
+        index -= exposed.length;
         commitSlot(index);
         if (!valid(index) || count <= 0) {
             return null;
@@ -182,7 +209,7 @@ public class DrawerItemInventory implements ISidedInventory {
                 1,
                 handler.getSnapshot(index)
                     .getTemplateStackSize());
-            long stackUnits = capacity / stackSize;
+            long stackUnits = Math.max(1L, capacity / stackSize);
             smallestUnit = Math.min(smallestUnit, stackUnits);
             measured = true;
         }
@@ -205,12 +232,19 @@ public class DrawerItemInventory implements ISidedInventory {
         stackLimit = Integer.MIN_VALUE;
     }
 
+    public void invalidateSlots() {
+        resetSlots(Math.max(0, handler.getStorageCount()));
+    }
+
     public void flushChanges() {
-        if (synchronizing || handedOut.isEmpty()) {
+        if (synchronizing || (handedOut.isEmpty() && inputHandedOut.isEmpty())) {
             return;
         }
         synchronizing = true;
         try {
+            for (int index = inputHandedOut.nextSetBit(0); index >= 0; index = inputHandedOut.nextSetBit(index + 1)) {
+                commitInputEdit(index);
+            }
             for (int index = handedOut.nextSetBit(0); index >= 0; index = handedOut.nextSetBit(index + 1)) {
                 commit(index);
             }
@@ -229,6 +263,47 @@ public class DrawerItemInventory implements ISidedInventory {
         } finally {
             synchronizing = false;
         }
+    }
+
+    private void commitInput(int index) {
+        if (synchronizing || !inputHandedOut.get(index)) {
+            return;
+        }
+        synchronizing = true;
+        try {
+            commitInputEdit(index);
+        } finally {
+            synchronizing = false;
+        }
+    }
+
+    private void commitInputEdit(int index) {
+        ItemStack before = inputBaseline[index];
+        ItemStack after = inputExposed[index];
+        int amount = sameType(before, after) ? count(after) - count(before) : count(after);
+        if (amount > 0 && after != null) {
+            insertExactly(index, after, amount);
+        }
+        refreshInput(index);
+    }
+
+    private void refreshInput(int index) {
+        BigItemStack snapshot = handler.getSnapshot(index);
+        ItemStack template = snapshot.getTemplate();
+        ItemStack stack = null;
+        if (template != null) {
+            long capacity = Math.max(0L, handler.getCapacity(index));
+            long remaining = Math.max(0L, capacity - snapshot.getAmount());
+            int unit = (int) Math.min(capacity, Math.max(1, template.getMaxStackSize()));
+            int count = (int) Math.max(0L, unit - remaining);
+            if (count > 0) {
+                stack = template.copy();
+                stack.stackSize = count;
+            }
+        }
+        inputExposed[index] = stack;
+        inputBaseline[index] = stack == null ? null : stack.copy();
+        inputHandedOut.clear(index);
     }
 
     /**
@@ -271,11 +346,9 @@ public class DrawerItemInventory implements ISidedInventory {
 
     @Override
     public boolean isItemValidForSlot(int index, @Nonnull ItemStack stack) {
+        syncSlots();
         flushChanges();
-        if (isInputSlot(index)) {
-            return acceptsInput(stack);
-        }
-        if (!valid(index) || stack.getItem() == null || stack.stackSize <= 0) {
+        if (!isInputSlot(index) || stack.getItem() == null || stack.stackSize <= 0) {
             return false;
         }
         ItemStack current = handler.getSnapshot(index)
@@ -283,13 +356,13 @@ public class DrawerItemInventory implements ISidedInventory {
         if (current != null && !sameType(current, stack)) {
             return false;
         }
-        long requested = current == null ? stack.stackSize : 1L;
-        return handler.insert(index, new BigItemStack(stack, requested), StorageAction.SIMULATE)
-            .getProcessedAmount() == requested;
+        return handler.insert(index, new BigItemStack(stack, stack.stackSize), StorageAction.SIMULATE)
+            .getProcessedAmount() == stack.stackSize;
     }
 
     @Override
     public int[] getAccessibleSlotsFromSide(int side) {
+        syncSlots();
         return accessibleSlots;
     }
 
@@ -300,6 +373,11 @@ public class DrawerItemInventory implements ISidedInventory {
 
     @Override
     public boolean canExtractItem(int index, @Nonnull ItemStack stack, int side) {
+        syncSlots();
+        if (isInputSlot(index)) {
+            return false;
+        }
+        index -= exposed.length;
         if (!valid(index) || stack == null || stack.getItem() == null || stack.stackSize <= 0) {
             return false;
         }
@@ -309,6 +387,7 @@ public class DrawerItemInventory implements ISidedInventory {
 
     @Nonnull
     public List<ItemStorageView> getViews() {
+        syncSlots();
         flushChanges();
         return ItemStorageView.storages(handler);
     }
@@ -362,8 +441,7 @@ public class DrawerItemInventory implements ISidedInventory {
         if (stack == null) {
             return null;
         }
-        int visibleLimit = Math.max(1, getInventoryStackLimit());
-        stack.stackSize = (int) Math.min(snapshot.getAmount(), visibleLimit);
+        stack.stackSize = (int) Math.min(snapshot.getAmount(), Integer.MAX_VALUE);
         return stack;
     }
 
@@ -371,17 +449,30 @@ public class DrawerItemInventory implements ISidedInventory {
         return index >= 0 && index < exposed.length;
     }
 
-    private static int count(ItemStack stack) {
-        return stack == null ? 0 : Math.max(0, stack.stackSize);
+    private void syncSlots() {
+        int count = Math.max(0, handler.getStorageCount());
+        if (count == exposed.length) {
+            return;
+        }
+        resetSlots(count);
     }
 
-    private boolean acceptsInput(@Nullable ItemStack stack) {
-        if (stack == null || stack.getItem() == null || stack.stackSize <= 0) {
-            return false;
-        }
-        long requested = stack.stackSize;
-        return handler.insertRouted(new BigItemStack(stack, requested), StorageAction.SIMULATE)
-            .getProcessedAmount() == requested;
+    private void resetSlots(int count) {
+        exposed = new ItemStack[count];
+        baseline = new ItemStack[count];
+        inputExposed = new ItemStack[count];
+        inputBaseline = new ItemStack[count];
+        rollbackStacks = new ItemStack[count];
+        rollbackAmounts = new long[count];
+        handedOut.clear();
+        inputHandedOut.clear();
+        accessibleSlots = new int[count * 2];
+        for (int index = 0; index < accessibleSlots.length; index++) accessibleSlots[index] = index;
+        invalidateLimit();
+    }
+
+    private static int count(ItemStack stack) {
+        return stack == null ? 0 : Math.max(0, stack.stackSize);
     }
 
     private boolean insertExactly(int index, @Nonnull ItemStack stack, long amount) {
@@ -410,7 +501,7 @@ public class DrawerItemInventory implements ISidedInventory {
     }
 
     private boolean isInputSlot(int index) {
-        return index == inputSlot;
+        return index >= 0 && index < exposed.length;
     }
 
     private static boolean sameStack(ItemStack first, ItemStack second) {

@@ -32,25 +32,23 @@ public interface IBigItemHandler extends IStorageHandler<BigItemStack, ItemStora
     }
 
     /**
-     * Exposes one virtual slot per stored item key and, when available, one leading
-     * empty insertion slot. Physical storage positions stay internal.
+     * Exposes one virtual slot per stored item key and one leading routed input
+     * slot whenever physical storage exists. Physical positions stay internal.
      */
     default int getSlots() {
         return ItemStorageView.virtualSlots(this);
     }
 
     /**
-     * Returns the virtual empty slot or one aggregated item-key view. Empty physical
-     * slots are not shown as typed content; a zero-amount retained filter is exposed
-     * through the leading empty slot so automation can insert the matching type into a
-     * configured empty drawer.
+     * Returns the routed input slot or one aggregated item-key view. The input
+     * slot remains empty even when all physical drawers have stored templates.
      */
     default ItemStack getStackInSlot(int slot) {
-        boolean hasEmpty = ItemStorageView.hasEmptyStorage(this);
-        if (hasEmpty && slot == 0) {
+        boolean hasInput = getStorageCount() > 0;
+        if (hasInput && slot == 0) {
             return null;
         }
-        ItemStorageView storage = ItemStorageView.storageAt(slot, hasEmpty, ItemStorageView.storages(this));
+        ItemStorageView storage = ItemStorageView.storageAt(slot, hasInput, ItemStorageView.storages(this));
         return storage == null ? null : storage.toItemStack();
     }
 
@@ -91,8 +89,8 @@ public interface IBigItemHandler extends IStorageHandler<BigItemStack, ItemStora
         if (amount <= 0) {
             return null;
         }
-        boolean hasEmpty = ItemStorageView.hasEmptyStorage(this);
-        ItemStorageView storage = ItemStorageView.storageAt(slot, hasEmpty, ItemStorageView.storages(this));
+        ItemStorageView storage = ItemStorageView
+            .storageAt(slot, getStorageCount() > 0, ItemStorageView.storages(this));
         if (storage == null) {
             return null;
         }

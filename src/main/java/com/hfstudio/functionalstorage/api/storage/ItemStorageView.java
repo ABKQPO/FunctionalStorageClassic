@@ -118,8 +118,8 @@ public class ItemStorageView {
     }
 
     /**
-     * Reports how many virtual slots a handler exposes, counting the leading
-     * empty insertion slot when the handler offers one.
+     * Reports how many virtual slots a handler exposes, including a routed
+     * input slot whenever physical storage exists.
      *
      * @param handler handler to inspect
      * @return the virtual slot count
@@ -129,7 +129,7 @@ public class ItemStorageView {
         if (cache != null) {
             return cache.virtualSlots(handler);
         }
-        return storages(handler).size() + (hasEmptyStorage(handler) ? 1 : 0);
+        return storages(handler).size() + (handler.getStorageCount() > 0 ? 1 : 0);
     }
 
     /**
@@ -140,11 +140,11 @@ public class ItemStorageView {
      * @return the slot limit, or zero when the slot does not exist
      */
     public static int slotLimit(@Nonnull IBigItemHandler handler, int slot) {
-        boolean hasEmpty = hasEmptyStorage(handler);
-        if (hasEmpty && slot == 0) {
-            return toForgeLimit(emptyStorageCapacity(handler));
+        boolean hasInput = handler.getStorageCount() > 0;
+        if (hasInput && slot == 0) {
+            return Integer.MAX_VALUE;
         }
-        ItemStorageView storage = storageAt(slot, hasEmpty, storages(handler));
+        ItemStorageView storage = storageAt(slot, hasInput, storages(handler));
         if (storage == null) {
             return 0;
         }
