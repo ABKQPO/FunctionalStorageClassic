@@ -50,7 +50,7 @@ public class BridgeResizeTest {
         network.rebuild(children);
 
         DrawerItemInventory small = new DrawerItemInventory(network, "network", () -> {});
-        assertEquals(2, small.getSizeInventory(), "the bridge must span the initial drawers");
+        assertEquals(4, small.getSizeInventory(), "each drawer index must expose input and output slots");
 
         // Link a second drawer, which the aggregate learns about on rebuild.
         BigItemHandler second = new BigItemHandler(3);
@@ -61,11 +61,11 @@ public class BridgeResizeTest {
         assertEquals(5, network.getStorageCount(), "the aggregate must span the new drawer");
 
         DrawerItemInventory rebuilt = new DrawerItemInventory(network, "network", () -> {});
-        assertEquals(5, rebuilt.getSizeInventory(), "a bridge built after growth must span every index");
+        assertEquals(10, rebuilt.getSizeInventory(), "a bridge built after growth must span both slot groups");
 
-        // The newly linked drawer must be reachable through the aggregate index.
-        assertTrue(rebuilt.getStackInSlot(4) != null, "the last index must address the newly linked drawer");
-        assertEquals(42, rebuilt.getStackInSlot(4).stackSize, "the new drawer's contents must be reported");
+        // Output slots follow all input slots, preserving the aggregate's physical index.
+        assertNotNull(rebuilt.getStackInSlot(9), "the last output must address the newly linked drawer");
+        assertEquals(42, rebuilt.getStackInSlot(9).stackSize, "the new drawer's contents must be reported");
     }
 
     @Test
@@ -80,7 +80,7 @@ public class BridgeResizeTest {
         AggregatedStorage.Items network = new AggregatedStorage.Items();
         network.rebuild(children);
         DrawerItemInventory before = new DrawerItemInventory(network, "network", () -> {});
-        assertEquals(4, before.getSizeInventory(), "the bridge must span both drawers");
+        assertEquals(8, before.getSizeInventory(), "the bridge must span both slot groups");
 
         // Unlink the second drawer.
         children.remove(second);
@@ -88,8 +88,8 @@ public class BridgeResizeTest {
         assertEquals(2, network.getStorageCount(), "the aggregate must shrink");
 
         DrawerItemInventory after = new DrawerItemInventory(network, "network", () -> {});
-        assertEquals(2, after.getSizeInventory(), "a rebuilt bridge must span only the remaining drawer");
-        assertNull(after.getStackInSlot(3), "an index that no longer exists must hand out nothing");
+        assertEquals(4, after.getSizeInventory(), "a rebuilt bridge must span only the remaining drawer");
+        assertNull(after.getStackInSlot(4), "an index that no longer exists must hand out nothing");
         assertNull(after.getStackInSlot(9), "a never-existing index must hand out nothing");
     }
 
@@ -111,7 +111,7 @@ public class BridgeResizeTest {
         network.rebuild(children);
 
         DrawerItemInventory twoSlot = new DrawerItemInventory(network, "network", () -> {});
-        assertNotNull(twoSlot.getStackInSlot(1), "index one must address the second drawer");
+        assertNotNull(twoSlot.getStackInSlot(3), "output index three must address the second drawer");
 
         // Resize the first drawer, which pushes the second drawer's index outward.
         BigItemHandler widened = new BigItemHandler(3);
@@ -122,9 +122,9 @@ public class BridgeResizeTest {
         network.rebuild(replaced);
 
         DrawerItemInventory resized = new DrawerItemInventory(network, "network", () -> {});
-        assertEquals(4, resized.getSizeInventory(), "the bridge must span the widened layout");
-        assertNotNull(resized.getStackInSlot(3), "the second drawer's index must have moved outward");
-        assertEquals(7, resized.getStackInSlot(3).stackSize, "the moved index must report the same contents");
+        assertEquals(8, resized.getSizeInventory(), "the bridge must span both groups of the widened layout");
+        assertNotNull(resized.getStackInSlot(7), "the second drawer's output index must have moved outward");
+        assertEquals(7, resized.getStackInSlot(7).stackSize, "the moved index must report the same contents");
     }
 
     @Test
@@ -153,7 +153,7 @@ public class BridgeResizeTest {
 
         Item item = StorageFixtures.newItem();
         DrawerItemInventory bridge = new DrawerItemInventory(network, "network", () -> {});
-        bridge.setInventorySlotContents(3, StorageFixtures.stack(item, 20));
+        bridge.setInventorySlotContents(7, StorageFixtures.stack(item, 20));
         bridge.markDirty();
 
         assertEquals(

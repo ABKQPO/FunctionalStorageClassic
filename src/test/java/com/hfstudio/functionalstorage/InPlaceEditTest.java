@@ -2,6 +2,7 @@ package com.hfstudio.functionalstorage;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import net.minecraft.inventory.IInventory;
 import net.minecraft.inventory.ISidedInventory;
@@ -42,7 +43,7 @@ public class InPlaceEditTest {
         view.setInventorySlotContents(0, StorageFixtures.stack(item, 100));
         assertEquals(100, StorageFixtures.total(handler, item), "the initial write must be committed");
 
-        ItemStack held = view.getStackInSlot(0);
+        ItemStack held = view.getStackInSlot(4);
         assertNotNull(held, "a populated slot must hand out a stack");
         held.stackSize = 40;
 
@@ -61,9 +62,9 @@ public class InPlaceEditTest {
 
         // The caller keeps the stack it holds while it reads a further slot, which is
         // ordinary use of the interface, and edits it only afterwards.
-        ItemStack held = view.getStackInSlot(0);
+        ItemStack held = view.getStackInSlot(4);
         assertNotNull(held, "a populated slot must hand out a stack");
-        view.getStackInSlot(1);
+        view.getStackInSlot(5);
         held.stackSize = 40;
 
         view.markDirty();
@@ -82,11 +83,11 @@ public class InPlaceEditTest {
 
         view.setInventorySlotContents(0, StorageFixtures.stack(item, 100));
 
-        ItemStack held = view.getStackInSlot(0);
+        ItemStack held = view.getStackInSlot(4);
         assertNotNull(held, "a populated slot must hand out a stack");
         held.stackSize = 40;
 
-        ItemStack reread = view.getStackInSlot(0);
+        ItemStack reread = view.getStackInSlot(4);
         assertNotNull(reread, "the slot must still hold a stack");
         assertEquals(40, reread.stackSize, "re-reading the slot must report the committed edit");
         assertEquals(40, StorageFixtures.total(handler, item), "re-reading the slot must commit the edit");
@@ -102,7 +103,7 @@ public class InPlaceEditTest {
         view.setInventorySlotContents(0, StorageFixtures.stack(item, 250));
         assertEquals(250, StorageFixtures.total(handler, item), "the initial write must be committed");
 
-        view.setInventorySlotContents(0, null);
+        view.setInventorySlotContents(4, null);
         assertEquals(0L, StorageFixtures.total(handler, item), "clearing the slot must empty storage");
     }
 
@@ -115,8 +116,8 @@ public class InPlaceEditTest {
 
         view.setInventorySlotContents(0, StorageFixtures.stack(item, 300));
         for (int round = 0; round < 50; round++) {
-            ItemStack held = view.getStackInSlot(0);
-            view.setInventorySlotContents(0, held);
+            ItemStack held = view.getStackInSlot(4);
+            view.setInventorySlotContents(4, held);
         }
 
         assertEquals(300, StorageFixtures.total(handler, item), "rewriting the same stack must change nothing");
@@ -131,7 +132,7 @@ public class InPlaceEditTest {
 
         view.setInventorySlotContents(0, StorageFixtures.stack(item, 80));
 
-        ItemStack held = view.getStackInSlot(0);
+        ItemStack held = view.getStackInSlot(4);
         held.stackSize = 75;
         view.flushChanges();
 
@@ -152,12 +153,16 @@ public class InPlaceEditTest {
         }
 
         int[] slots = sided.getAccessibleSlotsFromSide(0);
-        assertEquals(64, slots.length, "every slot must be reachable from a side");
+        assertEquals(128, slots.length, "input and output slots must be reachable from a side");
 
         long seen = 0L;
-        for (int slot : slots) {
-            ItemStack stack = view.getStackInSlot(slot);
-            assertNotNull(stack, "slot " + slot + " must report its stack");
+        for (int index = 0; index < items.length; index++) {
+            assertEquals(index, slots[index], "input slots must precede output slots");
+            assertNull(view.getStackInSlot(slots[index]), "unused input slot must not display stored contents");
+            int output = slots[index + items.length];
+            assertEquals(index + items.length, output, "output slots must preserve physical order");
+            ItemStack stack = view.getStackInSlot(output);
+            assertNotNull(stack, "output slot " + output + " must report its stack");
             seen += stack.stackSize;
         }
 

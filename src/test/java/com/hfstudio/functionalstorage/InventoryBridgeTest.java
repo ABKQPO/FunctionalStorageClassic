@@ -43,11 +43,11 @@ public class InventoryBridgeTest {
 
         DrawerItemInventory inventory = new DrawerItemInventory(handler, "test", () -> {});
 
-        // Hand out slot 0, then slot 1, and only then edit the first stack. A caller
+        // Hand out two output slots, and only then edit the first stack. A caller
         // doing this is editing a stack it legitimately holds.
-        ItemStack first = inventory.getStackInSlot(0);
-        assertNotNull(first, "slot 0 must hand out a stack");
-        inventory.getStackInSlot(1);
+        ItemStack first = inventory.getStackInSlot(4);
+        assertNotNull(first, "the first output slot must hand out a stack");
+        inventory.getStackInSlot(5);
 
         long before = StorageFixtures.total(handler, item);
         first.stackSize += 25;
@@ -69,8 +69,8 @@ public class InventoryBridgeTest {
 
         DrawerItemInventory inventory = new DrawerItemInventory(handler, "test", () -> {});
 
-        ItemStack stack = inventory.getStackInSlot(0);
-        assertNotNull(stack, "slot 0 must hand out a stack");
+        ItemStack stack = inventory.getStackInSlot(4);
+        assertNotNull(stack, "the first output slot must hand out a stack");
         stack.stackSize += 25;
         inventory.markDirty();
 
@@ -86,8 +86,8 @@ public class InventoryBridgeTest {
 
         DrawerItemInventory inventory = new DrawerItemInventory(handler, "test", () -> {});
 
-        ItemStack stack = inventory.getStackInSlot(0);
-        assertNotNull(stack, "slot 0 must hand out a stack");
+        ItemStack stack = inventory.getStackInSlot(4);
+        assertNotNull(stack, "the first output slot must hand out a stack");
         stack.stackSize -= 40;
         inventory.markDirty();
 
@@ -103,7 +103,7 @@ public class InventoryBridgeTest {
 
         DrawerItemInventory inventory = new DrawerItemInventory(handler, "test", () -> {});
 
-        assertEquals(null, inventory.getStackInSlot(1), "an empty index must hand out nothing");
+        assertEquals(null, inventory.getStackInSlot(5), "an empty output index must hand out nothing");
         assertEquals(null, inventory.getStackInSlot(-1), "an index below zero must hand out nothing");
         assertEquals(null, inventory.getStackInSlot(99), "an index past the end must hand out nothing");
     }
@@ -118,7 +118,7 @@ public class InventoryBridgeTest {
         DrawerItemInventory inventory = new DrawerItemInventory(handler, "test", () -> {});
 
         for (int round = 0; round < 20; round++) {
-            ItemStack stack = inventory.getStackInSlot(0);
+            ItemStack stack = inventory.getStackInSlot(2);
             assertNotNull(stack, "the populated slot must keep handing out a stack");
             assertEquals(64, stack.stackSize, "an unedited read must keep reporting the stored amount");
         }

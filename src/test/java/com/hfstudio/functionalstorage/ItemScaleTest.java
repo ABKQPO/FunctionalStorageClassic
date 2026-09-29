@@ -158,7 +158,7 @@ public class ItemScaleTest {
         assertEquals(capacity, filled.getProcessedAmount(), "a long request must be served in full");
         assertEquals(capacity, StorageFixtures.total(handler, item), "the whole long amount must be stored");
 
-        ItemStack read = view.getStackInSlot(0);
+        ItemStack read = view.getStackInSlot(1);
         assertEquals(
             Integer.MAX_VALUE,
             read.stackSize,
