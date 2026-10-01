@@ -240,5 +240,10 @@ public abstract class StorageNetworkTile extends ControllableDrawerTile
     }
 
     @Override
+    protected boolean matchesOnlyOnManualDeposit() {
+        return true;
+    }
+
+    @Override
     public void onSlotClicked(@Nonnull EntityPlayer player, int slot) {}
 }

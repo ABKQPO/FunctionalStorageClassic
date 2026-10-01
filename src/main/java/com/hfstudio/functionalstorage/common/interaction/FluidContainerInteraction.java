@@ -1,5 +1,6 @@
 package com.hfstudio.functionalstorage.common.interaction;
 
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
 import net.minecraft.entity.player.EntityPlayer;
@@ -26,19 +27,24 @@ public class FluidContainerInteraction {
     private FluidContainerInteraction() {}
 
     public static boolean activate(EntityPlayer player, IBigFluidHandler handler, int slot) {
+        return activate(player, handler, slot, null);
+    }
+
+    public static boolean activate(EntityPlayer player, IBigFluidHandler handler, int slot,
+        BiFunction<Integer, BigFluidStack, Runnable> prepareLockedSlot) {
         ItemStack held = player.getHeldItem();
         if (!isFluidContainer(held)) {
             return false;
         }
         if (player.capabilities.isCreativeMode) {
-            activate(held, handler, slot, result -> {});
+            activate(held, handler, slot, result -> {}, prepareLockedSlot);
             return true;
         }
         ItemStack remaining = held.copy();
         BatchContainerExchange exchange = new BatchContainerExchange(player);
         int transfers = held.stackSize;
         for (int index = 0; index < transfers; index++) {
-            if (!activate(singleContainer(remaining), handler, slot, exchange::accept)) {
+            if (!activate(singleContainer(remaining), handler, slot, exchange::accept, prepareLockedSlot)) {
                 break;
             }
             remaining.stackSize--;
@@ -54,6 +60,17 @@ public class FluidContainerInteraction {
     }
 
     public static boolean activate(ItemStack held, IBigFluidHandler handler, int slot, Consumer<ItemStack> exchange) {
+        return activate(held, handler, slot, exchange, null);
+    }
+
+    public static boolean activate(ItemStack held, IBigFluidHandler handler, int slot, Consumer<ItemStack> exchange,
+        BiFunction<Integer, BigFluidStack, Runnable> prepareLockedSlot) {
+        return activateContainer(held, handler, slot, exchange, prepareLockedSlot, false);
+    }
+
+    private static boolean activateContainer(ItemStack held, IBigFluidHandler handler, int slot,
+        Consumer<ItemStack> exchange, BiFunction<Integer, BigFluidStack, Runnable> prepareLockedSlot,
+        boolean matchingOnly) {
         if (held == null || handler == null || exchange == null || handler.getStorageCount() <= 0) {
             return false;
         }
@@ -65,14 +82,21 @@ public class FluidContainerInteraction {
         if (single.getItem() instanceof IFluidContainerItem container) {
             FluidStack contained = container.getFluid(single);
             if (contained != null && contained.amount > 0) {
-                return insertMutable(handler, slot, single, container, contained, exchange)
-                    || fillMutable(handler, slot, single, container, exchange);
+                return insertMutable(
+                    handler,
+                    slot,
+                    single,
+                    container,
+                    contained,
+                    exchange,
+                    prepareLockedSlot,
+                    matchingOnly) || fillMutable(handler, slot, single, container, exchange);
             }
             return fillMutable(handler, slot, single, container, exchange);
         }
         FluidStack contained = FluidContainerRegistry.getFluidForFilledItem(single);
         if (contained != null) {
-            return insertFilled(handler, slot, single, contained, exchange);
+            return insertFilled(handler, slot, single, contained, exchange, prepareLockedSlot, matchingOnly);
         }
         if (!FluidContainerRegistry.isEmptyContainer(single)) {
             return false;
@@ -89,6 +113,14 @@ public class FluidContainerInteraction {
     }
 
     public static int depositInventory(EntityPlayer player, IBigFluidHandler handler) {
+        return depositInventory(player, handler, false);
+    }
+
+    public static int depositMatchingInventory(EntityPlayer player, IBigFluidHandler handler) {
+        return depositInventory(player, handler, true);
+    }
+
+    private static int depositInventory(EntityPlayer player, IBigFluidHandler handler, boolean matchingOnly) {
         if (player == null || handler == null) {
             return 0;
         }
@@ -96,11 +128,18 @@ public class FluidContainerInteraction {
         for (int index = 0; index < player.inventory.mainInventory.length; index++) {
             int inventorySlot = index;
             ItemStack source = player.inventory.getStackInSlot(index);
-            if (deposit(
-                player,
-                handler,
-                source,
-                result -> player.inventory.setInventorySlotContents(inventorySlot, result))) {
+            if (source != null && isFilledFluidContainer(source)
+                && activateContainer(
+                    source,
+                    handler,
+                    ROUTED,
+                    result -> ContainerExchange.complete(
+                        player,
+                        source,
+                        stack -> player.inventory.setInventorySlotContents(inventorySlot, stack),
+                        result),
+                    null,
+                    matchingOnly)) {
                 transferred++;
             }
         }
@@ -108,18 +147,30 @@ public class FluidContainerInteraction {
     }
 
     private static boolean insertFilled(IBigFluidHandler handler, int slot, ItemStack single, FluidStack fluid,
-        Consumer<ItemStack> exchange) {
+        Consumer<ItemStack> exchange, BiFunction<Integer, BigFluidStack, Runnable> prepareLockedSlot,
+        boolean matchingOnly) {
         BigFluidStack request = new BigFluidStack(fluid, fluid.amount);
         ItemStack drained = FluidContainerRegistry.drainFluidContainer(single);
         if (drained == null) {
             return false;
         }
-        if (!insert(handler, slot, request, StorageAction.SIMULATE).isComplete()) {
+        Runnable rollbackFilter = prepareLockedSlot == null ? () -> {} : prepareLockedSlot.apply(slot, request);
+        if (rollbackFilter == null) {
             return false;
         }
-        TransferResult<BigFluidStack, FluidStorageKey> executed = insert(handler, slot, request, StorageAction.EXECUTE);
+        if (!insert(handler, slot, request, StorageAction.SIMULATE, matchingOnly).isComplete()) {
+            rollbackFilter.run();
+            return false;
+        }
+        TransferResult<BigFluidStack, FluidStorageKey> executed = insert(
+            handler,
+            slot,
+            request,
+            StorageAction.EXECUTE,
+            matchingOnly);
         if (!executed.isComplete()) {
             rollbackInserted(handler, slot, executed);
+            rollbackFilter.run();
             return false;
         }
         exchange.accept(drained);
@@ -127,23 +178,36 @@ public class FluidContainerInteraction {
     }
 
     private static boolean insertMutable(IBigFluidHandler handler, int slot, ItemStack single,
-        IFluidContainerItem container, FluidStack fluid, Consumer<ItemStack> exchange) {
+        IFluidContainerItem container, FluidStack fluid, Consumer<ItemStack> exchange,
+        BiFunction<Integer, BigFluidStack, Runnable> prepareLockedSlot, boolean matchingOnly) {
         BigFluidStack request = new BigFluidStack(fluid, fluid.amount);
-        if (!insert(handler, slot, request, StorageAction.SIMULATE).isComplete()) {
-            return false;
-        }
         FluidStack simulated = container.drain(single, fluid.amount, false);
         if (simulated == null || simulated.amount != fluid.amount || !simulated.isFluidEqual(fluid)) {
             return false;
         }
-        TransferResult<BigFluidStack, FluidStorageKey> executed = insert(handler, slot, request, StorageAction.EXECUTE);
+        Runnable rollbackFilter = prepareLockedSlot == null ? () -> {} : prepareLockedSlot.apply(slot, request);
+        if (rollbackFilter == null) {
+            return false;
+        }
+        if (!insert(handler, slot, request, StorageAction.SIMULATE, matchingOnly).isComplete()) {
+            rollbackFilter.run();
+            return false;
+        }
+        TransferResult<BigFluidStack, FluidStorageKey> executed = insert(
+            handler,
+            slot,
+            request,
+            StorageAction.EXECUTE,
+            matchingOnly);
         if (!executed.isComplete()) {
             rollbackInserted(handler, slot, executed);
+            rollbackFilter.run();
             return false;
         }
         FluidStack drained = container.drain(single, fluid.amount, true);
         if (drained == null || drained.amount != fluid.amount || !drained.isFluidEqual(fluid)) {
             rollbackInserted(handler, slot, executed);
+            rollbackFilter.run();
             return false;
         }
         exchange.accept(single);
@@ -245,6 +309,29 @@ public class FluidContainerInteraction {
     private static TransferResult<BigFluidStack, FluidStorageKey> insert(IBigFluidHandler handler, int slot,
         BigFluidStack request, StorageAction action) {
         return slot < 0 ? handler.fillRouted(request, action) : handler.insert(slot, request, action);
+    }
+
+    private static TransferResult<BigFluidStack, FluidStorageKey> insert(IBigFluidHandler handler, int slot,
+        BigFluidStack request, StorageAction action, boolean matchingOnly) {
+        if (!matchingOnly || slot >= 0) {
+            return insert(handler, slot, request, action);
+        }
+        long requested = request.getAmount();
+        long processedTotal = 0L;
+        FluidStack template = request.getTemplate();
+        int count = handler.getStorageCount();
+        for (int index = 0; index < count && processedTotal < requested; index++) {
+            if (!handler.supportsFill(index) || !handler.supportsFluid(index, request)
+                || !handler.getSnapshot(index)
+                    .isSameType(template)) {
+                continue;
+            }
+            long remaining = requested - processedTotal;
+            long processed = handler.insert(index, request.withAmount(remaining), action)
+                .getProcessedAmount();
+            processedTotal += Math.min(remaining, Math.max(0L, processed));
+        }
+        return new TransferResult<>(requested, request.withAmount(processedTotal), action);
     }
 
     private static TransferResult<BigFluidStack, FluidStorageKey> extract(IBigFluidHandler handler, int slot,

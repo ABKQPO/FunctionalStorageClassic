@@ -278,9 +278,9 @@ public class FunctionalStorageConfig {
         public boolean threeDimensionalBlockDisplay = true;
 
         @Config.Comment("Distance in blocks at which drawer contents stop rendering")
-        @Config.RangeInt(min = 1, max = 2048)
-        @Config.DefaultInt(64)
-        public int drawerRenderRange = 64;
+        @Config.RangeInt(min = 1, max = 256)
+        @Config.DefaultInt(16)
+        public int drawerRenderRange = 16;
 
         @Config.Comment("Render the numeric amount on drawer faces by default")
         @Config.DefaultBoolean(true)

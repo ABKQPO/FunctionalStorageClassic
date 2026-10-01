@@ -17,6 +17,7 @@ import net.minecraft.client.renderer.RenderBlocks;
 import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.entity.RenderItem;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.client.renderer.tileentity.TileEntitySpecialRenderer;
@@ -119,6 +120,8 @@ public class DrawerRenderer extends TileEntitySpecialRenderer implements IResour
     private final SimpleIconBatch simpleIcons = new SimpleIconBatch();
     private final TextLabel[] textLabels = new TextLabel[DrawerFaceLayout.X_4.getSlotCount()];
     private int textLabelCount;
+    private boolean cachedLightingEnabled;
+    private boolean blockTextureBound;
     private final RenderItem renderer = new RenderItem() {
 
         private final RenderBlocks guiBlocks = new RenderBlocks();
@@ -268,6 +271,8 @@ public class DrawerRenderer extends TileEntitySpecialRenderer implements IResour
             return;
         }
         int metadata = tile.getBlockMetadata();
+        cachedLightingEnabled = false;
+        blockTextureBound = false;
         float previousLightX = OpenGlHelper.lastBrightnessX;
         float previousLightY = OpenGlHelper.lastBrightnessY;
         GL11.glPushAttrib(
@@ -287,15 +292,18 @@ public class DrawerRenderer extends TileEntitySpecialRenderer implements IResour
             textLabelCount = 0;
 
             DrawerFaceLayout layout = block.getFaceLayout();
-            IBigItemHandler itemHandler = drawer.getItemHandler();
-            IBigFluidHandler fluidHandler = drawer.getFluidHandler();
-            IBigAspectHandler aspectHandler = drawer.getAspectHandler();
-            if (itemHandler != null) {
-                renderItemSlots(itemHandler, layout, options);
-            } else if (fluidHandler != null) {
-                renderFluidSlots(drawer, fluidHandler, layout, options);
-            } else if (aspectHandler != null) {
-                renderAspectSlots(aspectHandler, layout, options);
+            if (options.isShowItemRender() || options.isShowItemCount()
+                || options.getAdvancedValue(ConfigurationToolItem.ConfigurationAction.INDICATOR) != 0) {
+                IBigItemHandler itemHandler = drawer.getItemHandler();
+                IBigFluidHandler fluidHandler = drawer.getFluidHandler();
+                IBigAspectHandler aspectHandler = drawer.getAspectHandler();
+                if (itemHandler != null) {
+                    renderItemSlots(itemHandler, layout, options);
+                } else if (fluidHandler != null) {
+                    renderFluidSlots(drawer, fluidHandler, layout, options);
+                } else if (aspectHandler != null) {
+                    renderAspectSlots(aspectHandler, layout, options);
+                }
             }
             if (options.isShowUpgrades()) {
                 renderUpgrades(drawer);
@@ -330,18 +338,26 @@ public class DrawerRenderer extends TileEntitySpecialRenderer implements IResour
     private void renderItemSlots(@Nonnull IBigItemHandler handler, @Nonnull DrawerFaceLayout layout,
         @Nonnull DrawerOptions options) {
         int slotCount = Math.min(layout.getSlotCount(), handler.getStorageCount());
+        boolean showCount = options.isShowItemCount();
+        boolean showIndicator = options.getAdvancedValue(ConfigurationToolItem.ConfigurationAction.INDICATOR) != 0;
+        boolean renderLabels = showCount || showIndicator;
+        float scale = iconScale(layout);
         for (int slot = 0; slot < slotCount; slot++) {
-            BigItemStack snapshot = itemSnapshots[slot] = handler.getSnapshot(slot);
+            BigItemStack snapshot = handler.getSnapshot(slot);
+            if (renderLabels) {
+                itemSnapshots[slot] = snapshot;
+            }
             if (!snapshot.hasTemplate()) {
                 continue;
             }
-            float centerX = layout.getSlotX(slot);
-            float centerY = layout.getSlotY(slot);
             if (options.isShowItemRender()) {
-                renderStack(snapshot.getTemplate(), centerX, centerY, iconScale(layout));
+                renderStack(snapshot.getTemplate(), layout.getSlotX(slot), layout.getSlotY(slot), scale);
             }
         }
         simpleIcons.flush();
+        if (!renderLabels) {
+            return;
+        }
         for (int slot = 0; slot < slotCount; slot++) {
             BigItemStack snapshot = itemSnapshots[slot];
             if (!snapshot.hasTemplate()) {
@@ -349,18 +365,14 @@ public class DrawerRenderer extends TileEntitySpecialRenderer implements IResour
             }
             float centerX = layout.getSlotX(slot);
             float centerY = layout.getSlotY(slot);
-            if (options.isShowItemCount()) {
-                renderText(
-                    NumberFormatUtil.formatNumberCompact(snapshot.getAmount()),
-                    centerX,
-                    centerY,
-                    iconScale(layout));
+            if (showCount) {
+                renderText(NumberFormatUtil.formatNumberCompact(snapshot.getAmount()), centerX, centerY, scale);
             }
-            if (options.getAdvancedValue(ConfigurationToolItem.ConfigurationAction.INDICATOR) != 0) {
+            if (showIndicator) {
                 renderIndicator(
                     centerX,
                     centerY,
-                    iconScale(layout),
+                    scale,
                     ratio(snapshot.getAmount(), handler.getCapacity(slot)),
                     options);
             }
@@ -515,6 +527,14 @@ public class DrawerRenderer extends TileEntitySpecialRenderer implements IResour
                 Block.getBlockFromItem(stack.getItem())
                     .getRenderType())
                 || MinecraftForgeClient.getItemRenderer(stack, IItemRenderer.ItemRenderType.EQUIPPED) != null);
+        boolean cacheableBlock = raised && isCacheableBlock(stack);
+        boolean cachedCube = cacheableBlock && Block.getBlockFromItem(stack.getItem())
+            .getRenderType() == 0;
+        Minecraft minecraft = Minecraft.getMinecraft();
+        if (cachedCube) {
+            renderCachedCube(stack, minecraft, x, y, scale);
+            return;
+        }
         int previousMatrixMode = GL11.glGetInteger(GL11.GL_MATRIX_MODE);
         GL11.glPushAttrib(GL11.GL_ALL_ATTRIB_BITS);
         GL11.glMatrixMode(GL11.GL_PROJECTION);
@@ -529,16 +549,13 @@ public class DrawerRenderer extends TileEntitySpecialRenderer implements IResour
             GL11.glDisable(GL11.GL_POLYGON_OFFSET_FILL);
             GL11.glDisable(GL11.GL_CULL_FACE);
             GL11.glColor4f(1F, 1F, 1F, 1F);
-            Minecraft minecraft = Minecraft.getMinecraft();
             if (raised) {
                 // Seat the full model in the face instead of floating it ahead of the label.
                 GL11.glTranslatef(x, y, 0.002F - scale / 3f);
                 GL11.glScalef(scale / 1.4f, -scale / 1.4f, -scale / 1.4f);
                 RenderHelper.enableStandardItemLighting();
-                if (!renderCachedBlock(stack, minecraft)) {
-                    minecraft.entityRenderer.itemRenderer
-                        .renderItem(minecraft.thePlayer, stack, 0, IItemRenderer.ItemRenderType.EQUIPPED);
-                }
+                minecraft.entityRenderer.itemRenderer
+                    .renderItem(minecraft.thePlayer, stack, 0, IItemRenderer.ItemRenderType.EQUIPPED);
             } else {
                 GL11.glTranslatef(x, y, Z_ICON_2D);
                 GL11.glScalef(scale / 16F, scale / 16F, 0.0001F);
@@ -559,13 +576,35 @@ public class DrawerRenderer extends TileEntitySpecialRenderer implements IResour
             GL11.glMatrixMode(GL11.GL_MODELVIEW);
             GL11.glPopAttrib();
             GL11.glMatrixMode(previousMatrixMode);
+            blockTextureBound = false;
         }
     }
 
-    private boolean renderCachedBlock(ItemStack stack, Minecraft minecraft) {
-        if (!isCacheableBlock(stack)) {
-            return false;
+    private void renderCachedCube(ItemStack stack, Minecraft minecraft, float x, float y, float scale) {
+        float inverseScale = 1F / (scale / 1.4F);
+        GL11.glMatrixMode(GL11.GL_MODELVIEW);
+        GL11.glEnable(GL12.GL_RESCALE_NORMAL);
+        GL11.glEnable(GL11.GL_DEPTH_TEST);
+        GL11.glDepthFunc(GL11.GL_LEQUAL);
+        GL11.glDepthMask(true);
+        GL11.glDisable(GL11.GL_POLYGON_OFFSET_FILL);
+        GL11.glDisable(GL11.GL_CULL_FACE);
+        GL11.glColor4f(1F, 1F, 1F, 1F);
+        GL11.glTranslatef(x, y, 0.002F - scale / 3F);
+        GL11.glScalef(scale / 1.4F, -scale / 1.4F, -scale / 1.4F);
+        try {
+            if (!cachedLightingEnabled) {
+                RenderHelper.enableStandardItemLighting();
+                cachedLightingEnabled = true;
+            }
+            renderCachedBlock(stack, minecraft);
+        } finally {
+            GL11.glScalef(inverseScale, -inverseScale, -inverseScale);
+            GL11.glTranslatef(-x, -y, -(0.002F - scale / 3F));
         }
+    }
+
+    private void renderCachedBlock(ItemStack stack, Minecraft minecraft) {
         Block block = Block.getBlockFromItem(stack.getItem());
         int damage = stack.getItemDamage();
         BlockModelKey key = new BlockModelKey(block, damage);
@@ -581,7 +620,10 @@ public class DrawerRenderer extends TileEntitySpecialRenderer implements IResour
             blockModelLists.put(key, list);
         }
         TextureManager textureManager = minecraft.getTextureManager();
-        textureManager.bindTexture(TextureMap.locationBlocksTexture);
+        if (!blockTextureBound) {
+            textureManager.bindTexture(TextureMap.locationBlocksTexture);
+            blockTextureBound = true;
+        }
         boolean translucent = block.getRenderBlockPass() != 0;
         if (translucent) {
             GL11.glEnable(GL11.GL_BLEND);
@@ -595,7 +637,6 @@ public class DrawerRenderer extends TileEntitySpecialRenderer implements IResour
             GL11.glDisable(GL11.GL_BLEND);
             GL11.glDisable(GL11.GL_CULL_FACE);
         }
-        return true;
     }
 
     private boolean isCacheableBlock(ItemStack stack) {
@@ -603,8 +644,17 @@ public class DrawerRenderer extends TileEntitySpecialRenderer implements IResour
             return false;
         }
         Block block = Block.getBlockFromItem(stack.getItem());
-        return RenderBlocks.renderItemIn3d(block.getRenderType())
-            && MinecraftForgeClient.getItemRenderer(stack, IItemRenderer.ItemRenderType.EQUIPPED) == null;
+        if (block.getRenderType() != 0 || !RenderBlocks.renderItemIn3d(block.getRenderType())
+            || MinecraftForgeClient.getItemRenderer(stack, IItemRenderer.ItemRenderType.EQUIPPED) != null) {
+            return false;
+        }
+        for (int side = 0; side < 6; side++) {
+            IIcon icon = inventoryBlocks.getBlockIconFromSideAndMetadata(block, side, stack.getItemDamage());
+            if (!(icon instanceof TextureAtlasSprite sprite) || sprite.getFrameCount() > 1) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private int compileBlockModel(Block block, int damage) {
@@ -672,6 +722,7 @@ public class DrawerRenderer extends TileEntitySpecialRenderer implements IResour
         }
         tessellator.draw();
         GL11.glTranslatef(0.5F, 0.5F, 0.5F);
+        GL11.glRotatef(-90F, 0F, 1F, 0F);
     }
 
     private void clearBlockModelLists() {
@@ -759,6 +810,7 @@ public class DrawerRenderer extends TileEntitySpecialRenderer implements IResour
             if (size == 0) {
                 return;
             }
+            blockTextureBound = false;
             TextureManager textureManager = Minecraft.getMinecraft()
                 .getTextureManager();
             GL11.glPushAttrib(
@@ -796,6 +848,7 @@ public class DrawerRenderer extends TileEntitySpecialRenderer implements IResour
                 renderGlint(textureManager);
             } finally {
                 GL11.glPopAttrib();
+                blockTextureBound = false;
                 size = 0;
             }
         }
@@ -1207,17 +1260,18 @@ public class DrawerRenderer extends TileEntitySpecialRenderer implements IResour
             GL11.glTranslatef(centerX, centerY + (iconScale > 0.25F ? 0.425F : 0.22F), Z_INDICATOR);
             GL11.glDisable(GL11.GL_LIGHTING);
             GL11.glDisable(GL11.GL_TEXTURE_2D);
-            Tessellator tessellator = Tessellator.instance;
-            if (mode != 3) {
+            boolean showFill = mode == 1 || fill >= 1F;
+            if (mode != 3 || showFill) {
+                Tessellator tessellator = Tessellator.instance;
                 tessellator.startDrawingQuads();
-                tessellator.setColorOpaque_F(0.1F, 0.1F, 0.1F);
-                addIndicatorQuad(tessellator, INDICATOR_HALF_WIDTH);
-                tessellator.draw();
-            }
-            if (mode == 1 || fill >= 1F) {
-                tessellator.startDrawingQuads();
-                tessellator.setColorOpaque_F(0.2F, 0.8F, 0.2F);
-                addIndicatorQuad(tessellator, INDICATOR_HALF_WIDTH * Math.max(0.02F, fill));
+                if (mode != 3) {
+                    tessellator.setColorOpaque_F(0.1F, 0.1F, 0.1F);
+                    addIndicatorQuad(tessellator, INDICATOR_HALF_WIDTH);
+                }
+                if (showFill) {
+                    tessellator.setColorOpaque_F(0.2F, 0.8F, 0.2F);
+                    addIndicatorQuad(tessellator, INDICATOR_HALF_WIDTH * Math.max(0.02F, fill));
+                }
                 tessellator.draw();
             }
         } finally {

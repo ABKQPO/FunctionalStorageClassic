@@ -100,15 +100,38 @@ public class EssentiaDrawerTile extends ControllableDrawerTile
         if (worldObj == null || worldObj.isRemote) {
             return false;
         }
-        return EssentiaContainerRegistry.activate(player, handler, slot)
+        return EssentiaContainerRegistry.activate(player, handler, slot, this::prepareLockedSlot)
             || super.onSlotActivated(player, side, hitX, hitY, hitZ, slot);
     }
 
     @Override
     public void onSlotClicked(@Nonnull EntityPlayer player, int slot) {
         if (worldObj != null && !worldObj.isRemote) {
-            EssentiaContainerRegistry.activate(player, handler, slot);
+            EssentiaContainerRegistry.activate(player, handler, slot, this::prepareLockedSlot);
         }
+    }
+
+    public Runnable prepareLockedSlot(int slot, BigAspectStack request) {
+        if (worldObj == null || worldObj.isRemote
+            || request == null
+            || !request.hasTemplate()
+            || slot < 0
+            || slot >= handler.getStorageCount()) {
+            return null;
+        }
+        if (!isLocked() || handler.getSnapshot(slot)
+            .hasTemplate()) {
+            return () -> {};
+        }
+        if (handler.getCapacity(slot) < request.getAmount() || !handler.setSlotFilter(slot, request.withAmount(0L))) {
+            return null;
+        }
+        return () -> {
+            BigAspectStack current = handler.getSnapshot(slot);
+            if ((current.getAmount() == 0L || handler.isCreative()) && current.isSameType(request.getAspect())) {
+                handler.setSlotFilter(slot, BigAspectStack.empty());
+            }
+        };
     }
 
     @Nonnull

@@ -26,6 +26,8 @@ import com.hfstudio.functionalstorage.common.interaction.FluidContainerInteracti
 import com.hfstudio.functionalstorage.common.inventory.adapter.UpgradeSlotInventory;
 import com.hfstudio.functionalstorage.common.item.upgrade.AutomationUpgradeItem;
 import com.hfstudio.functionalstorage.common.item.upgrade.RedstoneUpgradeItem;
+import com.hfstudio.functionalstorage.common.tile.EssentiaDrawerTile;
+import com.hfstudio.functionalstorage.common.tile.FluidDrawerTile;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 import com.hfstudio.functionalstorage.common.tile.controller.StorageNetworkTile;
 import com.hfstudio.functionalstorage.misc.GuiHandler;
@@ -236,13 +238,15 @@ public class ContainerDrawer extends Container implements MenuSettingsReceiver, 
                 cursor,
                 tile.getFluidHandler(),
                 index,
-                result -> ContainerExchange.completeCursor(player, result));
+                result -> ContainerExchange.completeCursor(player, result),
+                tile instanceof FluidDrawerTile fluidDrawer ? fluidDrawer::prepareLockedSlot : null);
         } else if (tile.getAspectHandler() != null) {
             EssentiaContainerRegistry.activate(
                 cursor,
                 tile.getAspectHandler(),
                 index,
-                result -> ContainerExchange.completeCursor(player, result));
+                result -> ContainerExchange.completeCursor(player, result),
+                tile instanceof EssentiaDrawerTile essentiaDrawer ? essentiaDrawer::prepareLockedSlot : null);
         }
     }
 

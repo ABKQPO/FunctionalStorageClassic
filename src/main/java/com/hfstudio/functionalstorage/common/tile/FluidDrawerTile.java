@@ -10,6 +10,7 @@ import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.FluidTankInfo;
 import net.minecraftforge.fluids.IFluidHandler;
 
+import com.hfstudio.functionalstorage.api.storage.BigFluidStack;
 import com.hfstudio.functionalstorage.api.storage.IBigFluidHandler;
 import com.hfstudio.functionalstorage.api.upgrade.StorageFeature;
 import com.hfstudio.functionalstorage.api.upgrade.UpgradeAttribute;
@@ -89,15 +90,39 @@ public class FluidDrawerTile extends ControllableDrawerTile implements IFluidHan
         if (worldObj == null || worldObj.isRemote) {
             return false;
         }
-        return FluidContainerInteraction.activate(player, handler, slot)
+        return FluidContainerInteraction.activate(player, handler, slot, this::prepareLockedSlot)
             || super.onSlotActivated(player, side, hitX, hitY, hitZ, slot);
     }
 
     @Override
     public void onSlotClicked(@Nonnull EntityPlayer player, int slot) {
         if (worldObj != null && !worldObj.isRemote) {
-            FluidContainerInteraction.activate(player, handler, slot);
+            FluidContainerInteraction.activate(player, handler, slot, this::prepareLockedSlot);
         }
+    }
+
+    public Runnable prepareLockedSlot(int slot, BigFluidStack request) {
+        if (worldObj == null || worldObj.isRemote
+            || request == null
+            || !request.hasTemplate()
+            || slot < 0
+            || slot >= handler.getStorageCount()) {
+            return null;
+        }
+        if (!isLocked() || handler.getSnapshot(slot)
+            .hasTemplate()) {
+            return () -> {};
+        }
+        if (!handler.supportsFill(slot) || handler.getCapacity(slot) < request.getAmount()
+            || !handler.setSlotFilter(slot, request.withAmount(0L))) {
+            return null;
+        }
+        return () -> {
+            BigFluidStack current = handler.getSnapshot(slot);
+            if ((current.getAmount() == 0L || handler.isCreative()) && current.isSameType(request.getTemplate())) {
+                handler.setSlotFilter(slot, BigFluidStack.empty());
+            }
+        };
     }
 
     @Override

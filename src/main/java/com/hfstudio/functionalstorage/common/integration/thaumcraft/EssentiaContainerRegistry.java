@@ -2,15 +2,18 @@ package com.hfstudio.functionalstorage.common.integration.thaumcraft;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 
+import com.hfstudio.functionalstorage.api.storage.AspectStorageKey;
 import com.hfstudio.functionalstorage.api.storage.BigAspectStack;
 import com.hfstudio.functionalstorage.api.storage.IBigAspectHandler;
 import com.hfstudio.functionalstorage.api.storage.StorageAction;
+import com.hfstudio.functionalstorage.api.storage.TransferResult;
 import com.hfstudio.functionalstorage.common.interaction.HeldContainerExchange;
 
 import thaumcraft.api.aspects.Aspect;
@@ -45,6 +48,11 @@ public class EssentiaContainerRegistry {
     }
 
     public static boolean activate(EntityPlayer player, IBigAspectHandler handler, int slot) {
+        return activate(player, handler, slot, null);
+    }
+
+    public static boolean activate(EntityPlayer player, IBigAspectHandler handler, int slot,
+        BiFunction<Integer, BigAspectStack, Runnable> prepareLockedSlot) {
         ItemStack held = player.getHeldItem();
         if (!isEssentiaContainer(held)) {
             return false;
@@ -55,7 +63,8 @@ public class EssentiaContainerRegistry {
                 player.getHeldItem(),
                 handler,
                 slot,
-                result -> HeldContainerExchange.complete(player, result))) {
+                result -> HeldContainerExchange.complete(player, result),
+                prepareLockedSlot)) {
                 break;
             }
         }
@@ -63,6 +72,11 @@ public class EssentiaContainerRegistry {
     }
 
     public static boolean activate(ItemStack held, IBigAspectHandler handler, int slot, Consumer<ItemStack> exchange) {
+        return activate(held, handler, slot, exchange, null);
+    }
+
+    public static boolean activate(ItemStack held, IBigAspectHandler handler, int slot, Consumer<ItemStack> exchange,
+        BiFunction<Integer, BigAspectStack, Runnable> prepareLockedSlot) {
         if (held == null || handler.getStorageCount() <= 0) {
             return false;
         }
@@ -81,23 +95,42 @@ public class EssentiaContainerRegistry {
         if (content != null && content.size() == 1) {
             Aspect aspect = content.getAspects()[0];
             BigAspectStack request = new BigAspectStack(aspect, content.getAmount(aspect));
-            if (!request.isEmpty() && handler.insert(target, request, StorageAction.SIMULATE)
-                .isComplete()) {
-                container.setAspects(result, new AspectList());
-                result.setItemDamage(definition.emptyMetadata());
-                handler.insert(target, request, StorageAction.EXECUTE);
-                exchange.accept(result);
-                transferred = true;
+            if (!request.isEmpty()) {
+                Runnable rollbackFilter = prepareLockedSlot == null ? () -> {}
+                    : prepareLockedSlot.apply(target, request);
+                if (rollbackFilter != null) {
+                    if (handler.insert(target, request, StorageAction.SIMULATE)
+                        .isComplete()) {
+                        TransferResult<BigAspectStack, AspectStorageKey> inserted = handler
+                            .insert(target, request, StorageAction.EXECUTE);
+                        if (inserted.isComplete()) {
+                            container.setAspects(result, new AspectList());
+                            result.setItemDamage(definition.emptyMetadata());
+                            exchange.accept(result);
+                            transferred = true;
+                        } else if (inserted.getProcessedAmount() > 0L) {
+                            handler.extract(target, inserted.getProcessedAmount(), StorageAction.EXECUTE);
+                        }
+                    }
+                    if (!transferred) {
+                        rollbackFilter.run();
+                    }
+                }
             }
         } else if (content == null || content.size() == 0) {
             BigAspectStack available = handler.getSnapshot(target);
             if (available.getAspect() != null && handler.extract(target, definition.capacity(), StorageAction.SIMULATE)
                 .isComplete()) {
-                result.setItemDamage(definition.filledMetadata());
-                container.setAspects(result, new AspectList().add(available.getAspect(), definition.capacity()));
-                handler.extract(target, definition.capacity(), StorageAction.EXECUTE);
-                exchange.accept(result);
-                transferred = true;
+                TransferResult<BigAspectStack, AspectStorageKey> extracted = handler
+                    .extract(target, definition.capacity(), StorageAction.EXECUTE);
+                if (extracted.isComplete()) {
+                    result.setItemDamage(definition.filledMetadata());
+                    container.setAspects(result, new AspectList().add(available.getAspect(), definition.capacity()));
+                    exchange.accept(result);
+                    transferred = true;
+                } else if (extracted.getProcessedAmount() > 0L) {
+                    handler.insert(target, extracted.getProcessed(), StorageAction.EXECUTE);
+                }
             }
         }
         return transferred;
@@ -132,4 +165,5 @@ public class EssentiaContainerRegistry {
         }
         return -1;
     }
+
 }

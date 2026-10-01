@@ -501,6 +501,9 @@ public abstract class ControllableDrawerTile extends TileEntity implements Capab
 
     @Nonnull
     public ItemStack createDropStack(@Nonnull ItemStack base) {
+        if (isDefaultDropState()) {
+            return base;
+        }
         NBTTagCompound tileData = writeTileData(new NBTTagCompound());
         if (tileData.hasNoTags()) {
             return base;
@@ -509,6 +512,17 @@ public abstract class ControllableDrawerTile extends TileEntity implements Capab
         root.setTag(KEY_TILE_DATA, tileData);
         base.setTagCompound(root);
         return base;
+    }
+
+    private boolean isDefaultDropState() {
+        return isEverythingEmpty() && !locked
+            && priority == 0
+            && controllerX == Integer.MIN_VALUE
+            && !style.isConfigured()
+            && drawerOptions.isShowItemCount() == FunctionalStorageConfig.CLIENT.defaultShowItemCount
+            && drawerOptions.isShowItemRender() == FunctionalStorageConfig.CLIENT.defaultShowItemRender
+            && drawerOptions.isShowUpgrades() == FunctionalStorageConfig.CLIENT.defaultShowUpgrades
+            && drawerOptions.getAdvancedValue(ConfigurationAction.INDICATOR) == 0;
     }
 
     public void loadFromItemStack(@Nonnull ItemStack stack) {
@@ -759,7 +773,15 @@ public abstract class ControllableDrawerTile extends TileEntity implements Capab
     @SideOnly(Side.CLIENT)
     @Override
     public AxisAlignedBB getRenderBoundingBox() {
-        return INFINITE_EXTENT_AABB;
+        ForgeDirection front = DrawerBlock.getFrontFacing(getBlockMetadata());
+        double extension = 1D / 16D;
+        return AxisAlignedBB.getBoundingBox(
+            xCoord + Math.min(0D, front.offsetX * extension),
+            yCoord + Math.min(0D, front.offsetY * extension),
+            zCoord + Math.min(0D, front.offsetZ * extension),
+            xCoord + 1D + Math.max(0D, front.offsetX * extension),
+            yCoord + 1D + Math.max(0D, front.offsetY * extension),
+            zCoord + 1D + Math.max(0D, front.offsetZ * extension));
     }
 
     @SideOnly(Side.CLIENT)
@@ -804,11 +826,15 @@ public abstract class ControllableDrawerTile extends TileEntity implements Capab
             items.setSlotFilter(slot, new BigItemStack(held, 0L));
         }
         if (held != null) {
-            insertFromInventory(player, handler, target, player.inventory.currentItem);
+            insertFromInventory(player, handler, target, player.inventory.currentItem, false);
         }
         if (repeated && acceptsDeposit(handler, slot)) {
             if (prioritizesFluidContainerDeposit()) {
-                FluidContainerInteraction.depositInventory(player, getFluidHandler());
+                if (matchesOnlyOnManualDeposit()) {
+                    FluidContainerInteraction.depositMatchingInventory(player, getFluidHandler());
+                } else {
+                    FluidContainerInteraction.depositInventory(player, getFluidHandler());
+                }
             }
             for (int inventorySlot = 0; inventorySlot < player.inventory.mainInventory.length; inventorySlot++) {
                 insertFromInventory(player, handler, target, inventorySlot, true);
@@ -845,8 +871,8 @@ public abstract class ControllableDrawerTile extends TileEntity implements Capab
         return false;
     }
 
-    private void insertFromInventory(EntityPlayer player, IBigItemHandler handler, int slot, int inventorySlot) {
-        insertFromInventory(player, handler, slot, inventorySlot, false);
+    protected boolean matchesOnlyOnManualDeposit() {
+        return false;
     }
 
     private void insertFromInventory(EntityPlayer player, IBigItemHandler handler, int slot, int inventorySlot,
