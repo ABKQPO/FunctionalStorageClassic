@@ -19,7 +19,7 @@ import cpw.mods.fml.common.Optional;
 import tconstruct.api.IExtendedStackLimitProvider;
 
 /** Presents stable physical slots and commits vanilla's mutable stack edits as storage deltas. */
-@Optional.Interface(iface = "tconstruct.api.IExtendedStackLimitProvider", modid = "TConstruct")
+@Optional.Interface(iface = "tconstruct.api.IExtendedStackLimitProvider", modid = "TConstruct", striprefs = true)
 public class DrawerItemInventory implements ISidedInventory, IExtendedStackLimitProvider {
 
     private static final int STACK_UNIT = 64;

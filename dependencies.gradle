@@ -66,6 +66,10 @@ dependencies {
 }
 
 configurations.configureEach {
+    resolutionStrategy {
+        force "com.github.GTNewHorizons:TinkersConstruct:1.14.115-GTNH"
+    }
+
     exclude group: "com.github.GTNewHorizons", module: "CodeChickenLib"
     exclude group: "com.github.GTNewHorizons", module: "Hodgepodge"
     exclude group: "com.github.GTNewHorizons", module: "Baubles"
