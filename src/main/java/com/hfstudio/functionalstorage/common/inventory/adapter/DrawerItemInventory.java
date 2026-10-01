@@ -210,7 +210,6 @@ public class DrawerItemInventory implements ISidedInventory, IExtendedStackLimit
     }
 
     @Override
-    @Optional.Method(modid = "TConstruct")
     public int getExtendedStackLimit(int slot, @Nullable ItemStack stack) {
         syncSlots();
         if (stack == null || stack.getItem() == null) {
