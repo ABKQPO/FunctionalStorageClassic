@@ -226,7 +226,9 @@ public class ContainerDrawer extends Container implements MenuSettingsReceiver, 
                         button == 1 ? (available.stackSize + 1) / 2 : available.stackSize,
                         StorageAction.EXECUTE));
             } else {
-                insert(index, cursor, button == 1 ? 1 : cursor.stackSize);
+                if (prepareLockedSlot(index, cursor)) {
+                    insert(index, cursor, button == 1 ? 1 : cursor.stackSize);
+                }
                 if (cursor.stackSize == 0) player.inventory.setItemStack(null);
             }
         } else if (tile.getFluidHandler() != null) {
@@ -250,7 +252,9 @@ public class ContainerDrawer extends Container implements MenuSettingsReceiver, 
             if (hotbar == null)
                 player.inventory.setInventorySlotContents(button, extract(index, 64, StorageAction.EXECUTE));
             else {
-                insert(index, hotbar, hotbar.stackSize);
+                if (prepareLockedSlot(index, hotbar)) {
+                    insert(index, hotbar, hotbar.stackSize);
+                }
                 if (hotbar.stackSize == 0) player.inventory.setInventorySlotContents(button, null);
             }
         } else if (mode == 3 && player.capabilities.isCreativeMode && player.inventory.getItemStack() == null) {
@@ -279,6 +283,43 @@ public class ContainerDrawer extends Container implements MenuSettingsReceiver, 
         stack.stackSize -= (int) tile.getItemHandler()
             .insert(index, new BigItemStack(stack, amount), StorageAction.EXECUTE)
             .getProcessedAmount();
+    }
+
+    private boolean prepareLockedSlot(int index, ItemStack stack) {
+        IBigItemHandler handler = tile.getItemHandler();
+        if (handler == null || stack == null || stack.stackSize <= 0) {
+            return false;
+        }
+        if (!tile.isLocked() || handler.getSnapshot(index)
+            .hasTemplate()) {
+            return true;
+        }
+        return tile.setItemFilter(index, stack);
+    }
+
+    private long insertForGui(ItemStack stack) {
+        IBigItemHandler handler = tile.getItemHandler();
+        if (handler == null || stack == null || stack.stackSize <= 0) {
+            return 0L;
+        }
+        BigItemStack request = new BigItemStack(stack, stack.stackSize);
+        long accepted = handler.insertRouted(request, StorageAction.EXECUTE)
+            .getProcessedAmount();
+        if (accepted > 0L || !tile.isLocked()) {
+            return accepted;
+        }
+        for (int index = 0; index < storageSlotCount; index++) {
+            if (!handler.getSnapshot(index)
+                .isEmpty() || !prepareLockedSlot(index, stack)) {
+                continue;
+            }
+            accepted = handler.insert(index, request, StorageAction.EXECUTE)
+                .getProcessedAmount();
+            if (accepted > 0L) {
+                return accepted;
+            }
+        }
+        return 0L;
     }
 
     private ItemStack extract(int index, int amount, StorageAction action) {
@@ -342,9 +383,7 @@ public class ContainerDrawer extends Container implements MenuSettingsReceiver, 
                 moveUpgradesToSlots(stack, storageSlotCount, playerStart);
             }
             if (stack.stackSize > 0 && tile.getItemHandler() != null) {
-                stack.stackSize -= (int) tile.getItemHandler()
-                    .insertRouted(new BigItemStack(stack, stack.stackSize), StorageAction.EXECUTE)
-                    .getProcessedAmount();
+                stack.stackSize -= (int) Math.min(stack.stackSize, insertForGui(stack));
             }
         }
         if (stack.stackSize == original.stackSize) return null;

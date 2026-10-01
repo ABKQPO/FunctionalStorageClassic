@@ -194,6 +194,45 @@ public interface IBigItemHandler extends IStorageHandler<BigItemStack, ItemStora
     }
 
     /**
+     * Routes insertion only through indices that already retain a compatible
+     * item template. Empty indices are never configured by this operation.
+     *
+     * @param request item request
+     * @param action  simulation or execution
+     * @return the amount accepted by existing item slots
+     */
+    @Nonnull
+    default TransferResult<BigItemStack, ItemStorageKey> insertMatchingRouted(@Nonnull BigItemStack request,
+        @Nonnull StorageAction action) {
+        Objects.requireNonNull(action, "action");
+        long requested = request.isEmpty() ? 0L : request.getAmount();
+        if (requested == 0L) {
+            return new TransferResult<>(0L, BigItemStack.empty(), action);
+        }
+        long processedTotal = 0L;
+        int count = Math.max(0, getStorageCount());
+        for (int pass = 0; pass < (allowsEquivalentResources() ? 2 : 1) && processedTotal < requested; pass++) {
+            for (int index = 0; index < count && processedTotal < requested; index++) {
+                BigItemStack current = getSnapshot(index);
+                if (!current.hasTemplate() || (pass == 0 && !current.isSameType(request))) {
+                    continue;
+                }
+                if (pass == 1 && current.isSameType(request)) {
+                    continue;
+                }
+                if (pass == 1
+                    && insert(index, request.withAmount(1L), StorageAction.SIMULATE).getProcessedAmount() <= 0L) {
+                    continue;
+                }
+                long remaining = requested - processedTotal;
+                long processed = insert(index, request.withAmount(remaining), action).getProcessedAmount();
+                processedTotal = saturatedAdd(processedTotal, Math.min(remaining, Math.max(0L, processed)));
+            }
+        }
+        return new TransferResult<>(requested, request.withAmount(processedTotal), action);
+    }
+
+    /**
      * Routes type-sensitive extraction through matching generic indices.
      */
     @Nonnull

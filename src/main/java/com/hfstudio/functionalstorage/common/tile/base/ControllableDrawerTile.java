@@ -811,7 +811,7 @@ public abstract class ControllableDrawerTile extends TileEntity implements Capab
                 FluidContainerInteraction.depositInventory(player, getFluidHandler());
             }
             for (int inventorySlot = 0; inventorySlot < player.inventory.mainInventory.length; inventorySlot++) {
-                insertFromInventory(player, handler, target, inventorySlot);
+                insertFromInventory(player, handler, target, inventorySlot, true);
             }
         }
         player.inventory.markDirty();
@@ -846,15 +846,22 @@ public abstract class ControllableDrawerTile extends TileEntity implements Capab
     }
 
     private void insertFromInventory(EntityPlayer player, IBigItemHandler handler, int slot, int inventorySlot) {
+        insertFromInventory(player, handler, slot, inventorySlot, false);
+    }
+
+    private void insertFromInventory(EntityPlayer player, IBigItemHandler handler, int slot, int inventorySlot,
+        boolean matchingOnly) {
         ItemStack stack = player.inventory.getStackInSlot(inventorySlot);
         if (stack == null || stack.stackSize <= 0) {
             return;
         }
         BigItemStack request = new BigItemStack(stack, stack.stackSize);
-        long accepted = slot < 0 ? handler.insertRouted(request, StorageAction.EXECUTE)
+        long accepted = slot < 0 && matchingOnly ? handler.insertMatchingRouted(request, StorageAction.EXECUTE)
             .getProcessedAmount()
-            : handler.insert(slot, request, StorageAction.EXECUTE)
-                .getProcessedAmount();
+            : slot < 0 ? handler.insertRouted(request, StorageAction.EXECUTE)
+                .getProcessedAmount()
+                : handler.insert(slot, request, StorageAction.EXECUTE)
+                    .getProcessedAmount();
         if (accepted > 0) {
             stack.stackSize -= (int) Math.min(stack.stackSize, accepted);
             player.inventory.setInventorySlotContents(inventorySlot, stack.stackSize == 0 ? null : stack);

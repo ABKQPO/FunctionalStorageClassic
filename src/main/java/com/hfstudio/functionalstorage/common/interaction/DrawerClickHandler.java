@@ -6,6 +6,7 @@ import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 
 import com.hfstudio.functionalstorage.common.block.base.DrawerBlock;
 import com.hfstudio.functionalstorage.common.item.LinkingToolItem;
+import com.hfstudio.functionalstorage.common.tile.FluidDrawerTile;
 
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 
@@ -22,13 +23,21 @@ public class DrawerClickHandler {
             event.setCanceled(true);
             return;
         }
-        if (!event.entityPlayer.capabilities.isCreativeMode || event.entityPlayer.isSneaking()) {
-            return;
-        }
         Block block = event.world.getBlock(event.x, event.y, event.z);
         if (!(block instanceof DrawerBlock drawer)
             || event.face != DrawerBlock.getFrontFacing(event.world.getBlockMetadata(event.x, event.y, event.z))
                 .ordinal()) {
+            return;
+        }
+        if (event.world.getTileEntity(event.x, event.y, event.z) instanceof FluidDrawerTile
+            && FluidContainerInteraction.isFluidContainer(held)) {
+            event.setCanceled(true);
+            if (!event.world.isRemote) {
+                drawer.onBlockClicked(event.world, event.x, event.y, event.z, event.entityPlayer);
+            }
+            return;
+        }
+        if (!event.entityPlayer.capabilities.isCreativeMode || event.entityPlayer.isSneaking()) {
             return;
         }
         event.setCanceled(true);

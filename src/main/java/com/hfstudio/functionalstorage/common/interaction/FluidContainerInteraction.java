@@ -30,17 +30,27 @@ public class FluidContainerInteraction {
         if (!isFluidContainer(held)) {
             return false;
         }
-        int transfers = player.capabilities.isCreativeMode ? 1 : held.stackSize;
+        if (player.capabilities.isCreativeMode) {
+            activate(held, handler, slot, result -> {});
+            return true;
+        }
+        ItemStack remaining = held.copy();
+        BatchContainerExchange exchange = new BatchContainerExchange(player);
+        int transfers = held.stackSize;
         for (int index = 0; index < transfers; index++) {
-            if (!activate(
-                player.getHeldItem(),
-                handler,
-                slot,
-                result -> HeldContainerExchange.complete(player, result))) {
+            if (!activate(singleContainer(remaining), handler, slot, exchange::accept)) {
                 break;
             }
+            remaining.stackSize--;
         }
+        exchange.complete(remaining);
         return true;
+    }
+
+    private static ItemStack singleContainer(ItemStack stack) {
+        ItemStack single = stack.copy();
+        single.stackSize = 1;
+        return single;
     }
 
     public static boolean activate(ItemStack held, IBigFluidHandler handler, int slot, Consumer<ItemStack> exchange) {
@@ -55,7 +65,8 @@ public class FluidContainerInteraction {
         if (single.getItem() instanceof IFluidContainerItem container) {
             FluidStack contained = container.getFluid(single);
             if (contained != null && contained.amount > 0) {
-                return insertMutable(handler, slot, single, container, contained, exchange);
+                return insertMutable(handler, slot, single, container, contained, exchange)
+                    || fillMutable(handler, slot, single, container, exchange);
             }
             return fillMutable(handler, slot, single, container, exchange);
         }
@@ -154,17 +165,17 @@ public class FluidContainerInteraction {
             ItemStack filled = FluidContainerRegistry.fillFluidContainer(template, single);
             FluidStack content = filled == null ? null : FluidContainerRegistry.getFluidForFilledItem(filled);
             if (content == null
-                || !extract(handler, slot, new BigFluidStack(content, content.amount), StorageAction.SIMULATE)
+                || !extract(handler, index, new BigFluidStack(content, content.amount), StorageAction.SIMULATE)
                     .isComplete()) {
                 continue;
             }
             TransferResult<BigFluidStack, FluidStorageKey> executed = extract(
                 handler,
-                slot,
+                index,
                 new BigFluidStack(content, content.amount),
                 StorageAction.EXECUTE);
             if (!executed.isComplete()) {
-                rollbackExtracted(handler, slot, executed);
+                rollbackExtracted(handler, index, executed);
                 return false;
             }
             exchange.accept(filled);
@@ -190,22 +201,22 @@ public class FluidContainerInteraction {
                 continue;
             }
             BigFluidStack request = new BigFluidStack(template, filled);
-            if (!extract(handler, slot, request, StorageAction.SIMULATE).isComplete()) {
+            if (!extract(handler, index, request, StorageAction.SIMULATE).isComplete()) {
                 continue;
             }
             TransferResult<BigFluidStack, FluidStorageKey> executed = extract(
                 handler,
-                slot,
+                index,
                 request,
                 StorageAction.EXECUTE);
             if (!executed.isComplete()) {
-                rollbackExtracted(handler, slot, executed);
+                rollbackExtracted(handler, index, executed);
                 return false;
             }
             FluidStack content = template.copy();
             content.amount = filled;
             if (container.fill(single, content, true) != filled) {
-                rollbackExtracted(handler, slot, executed);
+                rollbackExtracted(handler, index, executed);
                 return false;
             }
             exchange.accept(single);
@@ -252,6 +263,56 @@ public class FluidContainerInteraction {
         TransferResult<BigFluidStack, FluidStorageKey> extracted) {
         if (extracted.getProcessedAmount() > 0L) {
             insert(handler, slot, extracted.getProcessed(), StorageAction.EXECUTE);
+        }
+    }
+
+    private static class BatchContainerExchange {
+
+        private final EntityPlayer player;
+        private ItemStack result;
+
+        private BatchContainerExchange(EntityPlayer player) {
+            this.player = player;
+        }
+
+        private void accept(ItemStack exchanged) {
+            if (exchanged == null || exchanged.stackSize <= 0) {
+                return;
+            }
+            if (result == null) {
+                result = exchanged.copy();
+                return;
+            }
+            if (ItemStack.areItemStacksEqual(result, exchanged)
+                && result.stackSize <= result.getMaxStackSize() - exchanged.stackSize) {
+                result.stackSize += exchanged.stackSize;
+                return;
+            }
+            store(result);
+            result = exchanged.copy();
+        }
+
+        private void complete(ItemStack remaining) {
+            if (remaining.stackSize > 0) {
+                store(result);
+                result = remaining;
+            }
+            if (result != null && result.stackSize > 0) {
+                player.inventory.setInventorySlotContents(player.inventory.currentItem, result);
+            } else {
+                player.inventory.setInventorySlotContents(player.inventory.currentItem, null);
+            }
+            player.inventory.markDirty();
+            player.inventoryContainer.detectAndSendChanges();
+        }
+
+        private void store(ItemStack stack) {
+            if (stack == null || stack.stackSize <= 0) {
+                return;
+            }
+            if (!player.inventory.addItemStackToInventory(stack)) {
+                player.dropPlayerItemWithRandomChoice(stack, false);
+            }
         }
     }
 }

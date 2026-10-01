@@ -8,6 +8,7 @@ import com.hfstudio.functionalstorage.common.integration.bogosorter.BogoSorterIn
 import com.hfstudio.functionalstorage.common.integration.findit.FindItIntegration;
 import com.hfstudio.functionalstorage.common.integration.holoinventory.HoloInventoryIntegration;
 import com.hfstudio.functionalstorage.common.integration.jabba.JabbaIntegration;
+import com.hfstudio.functionalstorage.common.integration.logisticspipes.LogisticsPipesIntegration;
 import com.hfstudio.functionalstorage.common.integration.thaumcraft.ThaumcraftIntegration;
 import com.hfstudio.functionalstorage.common.integration.waila.WailaIntegration;
 import com.hfstudio.functionalstorage.common.interaction.DrawerClickHandler;
@@ -57,6 +58,9 @@ public class CommonProxy {
         }
         if (Mods.Jabba.isModLoaded()) {
             JabbaIntegration.register();
+        }
+        if (Mods.LogisticsPipes.isModLoaded()) {
+            LogisticsPipesIntegration.register();
         }
     }
 

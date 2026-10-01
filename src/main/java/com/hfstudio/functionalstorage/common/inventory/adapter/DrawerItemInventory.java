@@ -15,8 +15,12 @@ import com.hfstudio.functionalstorage.api.storage.IBigItemHandler;
 import com.hfstudio.functionalstorage.api.storage.ItemStorageView;
 import com.hfstudio.functionalstorage.api.storage.StorageAction;
 
+import cpw.mods.fml.common.Optional;
+import tconstruct.api.IExtendedStackLimitProvider;
+
 /** Presents stable physical slots and commits vanilla's mutable stack edits as storage deltas. */
-public class DrawerItemInventory implements ISidedInventory {
+@Optional.Interface(iface = "tconstruct.api.IExtendedStackLimitProvider", modid = "TConstruct", striprefs = true)
+public class DrawerItemInventory implements ISidedInventory, IExtendedStackLimitProvider {
 
     private static final int STACK_UNIT = 64;
 
@@ -203,6 +207,38 @@ public class DrawerItemInventory implements ISidedInventory {
             stackLimit = (int) smallest;
         }
         return stackLimit;
+    }
+
+    @Override
+    @Optional.Method(modid = "TConstruct")
+    public int getExtendedStackLimit(int slot, @Nullable ItemStack stack) {
+        syncSlots();
+        if (stack == null || stack.getItem() == null) {
+            return 0;
+        }
+
+        int storageCount = handler.getStorageCount();
+        int storageIndex = slot < storageCount ? slot : slot - storageCount;
+        if (storageIndex < 0 || storageIndex >= storageCount) {
+            return 0;
+        }
+        if (handler.voidsOverflow(storageIndex)) {
+            return Integer.MAX_VALUE;
+        }
+
+        long capacity = Math.max(0L, handler.getCapacity(storageIndex));
+        if (slot < storageCount) {
+            BigItemStack current = handler.getSnapshot(storageIndex);
+            if (current.hasTemplate() && current.getAmount() > 0L) {
+                long remaining = Math.max(0L, capacity - current.getAmount());
+                ItemStack template = current.getTemplate();
+                long unit = Math.min(capacity, Math.max(1, template.getMaxStackSize()));
+                if (remaining < unit) {
+                    capacity = Math.min(capacity, unit);
+                }
+            }
+        }
+        return capacity >= Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) capacity;
     }
 
     @Override

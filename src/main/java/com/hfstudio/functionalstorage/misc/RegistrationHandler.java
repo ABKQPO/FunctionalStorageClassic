@@ -33,7 +33,9 @@ import com.hfstudio.functionalstorage.common.integration.Mods;
 import com.hfstudio.functionalstorage.common.item.ConfigurationToolItem;
 import com.hfstudio.functionalstorage.common.item.DrawerBlockItem;
 import com.hfstudio.functionalstorage.common.item.EnderDrawerBlockItem;
+import com.hfstudio.functionalstorage.common.item.FluidDrawerBlockItem;
 import com.hfstudio.functionalstorage.common.item.FramedDrawerBlockItem;
+import com.hfstudio.functionalstorage.common.item.FramedFluidDrawerBlockItem;
 import com.hfstudio.functionalstorage.common.item.LinkingToolItem;
 import com.hfstudio.functionalstorage.common.item.upgrade.BreakerUpgradeItem;
 import com.hfstudio.functionalstorage.common.item.upgrade.CollectorUpgradeItem;
@@ -132,7 +134,7 @@ public class RegistrationHandler {
             fluidDrawers.add(block);
             String name = "fluid_" + block.getDrawerLayout()
                 .getSlotCount();
-            GameRegistry.registerBlock(block, DrawerBlockItem.class, name);
+            GameRegistry.registerBlock(block, FluidDrawerBlockItem.class, name);
             registerFsItemList(name, block);
         }
 
@@ -229,7 +231,10 @@ public class RegistrationHandler {
 
     private static void registerFramed(String id, FSItemList entry, DrawerBlock original, String defaultTexture) {
         FramedVariantBlock block = new FramedVariantBlock(id, original, defaultTexture);
-        GameRegistry.registerBlock(block, FramedDrawerBlockItem.class, id);
+        Class<? extends DrawerBlockItem> itemClass = original instanceof FluidDrawerBlock
+            ? FramedFluidDrawerBlockItem.class
+            : FramedDrawerBlockItem.class;
+        GameRegistry.registerBlock(block, itemClass, id);
         specialDrawers.add(block);
         entry.set(block);
     }
