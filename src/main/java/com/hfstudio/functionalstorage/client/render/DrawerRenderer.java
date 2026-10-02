@@ -40,6 +40,7 @@ import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL12;
 
+import com.gtnewhorizon.gtnhlib.client.renderer.TessellatorManager;
 import com.gtnewhorizon.gtnhlib.util.numberformatting.NumberFormatUtil;
 import com.hfstudio.functionalstorage.FunctionalStorage;
 import com.hfstudio.functionalstorage.api.storage.BigAspectStack;
@@ -116,6 +117,8 @@ public class DrawerRenderer extends TileEntitySpecialRenderer implements IResour
     private final RenderBlocks inventoryBlocks = new RenderBlocks();
     private final Map<ControllableDrawerTile, FluidRenderState> fluidRenderStates = new WeakHashMap<>();
     private final Map<BlockModelKey, Integer> blockModelLists = new LinkedHashMap<>(32, 0.75F, true);
+    private final Map<BlockModelKey, Boolean> cacheableBlocks = new LinkedHashMap<>(32, 0.75F, true);
+    private final BlockModelKey blockLookupKey = new BlockModelKey();
     private final BigItemStack[] itemSnapshots = new BigItemStack[DrawerFaceLayout.X_4.getSlotCount()];
     private final SimpleIconBatch simpleIcons = new SimpleIconBatch();
     private final TextLabel[] textLabels = new TextLabel[DrawerFaceLayout.X_4.getSlotCount()];
@@ -522,17 +525,20 @@ public class DrawerRenderer extends TileEntitySpecialRenderer implements IResour
         if (stack == null || stack.getItem() == null) {
             return;
         }
-        boolean raised = threeDimensional && stack.getItem() instanceof ItemBlock
-            && (RenderBlocks.renderItemIn3d(
-                Block.getBlockFromItem(stack.getItem())
-                    .getRenderType())
-                || MinecraftForgeClient.getItemRenderer(stack, IItemRenderer.ItemRenderType.EQUIPPED) != null);
-        boolean cacheableBlock = raised && isCacheableBlock(stack);
-        boolean cachedCube = cacheableBlock && Block.getBlockFromItem(stack.getItem())
-            .getRenderType() == 0;
         Minecraft minecraft = Minecraft.getMinecraft();
+        Block block = null;
+        IItemRenderer customRenderer = null;
+        boolean raised = false;
+        if (threeDimensional && stack.getItem() instanceof ItemBlock) {
+            block = Block.getBlockFromItem(stack.getItem());
+            customRenderer = MinecraftForgeClient.getItemRenderer(stack, IItemRenderer.ItemRenderType.EQUIPPED);
+            raised = RenderBlocks.renderItemIn3d(block.getRenderType()) || customRenderer != null;
+        }
+        boolean cachedCube = raised && !TessellatorManager.isCurrentlyCapturing()
+            && !TessellatorManager.shouldInterceptDraw(Tessellator.instance)
+            && isCacheableBlock(stack, block, customRenderer);
         if (cachedCube) {
-            renderCachedCube(stack, minecraft, x, y, scale);
+            renderCachedCube(stack, minecraft, block, x, y, scale);
             return;
         }
         int previousMatrixMode = GL11.glGetInteger(GL11.GL_MATRIX_MODE);
@@ -580,7 +586,7 @@ public class DrawerRenderer extends TileEntitySpecialRenderer implements IResour
         }
     }
 
-    private void renderCachedCube(ItemStack stack, Minecraft minecraft, float x, float y, float scale) {
+    private void renderCachedCube(ItemStack stack, Minecraft minecraft, Block block, float x, float y, float scale) {
         float inverseScale = 1F / (scale / 1.4F);
         GL11.glMatrixMode(GL11.GL_MODELVIEW);
         GL11.glEnable(GL12.GL_RESCALE_NORMAL);
@@ -597,18 +603,17 @@ public class DrawerRenderer extends TileEntitySpecialRenderer implements IResour
                 RenderHelper.enableStandardItemLighting();
                 cachedLightingEnabled = true;
             }
-            renderCachedBlock(stack, minecraft);
+            renderCachedBlock(stack, minecraft, block);
         } finally {
             GL11.glScalef(inverseScale, -inverseScale, -inverseScale);
             GL11.glTranslatef(-x, -y, -(0.002F - scale / 3F));
         }
     }
 
-    private void renderCachedBlock(ItemStack stack, Minecraft minecraft) {
-        Block block = Block.getBlockFromItem(stack.getItem());
+    private void renderCachedBlock(ItemStack stack, Minecraft minecraft, Block block) {
         int damage = stack.getItemDamage();
-        BlockModelKey key = new BlockModelKey(block, damage);
-        Integer list = blockModelLists.get(key);
+        blockLookupKey.set(block, damage);
+        Integer list = blockModelLists.get(blockLookupKey);
         if (list == null) {
             if (blockModelLists.size() >= MAX_CACHED_BLOCK_MODELS) {
                 BlockModelKey oldest = blockModelLists.keySet()
@@ -617,7 +622,7 @@ public class DrawerRenderer extends TileEntitySpecialRenderer implements IResour
                 GLAllocation.deleteDisplayLists(blockModelLists.remove(oldest));
             }
             list = compileBlockModel(block, damage);
-            blockModelLists.put(key, list);
+            blockModelLists.put(new BlockModelKey(block, damage), list);
         }
         TextureManager textureManager = minecraft.getTextureManager();
         if (!blockTextureBound) {
@@ -639,20 +644,33 @@ public class DrawerRenderer extends TileEntitySpecialRenderer implements IResour
         }
     }
 
-    private boolean isCacheableBlock(ItemStack stack) {
-        if (stack.hasTagCompound() || !(stack.getItem() instanceof ItemBlock) || stack.getItemSpriteNumber() != 0) {
+    private boolean isCacheableBlock(ItemStack stack, Block block, IItemRenderer customRenderer) {
+        if (stack.hasTagCompound() || block == null || customRenderer != null || stack.getItemSpriteNumber() != 0) {
             return false;
         }
-        Block block = Block.getBlockFromItem(stack.getItem());
-        if (block.getRenderType() != 0 || !RenderBlocks.renderItemIn3d(block.getRenderType())
-            || MinecraftForgeClient.getItemRenderer(stack, IItemRenderer.ItemRenderType.EQUIPPED) != null) {
+        int damage = stack.getItemDamage();
+        blockLookupKey.set(block, damage);
+        Boolean cached = cacheableBlocks.get(blockLookupKey);
+        if (cached != null) {
+            return cached;
+        }
+        if (block.getRenderType() != 0 || !RenderBlocks.renderItemIn3d(block.getRenderType())) {
+            cacheableBlocks.put(new BlockModelKey(block, damage), false);
             return false;
         }
         for (int side = 0; side < 6; side++) {
             IIcon icon = inventoryBlocks.getBlockIconFromSideAndMetadata(block, side, stack.getItemDamage());
             if (!(icon instanceof TextureAtlasSprite sprite) || sprite.getFrameCount() > 1) {
+                cacheableBlocks.put(new BlockModelKey(block, damage), false);
                 return false;
             }
+        }
+        cacheableBlocks.put(new BlockModelKey(block, damage), true);
+        if (cacheableBlocks.size() > MAX_CACHED_BLOCK_MODELS) {
+            cacheableBlocks.remove(
+                cacheableBlocks.keySet()
+                    .iterator()
+                    .next());
         }
         return true;
     }
@@ -730,6 +748,7 @@ public class DrawerRenderer extends TileEntitySpecialRenderer implements IResour
             GLAllocation.deleteDisplayLists(list);
         }
         blockModelLists.clear();
+        cacheableBlocks.clear();
     }
 
     private void renderGuiItem(Minecraft minecraft, ItemStack stack) {
@@ -920,7 +939,35 @@ public class DrawerRenderer extends TileEntitySpecialRenderer implements IResour
         private boolean glint;
     }
 
-    private record BlockModelKey(Block block, int damage) {}
+    private static class BlockModelKey {
+
+        private Block block;
+        private int damage;
+
+        private BlockModelKey() {}
+
+        private BlockModelKey(Block block, int damage) {
+            set(block, damage);
+        }
+
+        private void set(Block block, int damage) {
+            this.block = block;
+            this.damage = damage;
+        }
+
+        @Override
+        public int hashCode() {
+            return System.identityHashCode(block) * 31 + damage;
+        }
+
+        @Override
+        public boolean equals(Object object) {
+            if (!(object instanceof BlockModelKey other)) {
+                return false;
+            }
+            return block == other.block && damage == other.damage;
+        }
+    }
 
     /**
      * Resolves the inner cavity region one fluid slot occupies, as

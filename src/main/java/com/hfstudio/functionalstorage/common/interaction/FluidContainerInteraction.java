@@ -260,11 +260,24 @@ public class FluidContainerInteraction {
                 continue;
             }
             template.amount = Integer.MAX_VALUE;
-            int filled = container.fill(single, template, false);
+            int capacity = container.fill(single, template, false);
+            int available = clampToInt(stored.getAmount());
+            int requested = Math.min(capacity, available);
+            if (requested <= 0) {
+                continue;
+            }
+            FluidStack content = template.copy();
+            content.amount = requested;
+            int filled = container.fill(single, content, false);
             if (filled <= 0) {
                 continue;
             }
-            BigFluidStack request = new BigFluidStack(template, filled);
+            filled = Math.min(filled, available);
+            content.amount = filled;
+            if (container.fill(single, content, false) != filled) {
+                continue;
+            }
+            BigFluidStack request = new BigFluidStack(content, filled);
             if (!extract(handler, index, request, StorageAction.SIMULATE).isComplete()) {
                 continue;
             }
@@ -277,9 +290,11 @@ public class FluidContainerInteraction {
                 rollbackExtracted(handler, index, executed);
                 return false;
             }
-            FluidStack content = template.copy();
-            content.amount = filled;
-            if (container.fill(single, content, true) != filled) {
+            int actualFilled = container.fill(single, content, true);
+            if (actualFilled != filled) {
+                if (actualFilled > 0) {
+                    container.drain(single, actualFilled, true);
+                }
                 rollbackExtracted(handler, index, executed);
                 return false;
             }
@@ -287,6 +302,10 @@ public class FluidContainerInteraction {
             return true;
         }
         return false;
+    }
+
+    private static int clampToInt(long amount) {
+        return amount >= Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) Math.max(0L, amount);
     }
 
     public static boolean isFluidContainer(ItemStack stack) {

@@ -32,7 +32,6 @@ public class FluidDrawerBlockItem extends DrawerBlockItem implements IFluidConta
 
     public FluidDrawerBlockItem(Block block) {
         super(block);
-        setMaxStackSize(1);
     }
 
     @Nullable
