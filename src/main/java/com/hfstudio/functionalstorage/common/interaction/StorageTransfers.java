@@ -7,11 +7,14 @@ import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
 
 import com.hfstudio.functionalstorage.api.storage.BigItemStack;
+import com.hfstudio.functionalstorage.api.storage.IBigAspectHandler;
+import com.hfstudio.functionalstorage.api.storage.IBigFluidHandler;
 import com.hfstudio.functionalstorage.api.storage.IBigItemHandler;
 import com.hfstudio.functionalstorage.api.storage.StorageAction;
 import com.hfstudio.functionalstorage.common.container.StorageTransferMenu;
 import com.hfstudio.functionalstorage.common.integration.Mods;
 import com.hfstudio.functionalstorage.common.integration.bogosorter.BogoSorterIntegration;
+import com.hfstudio.functionalstorage.common.integration.thaumcraft.EssentiaContainerRegistry;
 
 public class StorageTransfers {
 
@@ -28,12 +31,16 @@ public class StorageTransfers {
     private final Container container;
     private final StorageTransferMenu menu;
     private final IBigItemHandler storage;
+    private final IBigFluidHandler fluidStorage;
+    private final IBigAspectHandler aspectStorage;
 
     private StorageTransfers(EntityPlayer player, Container container, StorageTransferMenu menu) {
         this.player = player;
         this.container = container;
         this.menu = menu;
         this.storage = menu.getTransferStorage();
+        this.fluidStorage = menu.getTransferFluidStorage();
+        this.aspectStorage = menu.getTransferAspectStorage();
     }
 
     public static void execute(EntityPlayer player, int slot, Action action, int amount, boolean reverse) {
@@ -41,7 +48,7 @@ public class StorageTransfers {
         if (player.worldObj.isRemote || container == null
             || !container.canInteractWith(player)
             || !(container instanceof StorageTransferMenu menu)
-            || menu.getTransferStorage() == null
+            || !menu.hasTransferStorage()
             || slot < 0
             || slot >= container.inventorySlots.size()
             || action == null
@@ -64,6 +71,10 @@ public class StorageTransfers {
         boolean fromPlayer = hovered.inventory == player.inventory && hovered.getSlotIndex() >= 0
             && hovered.getSlotIndex() < 36;
         if (!fromPlayer && storedSlot < 0) return;
+        if (fluidStorage != null || aspectStorage != null) {
+            moveContainers(hovered, storedSlot, fromPlayer, action);
+            return;
+        }
         boolean wheel = action == Action.PUSH || action == Action.PULL;
         if (wheel) {
             if (fromPlayer) {
@@ -97,11 +108,15 @@ public class StorageTransfers {
             ItemStack stored = storage.getSnapshot(storedSlot)
                 .getTemplate();
             if (stored == null) return;
-            for (int index : transferredSlots(count)) {
-                ItemStack stack = storage.getSnapshot(index)
-                    .getTemplate();
-                if (stack != null && (action != Action.MOVE_SAME || BigItemStack.matches(stored, stack))) {
-                    withdraw(index, 27 * Math.min(64, stack.getMaxStackSize()), false, true);
+            if (action == Action.MOVE_ALL) {
+                withdraw(storedSlot, 27 * Math.min(64, stored.getMaxStackSize()), false, true);
+            } else {
+                for (int index : transferredSlots(count)) {
+                    ItemStack stack = storage.getSnapshot(index)
+                        .getTemplate();
+                    if (stack != null && BigItemStack.matches(stored, stack)) {
+                        withdraw(index, 27 * Math.min(64, stack.getMaxStackSize()), false, true);
+                    }
                 }
             }
             return;
@@ -116,6 +131,31 @@ public class StorageTransfers {
             if (stack != null && (action != Action.MOVE_SAME || BigItemStack.matches(type, stack))) {
                 deposit(index, -1, stack.stackSize, false);
             }
+        }
+    }
+
+    private void moveContainers(Slot hovered, int storedSlot, boolean fromPlayer, Action action) {
+        if (action != Action.MOVE_ALL && action != Action.MOVE_SAME
+            && action != Action.MOVE_ONE
+            && action != Action.MOVE_ONE_EMPTY) {
+            return;
+        }
+        if (fromPlayer) {
+            int inventorySlot = hovered.getSlotIndex();
+            int limit = action == Action.MOVE_ONE || action == Action.MOVE_ONE_EMPTY ? 1 : Integer.MAX_VALUE;
+            if (fluidStorage != null) {
+                FluidContainerInteraction
+                    .depositInventorySlot(player, fluidStorage, inventorySlot, action == Action.MOVE_SAME, limit);
+            } else {
+                EssentiaContainerRegistry.depositInventorySlot(player, aspectStorage, inventorySlot, limit);
+            }
+            return;
+        }
+        int limit = action == Action.MOVE_ONE || action == Action.MOVE_ONE_EMPTY ? 1 : Integer.MAX_VALUE;
+        if (fluidStorage != null) {
+            FluidContainerInteraction.fillInventory(player, fluidStorage, storedSlot, limit);
+        } else {
+            EssentiaContainerRegistry.fillInventory(player, aspectStorage, storedSlot, limit);
         }
     }
 

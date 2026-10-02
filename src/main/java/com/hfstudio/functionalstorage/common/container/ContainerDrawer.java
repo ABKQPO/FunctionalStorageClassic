@@ -14,6 +14,8 @@ import net.minecraft.network.Packet;
 
 import com.hfstudio.functionalstorage.FunctionalStorage;
 import com.hfstudio.functionalstorage.api.storage.BigItemStack;
+import com.hfstudio.functionalstorage.api.storage.IBigAspectHandler;
+import com.hfstudio.functionalstorage.api.storage.IBigFluidHandler;
 import com.hfstudio.functionalstorage.api.storage.IBigItemHandler;
 import com.hfstudio.functionalstorage.api.storage.StorageAction;
 import com.hfstudio.functionalstorage.api.storage.StorageSubscription;
@@ -21,7 +23,6 @@ import com.hfstudio.functionalstorage.api.upgrade.IStorageUpgrade;
 import com.hfstudio.functionalstorage.common.block.base.DrawerBlock;
 import com.hfstudio.functionalstorage.common.integration.serverutilities.ServerUtilitiesIntegration;
 import com.hfstudio.functionalstorage.common.integration.thaumcraft.EssentiaContainerRegistry;
-import com.hfstudio.functionalstorage.common.interaction.ContainerExchange;
 import com.hfstudio.functionalstorage.common.interaction.FluidContainerInteraction;
 import com.hfstudio.functionalstorage.common.inventory.adapter.UpgradeSlotInventory;
 import com.hfstudio.functionalstorage.common.item.upgrade.AutomationUpgradeItem;
@@ -109,6 +110,16 @@ public class ContainerDrawer extends Container implements MenuSettingsReceiver, 
     @Override
     public IBigItemHandler getTransferStorage() {
         return tile.getItemHandler();
+    }
+
+    @Override
+    public IBigFluidHandler getTransferFluidStorage() {
+        return tile.getFluidHandler();
+    }
+
+    @Override
+    public IBigAspectHandler getTransferAspectStorage() {
+        return tile.getAspectHandler();
     }
 
     @Override
@@ -202,7 +213,12 @@ public class ContainerDrawer extends Container implements MenuSettingsReceiver, 
         if (!storage && mode != 1 && mode != 6) return super.slotClick(index, button, mode, player);
         if (tile.getWorldObj().isRemote) return null;
         func_94533_d();
-        if (mode == 1 && (button == 0 || button == 1)) {
+        if (mode == 1 && (button == 0 || button == 1)
+            && storage
+            && player.inventory.getItemStack() != null
+            && (tile.getFluidHandler() != null || tile.getAspectHandler() != null)) {
+            clickStorage(player, index, button);
+        } else if (mode == 1 && (button == 0 || button == 1)) {
             transferStackInSlot(player, index);
         } else if (mode == 6 && (button == 0 || button == 1)) {
             collectToCursor(player);
@@ -234,18 +250,16 @@ public class ContainerDrawer extends Container implements MenuSettingsReceiver, 
                 if (cursor.stackSize == 0) player.inventory.setItemStack(null);
             }
         } else if (tile.getFluidHandler() != null) {
-            FluidContainerInteraction.activate(
-                cursor,
+            FluidContainerInteraction.activateCursor(
+                player,
                 tile.getFluidHandler(),
                 index,
-                result -> ContainerExchange.completeCursor(player, result),
                 tile instanceof FluidDrawerTile fluidDrawer ? fluidDrawer::prepareLockedSlot : null);
         } else if (tile.getAspectHandler() != null) {
-            EssentiaContainerRegistry.activate(
-                cursor,
+            EssentiaContainerRegistry.activateCursor(
+                player,
                 tile.getAspectHandler(),
                 index,
-                result -> ContainerExchange.completeCursor(player, result),
                 tile instanceof EssentiaDrawerTile essentiaDrawer ? essentiaDrawer::prepareLockedSlot : null);
         }
     }
@@ -368,13 +382,23 @@ public class ContainerDrawer extends Container implements MenuSettingsReceiver, 
             return null;
         int playerStart = storageSlotCount + tile.getStorageUpgradeSlots() + tile.getUtilityUpgradeSlots();
         if (index < storageSlotCount) {
-            if (tile.getItemHandler() == null) return null;
-            ItemStack available = extract(index, 64, StorageAction.SIMULATE);
-            if (available == null) return null;
-            ItemStack original = available.copy();
-            if (!mergeItemStack(available, playerStart, inventorySlots.size(), true)) return null;
-            extract(index, original.stackSize - available.stackSize, StorageAction.EXECUTE);
-            return original;
+            if (tile.getItemHandler() != null) {
+                ItemStack available = extract(index, 64, StorageAction.SIMULATE);
+                if (available == null) return null;
+                ItemStack original = available.copy();
+                if (!mergeItemStack(available, playerStart, inventorySlots.size(), true)) return null;
+                extract(index, original.stackSize - available.stackSize, StorageAction.EXECUTE);
+                return original;
+            }
+            if (tile.getFluidHandler() != null) {
+                FluidContainerInteraction.fillInventory(player, tile.getFluidHandler(), index);
+                return null;
+            }
+            if (tile.getAspectHandler() != null) {
+                EssentiaContainerRegistry.fillInventory(player, tile.getAspectHandler(), index);
+                return null;
+            }
+            return null;
         }
         Slot slot = inventorySlots.get(index);
         if (!slot.getHasStack() || !slot.canTakeStack(player)) return null;
@@ -388,6 +412,14 @@ public class ContainerDrawer extends Container implements MenuSettingsReceiver, 
             }
             if (stack.stackSize > 0 && tile.getItemHandler() != null) {
                 stack.stackSize -= (int) Math.min(stack.stackSize, insertForGui(stack));
+            } else if (stack.stackSize > 0 && tile.getFluidHandler() != null) {
+                if (FluidContainerInteraction
+                    .depositInventorySlot(player, tile.getFluidHandler(), slot.getSlotIndex(), false) == 0) return null;
+                return original;
+            } else if (stack.stackSize > 0 && tile.getAspectHandler() != null) {
+                if (EssentiaContainerRegistry.depositInventorySlot(player, tile.getAspectHandler(), slot.getSlotIndex())
+                    == 0) return null;
+                return original;
             }
         }
         if (stack.stackSize == original.stackSize) return null;

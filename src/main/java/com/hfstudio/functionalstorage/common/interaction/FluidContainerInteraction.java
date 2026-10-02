@@ -36,13 +36,33 @@ public class FluidContainerInteraction {
         if (!isFluidContainer(held)) {
             return false;
         }
+        return activateBatch(
+            player,
+            held,
+            handler,
+            slot,
+            stack -> player.inventory.setInventorySlotContents(player.inventory.currentItem, stack),
+            prepareLockedSlot);
+    }
+
+    public static boolean activateCursor(EntityPlayer player, IBigFluidHandler handler, int slot,
+        BiFunction<Integer, BigFluidStack, Runnable> prepareLockedSlot) {
+        ItemStack cursor = player.inventory.getItemStack();
+        if (!isFluidContainer(cursor)) {
+            return false;
+        }
+        return activateBatch(player, cursor, handler, slot, player.inventory::setItemStack, prepareLockedSlot);
+    }
+
+    private static boolean activateBatch(EntityPlayer player, ItemStack source, IBigFluidHandler handler, int slot,
+        Consumer<ItemStack> replace, BiFunction<Integer, BigFluidStack, Runnable> prepareLockedSlot) {
         if (player.capabilities.isCreativeMode) {
-            activate(held, handler, slot, result -> {}, prepareLockedSlot);
+            activate(source, handler, slot, result -> {}, prepareLockedSlot);
             return true;
         }
-        ItemStack remaining = held.copy();
-        BatchContainerExchange exchange = new BatchContainerExchange(player);
-        int transfers = held.stackSize;
+        ItemStack remaining = source.copy();
+        ContainerBatchExchange exchange = new ContainerBatchExchange(player, replace);
+        int transfers = source.stackSize;
         for (int index = 0; index < transfers; index++) {
             if (!activate(singleContainer(remaining), handler, slot, exchange::accept, prepareLockedSlot)) {
                 break;
@@ -126,21 +146,79 @@ public class FluidContainerInteraction {
         }
         int transferred = 0;
         for (int index = 0; index < player.inventory.mainInventory.length; index++) {
-            int inventorySlot = index;
-            ItemStack source = player.inventory.getStackInSlot(index);
-            if (source != null && isFilledFluidContainer(source)
-                && activateContainer(
-                    source,
+            transferred += depositInventorySlot(player, handler, index, matchingOnly);
+        }
+        return transferred;
+    }
+
+    public static int depositInventorySlot(EntityPlayer player, IBigFluidHandler handler, int inventorySlot,
+        boolean matchingOnly) {
+        return depositInventorySlot(player, handler, inventorySlot, matchingOnly, Integer.MAX_VALUE);
+    }
+
+    public static int depositInventorySlot(EntityPlayer player, IBigFluidHandler handler, int inventorySlot,
+        boolean matchingOnly, int limit) {
+        if (player == null || handler == null
+            || inventorySlot < 0
+            || inventorySlot >= player.inventory.mainInventory.length
+            || limit <= 0) {
+            return 0;
+        }
+        int transferred = 0;
+        ItemStack source = player.inventory.getStackInSlot(inventorySlot);
+        while (source != null && transferred < limit && isFilledFluidContainer(source)) {
+            ItemStack current = source;
+            if (!activateContainer(
+                current,
+                handler,
+                ROUTED,
+                result -> ContainerExchange.complete(
+                    player,
+                    current,
+                    stack -> player.inventory.setInventorySlotContents(inventorySlot, stack),
+                    result),
+                null,
+                matchingOnly)) {
+                break;
+            }
+            transferred++;
+            source = player.inventory.getStackInSlot(inventorySlot);
+        }
+        return transferred;
+    }
+
+    public static int fillInventory(EntityPlayer player, IBigFluidHandler handler, int slot) {
+        return fillInventory(player, handler, slot, Integer.MAX_VALUE);
+    }
+
+    public static int fillInventory(EntityPlayer player, IBigFluidHandler handler, int slot, int limit) {
+        if (player == null || handler == null || slot < 0 || slot >= handler.getStorageCount() || limit <= 0) {
+            return 0;
+        }
+        int transferred = 0;
+        for (int inventorySlot = 0; inventorySlot < player.inventory.mainInventory.length
+            && transferred < limit; inventorySlot++) {
+            ItemStack source = player.inventory.getStackInSlot(inventorySlot);
+            int slotIndex = inventorySlot;
+            while (source != null && transferred < limit
+                && isFluidContainer(source)
+                && !isFilledFluidContainer(source)) {
+                ItemStack current = source;
+                if (!activateContainer(
+                    current,
                     handler,
-                    ROUTED,
+                    slot,
                     result -> ContainerExchange.complete(
                         player,
-                        source,
-                        stack -> player.inventory.setInventorySlotContents(inventorySlot, stack),
+                        current,
+                        stack -> player.inventory.setInventorySlotContents(slotIndex, stack),
                         result),
                     null,
-                    matchingOnly)) {
+                    false)) {
+                    break;
+                }
                 transferred++;
+                source = player.inventory.getStackInSlot(slotIndex);
             }
         }
         return transferred;
@@ -372,53 +450,4 @@ public class FluidContainerInteraction {
         }
     }
 
-    private static class BatchContainerExchange {
-
-        private final EntityPlayer player;
-        private ItemStack result;
-
-        private BatchContainerExchange(EntityPlayer player) {
-            this.player = player;
-        }
-
-        private void accept(ItemStack exchanged) {
-            if (exchanged == null || exchanged.stackSize <= 0) {
-                return;
-            }
-            if (result == null) {
-                result = exchanged.copy();
-                return;
-            }
-            if (ItemStack.areItemStacksEqual(result, exchanged)
-                && result.stackSize <= result.getMaxStackSize() - exchanged.stackSize) {
-                result.stackSize += exchanged.stackSize;
-                return;
-            }
-            store(result);
-            result = exchanged.copy();
-        }
-
-        private void complete(ItemStack remaining) {
-            if (remaining.stackSize > 0) {
-                store(result);
-                result = remaining;
-            }
-            if (result != null && result.stackSize > 0) {
-                player.inventory.setInventorySlotContents(player.inventory.currentItem, result);
-            } else {
-                player.inventory.setInventorySlotContents(player.inventory.currentItem, null);
-            }
-            player.inventory.markDirty();
-            player.inventoryContainer.detectAndSendChanges();
-        }
-
-        private void store(ItemStack stack) {
-            if (stack == null || stack.stackSize <= 0) {
-                return;
-            }
-            if (!player.inventory.addItemStackToInventory(stack)) {
-                player.dropPlayerItemWithRandomChoice(stack, false);
-            }
-        }
-    }
 }

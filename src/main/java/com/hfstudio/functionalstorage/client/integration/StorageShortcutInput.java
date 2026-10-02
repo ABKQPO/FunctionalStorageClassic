@@ -16,7 +16,7 @@ public class StorageShortcutInput {
 
     public static boolean supports(GuiContainer gui) {
         return gui instanceof StorageShortcutScreen && gui.inventorySlots instanceof StorageTransferMenu menu
-            && menu.getTransferStorage() != null
+            && menu.hasTransferStorage()
             && menu.getTransferSlotCount() > 0;
     }
 

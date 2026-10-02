@@ -14,7 +14,8 @@ import com.hfstudio.functionalstorage.api.storage.BigAspectStack;
 import com.hfstudio.functionalstorage.api.storage.IBigAspectHandler;
 import com.hfstudio.functionalstorage.api.storage.StorageAction;
 import com.hfstudio.functionalstorage.api.storage.TransferResult;
-import com.hfstudio.functionalstorage.common.interaction.HeldContainerExchange;
+import com.hfstudio.functionalstorage.common.interaction.ContainerBatchExchange;
+import com.hfstudio.functionalstorage.common.interaction.ContainerExchange;
 
 import thaumcraft.api.aspects.Aspect;
 import thaumcraft.api.aspects.AspectList;
@@ -22,6 +23,8 @@ import thaumcraft.api.aspects.IEssentiaContainerItem;
 
 /** Registers explicit container capacities because Thaumcraft's item interface does not expose them. */
 public class EssentiaContainerRegistry {
+
+    private static final int ROUTED = -1;
 
     private static final Map<Item, ContainerDefinition> CONTAINERS = new ConcurrentHashMap<>();
 
@@ -57,18 +60,138 @@ public class EssentiaContainerRegistry {
         if (!isEssentiaContainer(held)) {
             return false;
         }
-        int transfers = held.stackSize;
+        return activateBatch(
+            player,
+            held,
+            handler,
+            slot,
+            stack -> player.inventory.setInventorySlotContents(player.inventory.currentItem, stack),
+            prepareLockedSlot);
+    }
+
+    public static boolean activateCursor(EntityPlayer player, IBigAspectHandler handler, int slot,
+        BiFunction<Integer, BigAspectStack, Runnable> prepareLockedSlot) {
+        ItemStack cursor = player.inventory.getItemStack();
+        if (!isEssentiaContainer(cursor)) {
+            return false;
+        }
+        return activateBatch(player, cursor, handler, slot, player.inventory::setItemStack, prepareLockedSlot);
+    }
+
+    private static boolean activateBatch(EntityPlayer player, ItemStack source, IBigAspectHandler handler, int slot,
+        Consumer<ItemStack> replace, BiFunction<Integer, BigAspectStack, Runnable> prepareLockedSlot) {
+        if (player.capabilities.isCreativeMode) {
+            activate(source, handler, slot, result -> {}, prepareLockedSlot);
+            return true;
+        }
+        ItemStack remaining = source.copy();
+        ContainerBatchExchange exchange = new ContainerBatchExchange(player, replace);
+        int transfers = source.stackSize;
         for (int index = 0; index < transfers; index++) {
-            if (!activate(
-                player.getHeldItem(),
-                handler,
-                slot,
-                result -> HeldContainerExchange.complete(player, result),
-                prepareLockedSlot)) {
+            if (!activate(singleContainer(remaining), handler, slot, exchange::accept, prepareLockedSlot)) {
                 break;
             }
+            remaining.stackSize--;
         }
+        exchange.complete(remaining);
         return true;
+    }
+
+    private static ItemStack singleContainer(ItemStack stack) {
+        ItemStack single = stack.copy();
+        single.stackSize = 1;
+        return single;
+    }
+
+    public static int depositInventory(EntityPlayer player, IBigAspectHandler handler) {
+        if (player == null || handler == null) {
+            return 0;
+        }
+        int transferred = 0;
+        for (int index = 0; index < player.inventory.mainInventory.length; index++) {
+            transferred += depositInventorySlot(player, handler, index);
+        }
+        return transferred;
+    }
+
+    public static int depositInventorySlot(EntityPlayer player, IBigAspectHandler handler, int inventorySlot) {
+        return depositInventorySlot(player, handler, inventorySlot, Integer.MAX_VALUE);
+    }
+
+    public static int depositInventorySlot(EntityPlayer player, IBigAspectHandler handler, int inventorySlot,
+        int limit) {
+        if (player == null || handler == null
+            || inventorySlot < 0
+            || inventorySlot >= player.inventory.mainInventory.length
+            || limit <= 0) {
+            return 0;
+        }
+        int transferred = 0;
+        ItemStack source = player.inventory.getStackInSlot(inventorySlot);
+        while (source != null && transferred < limit && isFilled(source)) {
+            ItemStack current = source;
+            if (!activate(
+                current,
+                handler,
+                ROUTED,
+                result -> ContainerExchange.complete(
+                    player,
+                    current,
+                    stack -> player.inventory.setInventorySlotContents(inventorySlot, stack),
+                    result),
+                null)) {
+                break;
+            }
+            transferred++;
+            source = player.inventory.getStackInSlot(inventorySlot);
+        }
+        return transferred;
+    }
+
+    public static int fillInventory(EntityPlayer player, IBigAspectHandler handler, int slot) {
+        return fillInventory(player, handler, slot, Integer.MAX_VALUE);
+    }
+
+    public static int fillInventory(EntityPlayer player, IBigAspectHandler handler, int slot, int limit) {
+        if (player == null || handler == null || slot < 0 || slot >= handler.getStorageCount() || limit <= 0) {
+            return 0;
+        }
+        int transferred = 0;
+        for (int inventorySlot = 0; inventorySlot < player.inventory.mainInventory.length
+            && transferred < limit; inventorySlot++) {
+            ItemStack source = player.inventory.getStackInSlot(inventorySlot);
+            int slotIndex = inventorySlot;
+            while (source != null && transferred < limit && isEssentiaContainer(source)) {
+                ItemStack current = source;
+                if (!isEmpty(current) || !activate(
+                    current,
+                    handler,
+                    slot,
+                    result -> ContainerExchange.complete(
+                        player,
+                        current,
+                        stack -> player.inventory.setInventorySlotContents(slotIndex, stack),
+                        result),
+                    null)) {
+                    break;
+                }
+                transferred++;
+                source = player.inventory.getStackInSlot(slotIndex);
+            }
+        }
+        return transferred;
+    }
+
+    private static boolean isEmpty(ItemStack stack) {
+        if (!(stack.getItem() instanceof IEssentiaContainerItem container)) {
+            return false;
+        }
+        AspectList content = container.getAspects(singleContainer(stack));
+        return content == null || content.size() == 0;
+    }
+
+    private static boolean isFilled(ItemStack stack) {
+        return isEssentiaContainer(stack) && !isEmpty(stack);
     }
 
     public static boolean activate(ItemStack held, IBigAspectHandler handler, int slot, Consumer<ItemStack> exchange) {
