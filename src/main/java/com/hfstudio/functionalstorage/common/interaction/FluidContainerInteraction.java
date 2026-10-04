@@ -337,24 +337,28 @@ public class FluidContainerInteraction {
             if (template == null) {
                 continue;
             }
-            template.amount = Integer.MAX_VALUE;
-            int capacity = container.fill(single, template, false);
             int available = clampToInt(stored.getAmount());
-            int requested = Math.min(capacity, available);
-            if (requested <= 0) {
+            if (available <= 0) {
+                continue;
+            }
+            ItemStack filledContainer = single.copy();
+            FluidStack before = container.getFluid(filledContainer);
+            if (before != null && before.amount > 0 && !before.isFluidEqual(template)) {
+                continue;
+            }
+            int beforeAmount = before == null ? 0 : before.amount;
+            FluidStack offered = template.copy();
+            offered.amount = available;
+            int filled = container.fill(filledContainer, offered, true);
+            if (filled <= 0 || filled > available) {
+                continue;
+            }
+            FluidStack after = container.getFluid(filledContainer);
+            if (after == null || !after.isFluidEqual(template) || (long) after.amount - beforeAmount != filled) {
                 continue;
             }
             FluidStack content = template.copy();
-            content.amount = requested;
-            int filled = container.fill(single, content, false);
-            if (filled <= 0) {
-                continue;
-            }
-            filled = Math.min(filled, available);
             content.amount = filled;
-            if (container.fill(single, content, false) != filled) {
-                continue;
-            }
             BigFluidStack request = new BigFluidStack(content, filled);
             if (!extract(handler, index, request, StorageAction.SIMULATE).isComplete()) {
                 continue;
@@ -368,15 +372,7 @@ public class FluidContainerInteraction {
                 rollbackExtracted(handler, index, executed);
                 return false;
             }
-            int actualFilled = container.fill(single, content, true);
-            if (actualFilled != filled) {
-                if (actualFilled > 0) {
-                    container.drain(single, actualFilled, true);
-                }
-                rollbackExtracted(handler, index, executed);
-                return false;
-            }
-            exchange.accept(single);
+            exchange.accept(filledContainer);
             return true;
         }
         return false;

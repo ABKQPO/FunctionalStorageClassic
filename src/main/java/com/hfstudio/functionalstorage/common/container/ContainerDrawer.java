@@ -210,6 +210,15 @@ public class ContainerDrawer extends Container implements MenuSettingsReceiver, 
         if (!canInteractWith(player)) return null;
         boolean storage = index >= 0 && index < storageSlotCount;
         if (mode == 5) return super.slotClick(index, button, mode, player);
+        if (mode == 0 && (button == 0 || button == 1)
+            && index >= 0
+            && index < inventorySlots.size()
+            && inventorySlots.get(index) instanceof UpgradeSlot upgradeSlot
+            && player.inventory.getItemStack() != null) {
+            replaceUpgrade(player, upgradeSlot);
+            synchronize(player);
+            return null;
+        }
         if (!storage && mode != 1 && mode != 6) return super.slotClick(index, button, mode, player);
         if (tile.getWorldObj().isRemote) return null;
         func_94533_d();
@@ -230,6 +239,31 @@ public class ContainerDrawer extends Container implements MenuSettingsReceiver, 
         }
         synchronize(player);
         return null;
+    }
+
+    private void replaceUpgrade(EntityPlayer player, UpgradeSlot slot) {
+        ItemStack cursor = player.inventory.getItemStack();
+        if (cursor == null || !slot.isItemValid(cursor)) {
+            return;
+        }
+        ItemStack previous = slot.getStack() == null ? null
+            : slot.getStack()
+                .copy();
+        ItemStack installed = cursor.copy();
+        installed.stackSize = 1;
+        if (!player.capabilities.isCreativeMode) {
+            cursor.stackSize--;
+        }
+        tile.setUpgradeSlot(slot.storage, slot.getSlotIndex(), installed);
+        if (previous != null) {
+            player.inventory.setItemStack(previous);
+            if (!player.capabilities.isCreativeMode && cursor.stackSize > 0
+                && !player.inventory.addItemStackToInventory(cursor)) {
+                player.dropPlayerItemWithRandomChoice(cursor, false);
+            }
+        } else {
+            player.inventory.setItemStack(cursor.stackSize > 0 ? cursor : null);
+        }
     }
 
     private void clickStorage(EntityPlayer player, int index, int button) {

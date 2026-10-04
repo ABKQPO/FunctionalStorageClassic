@@ -226,7 +226,7 @@ public abstract class ControllableDrawerTile extends TileEntity implements Capab
         if (slot < 0 || slot >= limit) return false;
         if (stack != null
             && (!(stack.getItem() instanceof IStorageUpgrade upgrade) || upgrade.isStorageUpgrade() != storage
-                || hasConflictingUpgrade(stack, storage ? slot : -1)))
+                || hasConflictingUpgrade(stack, storage, slot)))
             return false;
         if (!storage || getActiveStorage() == null) return true;
         UpgradeState previous = getUpgradeState();
@@ -905,6 +905,12 @@ public abstract class ControllableDrawerTile extends TileEntity implements Capab
                 return true;
             }
         }
+        for (int slot = 0; slot < getStorageUpgradeSlots(); slot++) {
+            if (storageUpgrades[slot] != null && canSetUpgradeSlot(true, slot, held)) {
+                replace(player, held, storageUpgrades, slot);
+                return true;
+            }
+        }
         return false;
     }
 
@@ -915,7 +921,33 @@ public abstract class ControllableDrawerTile extends TileEntity implements Capab
                 return true;
             }
         }
+        for (int slot = 0; slot < getUtilityUpgradeSlots(); slot++) {
+            if (utilityUpgrades[slot] != null && canSetUpgradeSlot(false, slot, held)) {
+                replace(player, held, utilityUpgrades, slot);
+                return true;
+            }
+        }
         return false;
+    }
+
+    private void replace(@Nonnull EntityPlayer player, @Nonnull ItemStack held, @Nonnull ItemStack[] target, int slot) {
+        ItemStack previous = target[slot];
+        ItemStack installed = held.copy();
+        installed.stackSize = 1;
+        if (installed.getItem() instanceof AutomationUpgradeItem upgrade) {
+            upgrade.onInventoryTick(installed, worldObj, player);
+        }
+        target[slot] = installed;
+        if (!player.capabilities.isCreativeMode) {
+            held.stackSize--;
+            if (held.stackSize <= 0) {
+                player.inventory.setInventorySlotContents(player.inventory.currentItem, null);
+            }
+        }
+        if (previous != null && !player.inventory.addItemStackToInventory(previous)) {
+            player.dropPlayerItemWithRandomChoice(previous, false);
+        }
+        onUpgradesChanged();
     }
 
     private void install(@Nonnull EntityPlayer player, @Nonnull ItemStack held, @Nonnull ItemStack[] target, int slot) {
@@ -934,17 +966,17 @@ public abstract class ControllableDrawerTile extends TileEntity implements Capab
         onUpgradesChanged();
     }
 
-    private boolean hasConflictingUpgrade(@Nonnull ItemStack candidate, int ignoredStorageSlot) {
+    private boolean hasConflictingUpgrade(@Nonnull ItemStack candidate, boolean storage, int ignoredSlot) {
         if (!(candidate.getItem() instanceof IStorageUpgrade candidateUpgrade)) {
             return false;
         }
         for (int slot = 0; slot < storageUpgrades.length; slot++) {
-            if (slot != ignoredStorageSlot && isConflict(candidate, candidateUpgrade, storageUpgrades[slot])) {
+            if ((!storage || slot != ignoredSlot) && isConflict(candidate, candidateUpgrade, storageUpgrades[slot])) {
                 return true;
             }
         }
-        for (ItemStack existing : utilityUpgrades) {
-            if (isConflict(candidate, candidateUpgrade, existing)) {
+        for (int slot = 0; slot < utilityUpgrades.length; slot++) {
+            if ((storage || slot != ignoredSlot) && isConflict(candidate, candidateUpgrade, utilityUpgrades[slot])) {
                 return true;
             }
         }
