@@ -130,6 +130,16 @@ public class FunctionalStorageConfig {
         @Config.DefaultInt(10)
         public int speedAugmentReduction = 10;
 
+        @Config.Comment("Maximum number of speed augments that can be installed in one upgrade")
+        @Config.RangeInt(min = 1, max = 64)
+        @Config.DefaultInt(64)
+        public int maxSpeedAugments = 64;
+
+        @Config.Comment("Maximum number of efficiency augments that can be installed in one upgrade")
+        @Config.RangeInt(min = 1, max = 64)
+        @Config.DefaultInt(8)
+        public int maxEfficiencyAugments = 8;
+
         @Config.Comment("Every how many ticks drawer upgrades run")
         @Config.RangeInt(min = 1, max = 200)
         @Config.DefaultInt(4)

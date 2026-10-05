@@ -317,7 +317,7 @@ public class DrawerRenderer extends TileEntitySpecialRenderer implements IResour
                 for (ItemStack symbol : DrawerTooltipData.frequencyDisplay(
                     ender.getFrequency()
                         .toString())) {
-                    renderFlatStack(symbol, 0.3F + index++ * 0.1F, 0.12F, 0.08F);
+                    renderFlatStack(symbol, 0.3F + index++ * 0.1F, 0.12F, 0.08F, true);
                 }
                 simpleIcons.flush();
             }
@@ -495,7 +495,7 @@ public class DrawerRenderer extends TileEntitySpecialRenderer implements IResour
     }
 
     private void renderStack(ItemStack stack, float centerX, float centerY, float scale) {
-        if (!simpleIcons.tryAdd(stack, centerX, centerY, scale)) {
+        if (!simpleIcons.tryAdd(stack, centerX, centerY, scale, false)) {
             simpleIcons.flush();
             renderItem(stack, centerX, centerY, scale, FunctionalStorageConfig.CLIENT.threeDimensionalBlockDisplay);
         }
@@ -515,16 +515,26 @@ public class DrawerRenderer extends TileEntitySpecialRenderer implements IResour
     }
 
     private void renderFlatStack(ItemStack stack, float centerX, float centerY, float scale) {
-        if (!simpleIcons.tryAdd(stack, centerX, centerY, scale)) {
+        renderFlatStack(stack, centerX, centerY, scale, false);
+    }
+
+    private void renderFlatStack(ItemStack stack, float centerX, float centerY, float scale, boolean white) {
+        if (!simpleIcons.tryAdd(stack, centerX, centerY, scale, white)) {
             simpleIcons.flush();
-            renderItem(stack, centerX, centerY, scale, false);
+            renderItem(stack, centerX, centerY, scale, false, white);
         }
     }
 
     private void renderItem(ItemStack stack, float x, float y, float scale, boolean threeDimensional) {
+        renderItem(stack, x, y, scale, threeDimensional, false);
+    }
+
+    private void renderItem(ItemStack stack, float x, float y, float scale, boolean threeDimensional, boolean white) {
         if (stack == null || stack.getItem() == null) {
             return;
         }
+        boolean previousRenderWithColor = renderer.renderWithColor;
+        if (white) renderer.renderWithColor = false;
         Minecraft minecraft = Minecraft.getMinecraft();
         Block block = null;
         IItemRenderer customRenderer = null;
@@ -575,6 +585,7 @@ public class DrawerRenderer extends TileEntitySpecialRenderer implements IResour
                 renderGuiItem(minecraft, stack);
             }
         } finally {
+            renderer.renderWithColor = previousRenderWithColor;
             GL11.glMatrixMode(GL11.GL_MODELVIEW);
             GL11.glPopMatrix();
             GL11.glMatrixMode(GL11.GL_PROJECTION);
@@ -780,7 +791,7 @@ public class DrawerRenderer extends TileEntitySpecialRenderer implements IResour
             size = 0;
         }
 
-        private boolean tryAdd(ItemStack stack, float centerX, float centerY, float scale) {
+        private boolean tryAdd(ItemStack stack, float centerX, float centerY, float scale, boolean white) {
             if (stack == null || stack.getItem() == null) {
                 return true;
             }
@@ -816,7 +827,7 @@ public class DrawerRenderer extends TileEntitySpecialRenderer implements IResour
                 .getTextureManager()
                 .getResourceLocation(spriteNumber);
             entry.icon = icon;
-            entry.color = item.getColorFromItemStack(stack, 0);
+            entry.color = white ? 0xFFFFFF : item.getColorFromItemStack(stack, 0);
             entry.centerX = centerX;
             entry.centerY = centerY;
             entry.scale = scale;

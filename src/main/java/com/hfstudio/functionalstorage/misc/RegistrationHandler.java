@@ -117,6 +117,7 @@ public class RegistrationHandler {
     public static RefillUpgradeItem refillUpgrade;
     public static RefillUpgradeItem dimensionalRefillUpgrade;
     public static UpgradeItem speedUpgradeAugment;
+    public static UpgradeItem efficiencyUpgradeAugment;
     public static CreativeVendingUpgradeItem creativeVendingUpgrade;
     public static ResourceGenerationUpgradeItem drippingUpgrade;
     public static ResourceGenerationUpgradeItem obsidianUpgrade;
@@ -294,6 +295,9 @@ public class RegistrationHandler {
         refillUpgrade = registerUpgrade(new RefillUpgradeItem(false), "refill_upgrade");
         dimensionalRefillUpgrade = registerUpgrade(new RefillUpgradeItem(true), "dimensional_refill_upgrade");
         speedUpgradeAugment = registerUpgrade(new UpgradeItem("speed_upgrade_augment"), "speed_upgrade_augment");
+        efficiencyUpgradeAugment = registerUpgrade(
+            new UpgradeItem("efficiency_upgrade_augment"),
+            "efficiency_upgrade_augment");
 
         configurationTool = new ConfigurationToolItem();
         GameRegistry.registerItem(configurationTool, "configuration_tool");

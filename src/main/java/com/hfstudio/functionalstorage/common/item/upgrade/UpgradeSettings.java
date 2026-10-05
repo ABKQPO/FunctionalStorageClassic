@@ -20,7 +20,8 @@ public class UpgradeSettings {
     public static final int FILTER_SLOTS = 9;
     public static final String TOOL_KEY = "Tool";
     public static final String SPEED_AUGMENTS_KEY = "SpeedAugments";
-    public static final String[] NESTED_SLOT_KEYS = { TOOL_KEY, SPEED_AUGMENTS_KEY };
+    public static final String EFFICIENCY_AUGMENTS_KEY = "EfficiencyAugments";
+    public static final String[] NESTED_SLOT_KEYS = { TOOL_KEY, SPEED_AUGMENTS_KEY, EFFICIENCY_AUGMENTS_KEY };
 
     public record ItemFilter(ItemStack stack, String ore) {}
 
@@ -60,6 +61,11 @@ public class UpgradeSettings {
                 : null;
     }
 
+    public static int getAugmentCount(ItemStack upgrade, String key, int maximum) {
+        ItemStack augment = getStack(upgrade, key);
+        return Math.min(Math.max(0, maximum), augment == null ? 0 : Math.max(0, augment.stackSize));
+    }
+
     public static void setStack(ItemStack stack, String key, ItemStack value) {
         if (value == null) {
             tag(stack).removeTag(key);
@@ -96,6 +102,17 @@ public class UpgradeSettings {
     public static String filterOre(ItemStack upgrade, int slot) {
         return upgrade.hasTagCompound() ? upgrade.getTagCompound()
             .getString("FilterOre" + slot) : "";
+    }
+
+    public static List<String> filterOreNames(ItemStack upgrade, int slot) {
+        ItemStack filter = getFilter(upgrade, slot);
+        if (filter == null) return List.of();
+        List<String> names = new ArrayList<>();
+        for (int id : OreDictionary.getOreIDs(filter)) {
+            String name = OreDictionary.getOreName(id);
+            if (!name.isEmpty() && !names.contains(name)) names.add(name);
+        }
+        return names;
     }
 
     public static void cycleFilterOre(ItemStack upgrade, int slot, boolean backwards) {

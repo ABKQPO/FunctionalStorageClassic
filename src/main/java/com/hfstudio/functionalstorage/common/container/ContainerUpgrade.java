@@ -13,6 +13,7 @@ import com.hfstudio.functionalstorage.common.item.upgrade.AutomationUpgradeItem.
 import com.hfstudio.functionalstorage.common.item.upgrade.BreakerUpgradeItem;
 import com.hfstudio.functionalstorage.common.item.upgrade.UpgradeSettings;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
+import com.hfstudio.functionalstorage.config.FunctionalStorageConfig;
 import com.hfstudio.functionalstorage.misc.GuiHandler;
 import com.hfstudio.functionalstorage.misc.RegistrationHandler;
 
@@ -32,12 +33,19 @@ public class ContainerUpgrade extends Container implements GhostFilterMenu {
         this.upgradeSlot = upgradeSlot;
         this.upgradeStack = tile.getUtilityUpgrade(upgradeSlot);
         this.upgrade = (AutomationUpgradeItem) upgradeStack.getItem();
-        this.attachments = new InventoryBasic("Upgrade attachments", false, 2);
+        this.attachments = new InventoryBasic("Upgrade attachments", false, 3);
         attachments.setInventorySlotContents(0, UpgradeSettings.getStack(upgradeStack, UpgradeSettings.TOOL_KEY));
-        attachments
-            .setInventorySlotContents(1, UpgradeSettings.getStack(upgradeStack, UpgradeSettings.SPEED_AUGMENTS_KEY));
+        attachments.setInventorySlotContents(
+            1,
+            loadAttachment(UpgradeSettings.SPEED_AUGMENTS_KEY, FunctionalStorageConfig.UPGRADES.maxSpeedAugments));
+        attachments.setInventorySlotContents(
+            2,
+            loadAttachment(
+                UpgradeSettings.EFFICIENCY_AUGMENTS_KEY,
+                FunctionalStorageConfig.UPGRADES.maxEfficiencyAugments));
         addSlotToContainer(new AttachmentSlot(0, 80, 80));
         addSlotToContainer(new AttachmentSlot(1, 152, 80));
+        addSlotToContainer(new AttachmentSlot(2, 152, 62));
         for (int row = 0; row < 3; row++) {
             for (int column = 0; column < 9; column++) {
                 addSlotToContainer(new Slot(player.inventory, column + row * 9 + 9, 8 + column * 18, 104 + row * 18));
@@ -149,7 +157,7 @@ public class ContainerUpgrade extends Container implements GhostFilterMenu {
         if (!slot.getHasStack()) return null;
         ItemStack stack = slot.getStack();
         ItemStack original = stack.copy();
-        if (!(index < 2 ? mergeItemStack(stack, 2, inventorySlots.size(), true) : mergeItemStack(stack, 0, 2, false)))
+        if (!(index < 3 ? mergeItemStack(stack, 3, inventorySlots.size(), true) : mergeItemStack(stack, 0, 3, false)))
             return null;
         if (stack.stackSize == 0) slot.putStack(null);
         else slot.onSlotChanged();
@@ -164,13 +172,16 @@ public class ContainerUpgrade extends Container implements GhostFilterMenu {
 
         @Override
         public boolean isItemValid(ItemStack stack) {
-            return slotNumber == 0 ? upgrade instanceof BreakerUpgradeItem && stack.getMaxStackSize() == 1
-                : stack.getItem() == RegistrationHandler.speedUpgradeAugment;
+            return getSlotIndex() == 0 ? upgrade instanceof BreakerUpgradeItem && stack.getMaxStackSize() == 1
+                : getSlotIndex() == 1 ? stack.getItem() == RegistrationHandler.speedUpgradeAugment
+                    : stack.getItem() == RegistrationHandler.efficiencyUpgradeAugment;
         }
 
         @Override
         public int getSlotStackLimit() {
-            return slotNumber == 0 ? 1 : 64;
+            return getSlotIndex() == 0 ? 1
+                : getSlotIndex() == 1 ? getConfiguredAugmentLimit(FunctionalStorageConfig.UPGRADES.maxSpeedAugments)
+                    : getConfiguredAugmentLimit(FunctionalStorageConfig.UPGRADES.maxEfficiencyAugments);
         }
 
         @Override
@@ -179,10 +190,28 @@ public class ContainerUpgrade extends Container implements GhostFilterMenu {
             if (!tile.getWorldObj().isRemote) {
                 UpgradeSettings.setStack(
                     upgradeStack,
-                    slotNumber == 0 ? UpgradeSettings.TOOL_KEY : UpgradeSettings.SPEED_AUGMENTS_KEY,
+                    getSlotIndex() == 0 ? UpgradeSettings.TOOL_KEY
+                        : getSlotIndex() == 1 ? UpgradeSettings.SPEED_AUGMENTS_KEY
+                            : UpgradeSettings.EFFICIENCY_AUGMENTS_KEY,
                     getStack());
                 tile.markOptionsDirty();
             }
         }
+    }
+
+    private ItemStack loadAttachment(String key, int maximum) {
+        ItemStack stack = UpgradeSettings.getStack(upgradeStack, key);
+        if (stack == null) return null;
+        int originalSize = stack.stackSize;
+        stack.stackSize = Math.min(getConfiguredAugmentLimit(maximum), Math.max(0, originalSize));
+        if (stack.stackSize == 0) stack = null;
+        if (!tile.getWorldObj().isRemote && originalSize != (stack == null ? 0 : stack.stackSize)) {
+            UpgradeSettings.setStack(upgradeStack, key, stack);
+        }
+        return stack;
+    }
+
+    private int getConfiguredAugmentLimit(int configuredLimit) {
+        return Math.min(64, Math.max(1, configuredLimit));
     }
 }

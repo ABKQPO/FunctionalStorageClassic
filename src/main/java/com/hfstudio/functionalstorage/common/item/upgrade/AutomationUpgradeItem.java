@@ -69,6 +69,11 @@ public class AutomationUpgradeItem extends UpgradeItem implements IStorageUpgrad
         this.baseTickInterval = Math.max(1, baseTickInterval);
     }
 
+    @Override
+    public boolean canOpenConfigurationGui() {
+        return true;
+    }
+
     public boolean hasDirection() {
         return true;
     }
@@ -79,6 +84,22 @@ public class AutomationUpgradeItem extends UpgradeItem implements IStorageUpgrad
 
     public boolean isWireless() {
         return false;
+    }
+
+    public long getEfficiencyMultiplier(@Nonnull ItemStack stack) {
+        int count = UpgradeSettings.getAugmentCount(
+            stack,
+            UpgradeSettings.EFFICIENCY_AUGMENTS_KEY,
+            FunctionalStorageConfig.UPGRADES.maxEfficiencyAugments);
+        if (count >= 63) return Long.MAX_VALUE;
+        return 1L << count;
+    }
+
+    public long scaleAmount(@Nonnull ItemStack stack, long amount) {
+        if (amount <= 0) return 0;
+        long multiplier = getEfficiencyMultiplier(stack);
+        return multiplier == Long.MAX_VALUE || amount > Long.MAX_VALUE / multiplier ? Long.MAX_VALUE
+            : amount * multiplier;
     }
 
     @Override
@@ -107,8 +128,13 @@ public class AutomationUpgradeItem extends UpgradeItem implements IStorageUpgrad
 
     @Override
     public ItemStack onItemRightClick(ItemStack stack, World world, EntityPlayer player) {
-        if (!world.isRemote && hasDirection() && !isWireless())
-            setDirection(stack, RelativeDirection.byIndex((getDirection(stack).ordinal() + 1) % 6));
+        if (!world.isRemote && hasDirection() && !isWireless()) {
+            RelativeDirection direction = RelativeDirection.byIndex((getDirection(stack).ordinal() + 1) % 6);
+            setDirection(stack, direction);
+            ToolFeedback.send(
+                player,
+                new ChatComponentTranslation("functionalstorage.upgrade.direction", direction.getDisplayName()));
+        }
         return stack;
     }
 
@@ -123,11 +149,11 @@ public class AutomationUpgradeItem extends UpgradeItem implements IStorageUpgrad
     }
 
     public int getTickInterval(ItemStack stack) {
-        ItemStack augments = UpgradeSettings.getStack(stack, "SpeedAugments");
-        return Math.max(
-            1,
-            getTickInterval()
-                - (augments == null ? 0 : augments.stackSize) * FunctionalStorageConfig.UPGRADES.speedAugmentReduction);
+        int count = UpgradeSettings.getAugmentCount(
+            stack,
+            UpgradeSettings.SPEED_AUGMENTS_KEY,
+            FunctionalStorageConfig.UPGRADES.maxSpeedAugments);
+        return Math.max(1, getTickInterval() - count * FunctionalStorageConfig.UPGRADES.speedAugmentReduction);
     }
 
     @Override
@@ -225,25 +251,36 @@ public class AutomationUpgradeItem extends UpgradeItem implements IStorageUpgrad
         tooltip.add(
             StatCollector
                 .translateToLocalFormatted("functionalupgrade.desc.execute_every_tick", getTickInterval(stack)));
+        if (UpgradeSettings.getStack(stack, UpgradeSettings.EFFICIENCY_AUGMENTS_KEY) != null) {
+            tooltip.add(
+                StatCollector
+                    .translateToLocalFormatted("functionalstorage.upgrade.efficiency", getEfficiencyMultiplier(stack)));
+        }
         if (this instanceof PullingUpgradeItem || this instanceof PushingUpgradeItem) {
             boolean pull = this instanceof PullingUpgradeItem;
             String operation = pull ? "pull" : "push";
             tooltip.add(
                 StatCollector.translateToLocalFormatted(
                     "drawer_upgrade.functionalstorage." + operation + ".item",
-                    pull ? FunctionalStorageConfig.UPGRADES.upgradePullItems
-                        : FunctionalStorageConfig.UPGRADES.upgradePushItems));
+                    scaleAmount(
+                        stack,
+                        pull ? FunctionalStorageConfig.UPGRADES.upgradePullItems
+                            : FunctionalStorageConfig.UPGRADES.upgradePushItems)));
             tooltip.add(
                 StatCollector.translateToLocalFormatted(
                     "drawer_upgrade.functionalstorage." + operation + ".fluid",
                     NumberFormatUtil.formatFluid(
-                        pull ? FunctionalStorageConfig.UPGRADES.upgradePullFluid
-                            : FunctionalStorageConfig.UPGRADES.upgradePushFluid)));
+                        scaleAmount(
+                            stack,
+                            pull ? FunctionalStorageConfig.UPGRADES.upgradePullFluid
+                                : FunctionalStorageConfig.UPGRADES.upgradePushFluid))));
             tooltip.add(
                 StatCollector.translateToLocalFormatted(
                     "drawer_upgrade.functionalstorage." + operation + ".aspect",
-                    pull ? FunctionalStorageConfig.UPGRADES.upgradePullAspect
-                        : FunctionalStorageConfig.UPGRADES.upgradePushAspect));
+                    scaleAmount(
+                        stack,
+                        pull ? FunctionalStorageConfig.UPGRADES.upgradePullAspect
+                            : FunctionalStorageConfig.UPGRADES.upgradePushAspect)));
         }
         if (hasDirection()) {
             tooltip.add(
@@ -279,4 +316,5 @@ public class AutomationUpgradeItem extends UpgradeItem implements IStorageUpgrad
         }
         return stack.getTagCompound();
     }
+
 }

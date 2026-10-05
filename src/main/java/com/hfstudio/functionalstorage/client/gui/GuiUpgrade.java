@@ -8,6 +8,7 @@ import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.StatCollector;
 
@@ -307,7 +308,16 @@ public class GuiUpgrade extends GuiContainer {
             lines.add(item == null ? text("gui.functionalstorage.empty") : item.getDisplayName());
             lines.add(text("functionalstorage.gui.filter_use"));
             lines.add(text("tooltip.morefunctionalstorage.tag_selection"));
-            lines.add(ore.isEmpty() ? text("tooltip.morefunctionalstorage.tag.any_of_the_above") : ore);
+            if (item == null) {
+                lines.add(text("tooltip.morefunctionalstorage.tag.any_of_the_above"));
+            } else {
+                List<String> names = UpgradeSettings.filterOreNames(stack, filter);
+                String any = text("tooltip.morefunctionalstorage.tag.any_of_the_above");
+                lines.add(ore.isEmpty() ? EnumChatFormatting.GREEN + any : any);
+                for (String name : names) {
+                    lines.add(name.equals(ore) ? EnumChatFormatting.GREEN + name : name);
+                }
+            }
         }
         int control = control(x, y);
         if (control >= 0) lines.add(switch (control) {

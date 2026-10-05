@@ -21,16 +21,17 @@ public class EssentiaTransfer {
     private EssentiaTransfer() {}
 
     public static boolean pull(@Nonnull IBigAspectHandler drawer, @Nullable TileEntity source,
-        @Nonnull ForgeDirection side, int limit) {
+        @Nonnull ForgeDirection side, long limit) {
         if (source == null || limit <= 0) {
             return false;
         }
         if (source instanceof IEssentiaTransport transport) {
+            int nativeLimit = nativeAmount(limit);
             if (side != ForgeDirection.UNKNOWN) {
-                return pullThroughPort(drawer, transport, side, limit);
+                return pullThroughPort(drawer, transport, side, nativeLimit);
             }
             for (ForgeDirection port : ForgeDirection.VALID_DIRECTIONS) {
-                if (pullThroughPort(drawer, transport, port, limit)) {
+                if (pullThroughPort(drawer, transport, port, nativeLimit)) {
                     return true;
                 }
             }
@@ -53,7 +54,7 @@ public class EssentiaTransfer {
     }
 
     public static boolean push(@Nonnull IBigAspectHandler drawer, @Nullable TileEntity target,
-        @Nonnull ForgeDirection side, int limit) {
+        @Nonnull ForgeDirection side, long limit) {
         if (target == null || limit <= 0) {
             return false;
         }
@@ -62,8 +63,10 @@ public class EssentiaTransfer {
             if (stored.isEmpty()) {
                 continue;
             }
-            int available = (int) drawer.extract(slot, Math.min(limit, stored.getAmount()), StorageAction.SIMULATE)
-                .getProcessedAmount();
+            int available = nativeAmount(
+                drawer.extract(slot, Math.min(limit, stored.getAmount()), StorageAction.SIMULATE)
+                    .getProcessedAmount());
+
             if (available == 0) {
                 continue;
             }
@@ -94,10 +97,15 @@ public class EssentiaTransfer {
         return true;
     }
 
-    private static int acceptedAmount(IBigAspectHandler drawer, Aspect aspect, int amount) {
+    private static int acceptedAmount(IBigAspectHandler drawer, Aspect aspect, long amount) {
         return aspect == null || amount <= 0 ? 0
-            : (int) drawer.insertRouted(new BigAspectStack(aspect, amount), StorageAction.SIMULATE)
-                .getProcessedAmount();
+            : nativeAmount(
+                drawer.insertRouted(new BigAspectStack(aspect, amount), StorageAction.SIMULATE)
+                    .getProcessedAmount());
+    }
+
+    private static int nativeAmount(long amount) {
+        return (int) Math.min(Integer.MAX_VALUE, Math.max(0L, amount));
     }
 
     private static int offer(TileEntity target, ForgeDirection side, Aspect aspect, int amount) {

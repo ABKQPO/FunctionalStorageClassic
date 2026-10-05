@@ -24,7 +24,7 @@ public class TransferUtil {
     private TransferUtil() {}
 
     public static boolean pullItems(@Nonnull IBigItemHandler drawer, @Nullable TileEntity source,
-        @Nonnull ForgeDirection sourceSide, int limit) {
+        @Nonnull ForgeDirection sourceSide, long limit) {
         IInventory inventory = asInventory(source);
         if (inventory == null || limit <= 0) {
             return false;
@@ -39,7 +39,7 @@ public class TransferUtil {
             if (available == null || available.getItem() == null) {
                 continue;
             }
-            int request = Math.min(limit, available.stackSize);
+            int request = (int) Math.min(limit, (long) available.stackSize);
             ItemStack extracted = inventory.decrStackSize(slot, request);
             if (extracted == null || extracted.getItem() == null) {
                 continue;
@@ -52,11 +52,11 @@ public class TransferUtil {
                 inventory.setInventorySlotContents(slot, extracted);
                 break;
             }
-            int stored = (int) drawer.insert(target, probe, StorageAction.EXECUTE)
+            long stored = drawer.insert(target, probe, StorageAction.EXECUTE)
                 .getProcessedAmount();
             if (stored < extracted.stackSize) {
                 ItemStack leftover = extracted.copy();
-                leftover.stackSize = extracted.stackSize - stored;
+                leftover.stackSize = extracted.stackSize - (int) stored;
                 inventory.setInventorySlotContents(slot, leftover);
                 if (stored > 0) {
                     moved = true;
@@ -71,13 +71,13 @@ public class TransferUtil {
     }
 
     public static boolean pushItems(@Nonnull IBigItemHandler drawer, @Nullable TileEntity target,
-        @Nonnull ForgeDirection targetSide, int limit) {
+        @Nonnull ForgeDirection targetSide, long limit) {
         IInventory inventory = asInventory(target);
         if (inventory == null || limit <= 0) {
             return false;
         }
         int[] slots = accessibleSlots(inventory, targetSide);
-        int remaining = limit;
+        long remaining = limit;
         boolean moved = false;
         for (ItemStorageView view : ItemStorageView.storages(drawer)) {
             if (remaining <= 0) {
@@ -112,12 +112,12 @@ public class TransferUtil {
     }
 
     public static boolean pullFluid(@Nonnull IBigFluidHandler drawer, @Nullable TileEntity source,
-        @Nonnull ForgeDirection sourceSide, int limit) {
+        @Nonnull ForgeDirection sourceSide, long limit) {
         IFluidHandler handler = asFluidHandler(source);
         if (handler == null || limit <= 0) {
             return false;
         }
-        FluidStack drained = handler.drain(sourceSide, limit, false);
+        FluidStack drained = handler.drain(sourceSide, nativeAmount(limit), false);
         if (drained == null || drained.amount <= 0) {
             return false;
         }
@@ -134,7 +134,7 @@ public class TransferUtil {
     }
 
     public static boolean pushFluid(@Nonnull IBigFluidHandler drawer, @Nullable TileEntity target,
-        @Nonnull ForgeDirection targetSide, int limit) {
+        @Nonnull ForgeDirection targetSide, long limit) {
         IFluidHandler handler = asFluidHandler(target);
         if (handler == null || limit <= 0) {
             return false;
@@ -146,7 +146,7 @@ public class TransferUtil {
                 continue;
             }
             FluidStack request = template.copy();
-            request.amount = (int) Math.min(limit, Math.min(Integer.MAX_VALUE, snapshot.getAmount()));
+            request.amount = nativeAmount(Math.min(limit, snapshot.getAmount()));
             int accepted = handler.fill(targetSide, request, false);
             if (accepted <= 0) {
                 continue;
@@ -161,6 +161,10 @@ public class TransferUtil {
             return true;
         }
         return false;
+    }
+
+    private static int nativeAmount(long amount) {
+        return (int) Math.min(Integer.MAX_VALUE, Math.max(0L, amount));
     }
 
     /**

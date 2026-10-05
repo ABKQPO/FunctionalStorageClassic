@@ -159,7 +159,8 @@ public class ContainerDrawer extends Container implements MenuSettingsReceiver, 
             tile.markOptionsDirty();
             return true;
         }
-        if (stack == null || !(stack.getItem() instanceof AutomationUpgradeItem)) {
+        if (stack == null || !(stack.getItem() instanceof AutomationUpgradeItem upgrade)
+            || !upgrade.canOpenConfigurationGui()) {
             return false;
         }
         player.openGui(FunctionalStorage.instance, id, tile.getWorldObj(), tile.xCoord, tile.yCoord, tile.zCoord);
@@ -251,14 +252,11 @@ public class ContainerDrawer extends Container implements MenuSettingsReceiver, 
                 .copy();
         ItemStack installed = cursor.copy();
         installed.stackSize = 1;
-        if (!player.capabilities.isCreativeMode) {
-            cursor.stackSize--;
-        }
+        cursor.stackSize--;
         tile.setUpgradeSlot(slot.storage, slot.getSlotIndex(), installed);
         if (previous != null) {
             player.inventory.setItemStack(previous);
-            if (!player.capabilities.isCreativeMode && cursor.stackSize > 0
-                && !player.inventory.addItemStackToInventory(cursor)) {
+            if (cursor.stackSize > 0 && !player.inventory.addItemStackToInventory(cursor)) {
                 player.dropPlayerItemWithRandomChoice(cursor, false);
             }
         } else {

@@ -106,6 +106,7 @@ public enum FSItemList {
     RefillUpgrade("refill_upgrade"),
     DimensionalRefillUpgrade("dimensional_refill_upgrade"),
     SpeedUpgradeAugment("speed_upgrade_augment"),
+    EfficiencyUpgradeAugment("efficiency_upgrade_augment"),
 
     ConfigurationTool("configuration_tool"),
     LinkingTool("linking_tool");

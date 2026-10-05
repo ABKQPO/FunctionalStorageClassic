@@ -40,7 +40,6 @@ public class RefillUpgradeItem extends AutomationUpgradeItem {
     public void addDescription(List<String> tooltip) {
         String tooltipKey = getUnlocalizedName() + ".tooltip.";
         tooltip.add(EnumChatFormatting.GRAY + StatCollector.translateToLocal(tooltipKey + "0"));
-        tooltip.add(EnumChatFormatting.GRAY + StatCollector.translateToLocal(tooltipKey + "1"));
     }
 
     @Override

@@ -450,6 +450,15 @@ public class FunctionalStorageRecipes {
             DRAWER_ORE,
             'R',
             "dustRedstone");
+        registerOreRecipe(
+            FSItemList.EfficiencyUpgradeAugment.get(),
+            "DDD",
+            "DSD",
+            "DDD",
+            'D',
+            "gemDiamond",
+            'S',
+            FSItemList.SpeedUpgradeAugment.get());
     }
 
     private static void registerGenerationRecipes() {

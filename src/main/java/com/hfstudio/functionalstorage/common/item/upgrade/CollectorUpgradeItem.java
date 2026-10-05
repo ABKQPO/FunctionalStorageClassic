@@ -64,7 +64,7 @@ public class CollectorUpgradeItem extends AutomationUpgradeItem {
         if (entities == null || entities.isEmpty()) {
             return;
         }
-        int budget = FunctionalStorageConfig.UPGRADES.upgradeCollectorItems;
+        long budget = scaleAmount(stack, FunctionalStorageConfig.UPGRADES.upgradeCollectorItems);
         IBigItemHandler storage = UpgradeSettings.itemStorage(tile.getItemHandler(), stack);
         List<Integer> candidates = UpgradeTargeting.selectedSlots(stack, storage.getStorageCount());
         for (EntityItem entity : entities) {
@@ -76,7 +76,7 @@ public class CollectorUpgradeItem extends AutomationUpgradeItem {
             if (dropped == null || dropped.getItem() == null) {
                 continue;
             }
-            int request = Math.min(budget, dropped.stackSize);
+            int request = (int) Math.min(budget, dropped.stackSize);
             BigItemStack probe = new BigItemStack(dropped, request);
             // Collected drops merge into the slot already holding that item, and a
             // full matching slot is skipped rather than spilling into a new slot.
@@ -84,13 +84,13 @@ public class CollectorUpgradeItem extends AutomationUpgradeItem {
             if (target < 0) {
                 continue;
             }
-            int stored = (int) storage.insert(target, probe, StorageAction.EXECUTE)
+            long stored = storage.insert(target, probe, StorageAction.EXECUTE)
                 .getProcessedAmount();
             if (stored <= 0) {
                 continue;
             }
             budget -= stored;
-            dropped.stackSize -= stored;
+            dropped.stackSize -= (int) stored;
             if (dropped.stackSize <= 0) {
                 entity.setDead();
             } else {
@@ -110,7 +110,7 @@ public class CollectorUpgradeItem extends AutomationUpgradeItem {
         int z = tile.zCoord + side.offsetZ;
 
         Block block = world.getBlock(x, y, z);
-        int budget = FunctionalStorageConfig.UPGRADES.upgradeCollectorFluid;
+        long budget = scaleAmount(stack, FunctionalStorageConfig.UPGRADES.upgradeCollectorFluid);
         IBigFluidHandler storage = UpgradeSettings.fluidStorage(tile.getFluidHandler(), stack);
         FluidStack drain;
         if (block instanceof IFluidBlock fluidBlock) drain = fluidBlock.drain(world, x, y, z, false);

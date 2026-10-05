@@ -44,21 +44,21 @@ public class PullingUpgradeItem extends AutomationUpgradeItem {
                 UpgradeSettings.itemStorage(tile.getItemHandler(), stack),
                 source,
                 access,
-                FunctionalStorageConfig.UPGRADES.upgradePullItems);
+                scaleAmount(stack, FunctionalStorageConfig.UPGRADES.upgradePullItems));
         }
         if (tile.getFluidHandler() != null) {
             TransferUtil.pullFluid(
                 UpgradeSettings.fluidStorage(tile.getFluidHandler(), stack),
                 source,
                 access,
-                FunctionalStorageConfig.UPGRADES.upgradePullFluid);
+                scaleAmount(stack, FunctionalStorageConfig.UPGRADES.upgradePullFluid));
         }
         if (tile.getAspectHandler() != null) {
             EssentiaTransfer.pull(
                 UpgradeSettings.aspectStorage(tile.getAspectHandler(), stack),
                 source,
                 access,
-                FunctionalStorageConfig.UPGRADES.upgradePullAspect);
+                scaleAmount(stack, FunctionalStorageConfig.UPGRADES.upgradePullAspect));
         }
     }
 

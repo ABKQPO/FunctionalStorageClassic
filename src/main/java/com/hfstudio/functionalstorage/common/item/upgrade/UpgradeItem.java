@@ -40,6 +40,10 @@ public class UpgradeItem extends Item {
         setTextureName(FunctionalStorage.MOD_ID + ":" + name);
     }
 
+    public boolean canOpenConfigurationGui() {
+        return false;
+    }
+
     @Override
     @SideOnly(Side.CLIENT)
     public void registerIcons(IIconRegister register) {
@@ -63,6 +67,10 @@ public class UpgradeItem extends Item {
                     + StatCollector.translateToLocal(storage ? "upgrade.type.storage" : "upgrade.type.utility"));
         }
         addDescription(tooltip);
+        if (canOpenConfigurationGui()) {
+            tooltip
+                .add(EnumChatFormatting.GRAY + StatCollector.translateToLocal("functionalstorage.upgrade.configure"));
+        }
     }
 
     public void addDescription(List<String> tooltip) {

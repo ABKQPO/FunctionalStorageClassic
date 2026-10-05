@@ -63,6 +63,7 @@ public class GuiHandler implements IGuiHandler {
         return slot >= 0 && slot < drawer.getUtilityUpgradeSlots()
             && drawer.getUtilityUpgrade(slot) != null
             && drawer.getUtilityUpgrade(slot)
-                .getItem() instanceof AutomationUpgradeItem;
+                .getItem() instanceof AutomationUpgradeItem upgrade
+            && upgrade.canOpenConfigurationGui();
     }
 }

@@ -96,7 +96,7 @@ public class GenerationUpgradeItem extends AutomationUpgradeItem {
             return;
         }
         IBigFluidHandler storage = UpgradeSettings.fluidStorage(tile.getFluidHandler(), upgrade);
-        BigFluidStack request = new BigFluidStack(new FluidStack(FluidRegistry.WATER, 1), waterRate());
+        BigFluidStack request = new BigFluidStack(new FluidStack(FluidRegistry.WATER, 1), waterRate(upgrade));
         if (storage.hasRoomInSingleSlot(request)) {
             storage.insertIntoSingleSlot(request, StorageAction.EXECUTE);
         }
@@ -106,7 +106,7 @@ public class GenerationUpgradeItem extends AutomationUpgradeItem {
         if (tile.getItemHandler() == null) {
             return;
         }
-        insert(tile, upgrade, new ItemStack(Blocks.cobblestone, Math.max(1, stoneRate())));
+        insert(tile, upgrade, new ItemStack(Blocks.cobblestone), stoneRate(upgrade));
     }
 
     private void generateItem(@Nonnull ControllableDrawerTile tile, @Nonnull ItemStack stack) {
@@ -118,17 +118,16 @@ public class GenerationUpgradeItem extends AutomationUpgradeItem {
         if (produced == null || produced.getItem() == null) {
             return;
         }
-        ItemStack batch = produced.copy();
-        batch.stackSize = 1;
-        insert(tile, stack, batch);
+        insert(tile, stack, produced, scaleAmount(stack, 1));
     }
 
-    private void insert(@Nonnull ControllableDrawerTile tile, ItemStack upgrade, @Nonnull ItemStack stack) {
-        if (stack.getItem() == null || stack.stackSize <= 0) {
+    private void insert(@Nonnull ControllableDrawerTile tile, ItemStack upgrade, @Nonnull ItemStack template,
+        long amount) {
+        if (template.getItem() == null || amount <= 0) {
             return;
         }
         IBigItemHandler storage = UpgradeSettings.itemStorage(tile.getItemHandler(), upgrade);
-        BigItemStack request = new BigItemStack(stack, stack.stackSize);
+        BigItemStack request = new BigItemStack(template, amount);
         if (storage.hasRoomInSingleSlot(request)) {
             storage.insertIntoSingleSlot(request, StorageAction.EXECUTE);
         }
@@ -146,22 +145,24 @@ public class GenerationUpgradeItem extends AutomationUpgradeItem {
         return new ItemStack(item, 1, ItemUtil.metadataFromDescription(description));
     }
 
-    private int waterRate() {
-        return switch (tier) {
+    private long waterRate(ItemStack upgrade) {
+        int base = switch (tier) {
             case 2 -> FunctionalStorageConfig.UPGRADES.waterGenerationTier2;
             case 3 -> FunctionalStorageConfig.UPGRADES.waterGenerationTier3;
             case 4 -> FunctionalStorageConfig.UPGRADES.waterGenerationTier4;
             default -> FunctionalStorageConfig.UPGRADES.waterGenerationTier1;
         };
+        return scaleAmount(upgrade, base);
     }
 
-    private int stoneRate() {
-        return switch (tier) {
+    private long stoneRate(ItemStack upgrade) {
+        int base = switch (tier) {
             case 2 -> FunctionalStorageConfig.UPGRADES.stoneGenerationTier2;
             case 3 -> FunctionalStorageConfig.UPGRADES.stoneGenerationTier3;
             case 4 -> FunctionalStorageConfig.UPGRADES.stoneGenerationTier4;
             default -> FunctionalStorageConfig.UPGRADES.stoneGenerationTier1;
         };
+        return scaleAmount(upgrade, base);
     }
 
     @Override
@@ -173,7 +174,7 @@ public class GenerationUpgradeItem extends AutomationUpgradeItem {
             tooltip.add(
                 StatCollector.translateToLocalFormatted(
                     "functionalupgrade.desc.generate_fluid",
-                    NumberFormatUtil.formatFluid(waterRate()),
+                    NumberFormatUtil.formatFluid(waterRate(stack)),
                     FluidRegistry.WATER.getLocalizedName(new FluidStack(FluidRegistry.WATER, 1))));
         } else {
             ItemStack produced = kind == GenerationKind.STONE ? new ItemStack(Blocks.cobblestone) : getFilter(stack);
@@ -184,7 +185,7 @@ public class GenerationUpgradeItem extends AutomationUpgradeItem {
                 produced == null ? StatCollector.translateToLocal("functionalstorage.upgrade.filter_empty")
                     : StatCollector.translateToLocalFormatted(
                         "functionalupgrade.desc.generate_item",
-                        kind == GenerationKind.STONE ? stoneRate() : 1,
+                        kind == GenerationKind.STONE ? stoneRate(stack) : scaleAmount(stack, 1),
                         produced.getDisplayName()));
         }
     }

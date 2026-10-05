@@ -43,14 +43,14 @@ public class ResourceGenerationUpgradeItem extends AutomationUpgradeItem {
         if (tile.getWorldObj() == null || tile.getWorldObj().isRemote) return;
         if (item != null && tile.getItemHandler() != null) {
             IBigItemHandler storage = UpgradeSettings.itemStorage(tile.getItemHandler(), stack);
-            BigItemStack request = new BigItemStack(item, item.stackSize);
+            BigItemStack request = new BigItemStack(item, scaleAmount(stack, item.stackSize));
             if (storage.hasRoomInSingleSlot(request)) {
                 storage.insertIntoSingleSlot(request, StorageAction.EXECUTE);
             }
         }
         if (fluid != null && tile.getFluidHandler() != null) {
             IBigFluidHandler storage = UpgradeSettings.fluidStorage(tile.getFluidHandler(), stack);
-            BigFluidStack request = new BigFluidStack(fluid, fluid.amount);
+            BigFluidStack request = new BigFluidStack(fluid, scaleAmount(stack, fluid.amount));
             if (storage.hasRoomInSingleSlot(request)) {
                 storage.insertIntoSingleSlot(request, StorageAction.EXECUTE);
             }
@@ -66,11 +66,11 @@ public class ResourceGenerationUpgradeItem extends AutomationUpgradeItem {
             item == null
                 ? StatCollector.translateToLocalFormatted(
                     "functionalupgrade.desc.generate_fluid",
-                    fluid.amount,
+                    scaleAmount(stack, fluid.amount),
                     fluid.getLocalizedName())
                 : StatCollector.translateToLocalFormatted(
                     "functionalupgrade.desc.generate_item",
-                    item.stackSize,
+                    scaleAmount(stack, item.stackSize),
                     item.getDisplayName()));
     }
 }
