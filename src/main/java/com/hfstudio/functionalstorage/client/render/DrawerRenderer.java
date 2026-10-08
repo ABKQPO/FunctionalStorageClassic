@@ -79,6 +79,7 @@ public class DrawerRenderer extends TileEntitySpecialRenderer implements IResour
     private static final float Z_ICON = -0.035F;
     private static final float Z_ICON_2D = -0.02F;
     private static final float Z_TEXT = -0.01F;
+    private static final float MAX_X4_TEXT_WIDTH_PIXELS = 6F;
     private static final float Z_INDICATOR = 0.004F;
     private static final float ICON_HALF_EXTENT = 0.5F;
     /**
@@ -324,7 +325,7 @@ public class DrawerRenderer extends TileEntitySpecialRenderer implements IResour
             if (drawer.isLocked()) {
                 renderLockBadge();
             }
-            renderTextLabels();
+            renderTextLabels(layout);
 
         } finally {
             GL11.glPopMatrix();
@@ -1275,24 +1276,34 @@ public class DrawerRenderer extends TileEntitySpecialRenderer implements IResour
         textLabelCount++;
     }
 
-    private void renderTextLabels() {
+    private void renderTextLabels(DrawerFaceLayout layout) {
         if (textLabelCount == 0) {
             return;
         }
         FontRenderer font = Minecraft.getMinecraft().fontRenderer;
         GL11.glDisable(GL11.GL_LIGHTING);
+        GL11.glDisable(GL11.GL_DEPTH_TEST);
         GL11.glDepthMask(false);
         GL11.glPushMatrix();
         try {
             GL11.glTranslatef(0F, 0F, Z_TEXT);
             GL11.glScalef(TEXT_SCALE, TEXT_SCALE, 1F);
+            float maxWidth = layout == DrawerFaceLayout.X_4 ? MAX_X4_TEXT_WIDTH_PIXELS / (16F * TEXT_SCALE)
+                : Float.POSITIVE_INFINITY;
             boolean batched = textLabelCount > 1 && Mods.Angelica.isModLoaded() && AngelicaFontBatch.begin(font);
             try {
                 for (int index = 0; index < textLabelCount; index++) {
                     TextLabel label = textLabels[index];
-                    int x = Math.round(label.x / TEXT_SCALE) - font.getStringWidth(label.text) / 2;
-                    int y = Math.round(label.y / TEXT_SCALE);
-                    font.drawStringWithShadow(label.text, x, y, 0xFFFFFF);
+                    int width = font.getStringWidth(label.text);
+                    float scale = Math.min(1F, maxWidth / Math.max(1, width));
+                    GL11.glPushMatrix();
+                    try {
+                        GL11.glTranslatef(label.x / TEXT_SCALE, label.y / TEXT_SCALE, 0F);
+                        GL11.glScalef(scale, scale, 1F);
+                        font.drawStringWithShadow(label.text, -width / 2, 0, 0xFFFFFF);
+                    } finally {
+                        GL11.glPopMatrix();
+                    }
                 }
             } finally {
                 if (batched) {
