@@ -41,7 +41,6 @@ import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL12;
 
 import com.gtnewhorizon.gtnhlib.client.renderer.TessellatorManager;
-import com.gtnewhorizon.gtnhlib.util.numberformatting.NumberFormatUtil;
 import com.hfstudio.functionalstorage.FunctionalStorage;
 import com.hfstudio.functionalstorage.api.storage.BigAspectStack;
 import com.hfstudio.functionalstorage.api.storage.BigFluidStack;
@@ -50,6 +49,7 @@ import com.hfstudio.functionalstorage.api.storage.IBigAspectHandler;
 import com.hfstudio.functionalstorage.api.storage.IBigFluidHandler;
 import com.hfstudio.functionalstorage.api.storage.IBigItemHandler;
 import com.hfstudio.functionalstorage.client.gui.DrawerTooltipData;
+import com.hfstudio.functionalstorage.client.gui.StorageAmountFormatter;
 import com.hfstudio.functionalstorage.client.integration.AngelicaFontBatch;
 import com.hfstudio.functionalstorage.common.block.DrawerAttachment;
 import com.hfstudio.functionalstorage.common.block.DrawerFaceLayout;
@@ -369,7 +369,7 @@ public class DrawerRenderer extends TileEntitySpecialRenderer implements IResour
             float centerX = layout.getSlotX(slot);
             float centerY = layout.getSlotY(slot);
             if (showCount) {
-                renderText(NumberFormatUtil.formatNumberCompact(snapshot.getAmount()), centerX, centerY, scale);
+                renderText(StorageAmountFormatter.formatDisplay(snapshot.getAmount(), false), centerX, centerY, scale);
             }
             if (showIndicator) {
                 renderIndicator(
@@ -408,7 +408,11 @@ public class DrawerRenderer extends TileEntitySpecialRenderer implements IResour
             float centerX = (bounds[0] + bounds[1]) / 2F;
             float centerY = (bounds[2] + bounds[3]) / 2F;
             if (hasTemplate && options.isShowItemCount()) {
-                renderText(NumberFormatUtil.formatFluid(snapshot.getAmount()), centerX, centerY, iconScale(layout));
+                renderText(
+                    StorageAmountFormatter.formatDisplay(snapshot.getAmount(), true),
+                    centerX,
+                    centerY,
+                    iconScale(layout));
             }
             if (hasTemplate && options.getAdvancedValue(ConfigurationToolItem.ConfigurationAction.INDICATOR) != 0) {
                 renderIndicator(
@@ -437,7 +441,7 @@ public class DrawerRenderer extends TileEntitySpecialRenderer implements IResour
             }
             if (options.isShowItemCount()) {
                 renderText(
-                    NumberFormatUtil.formatNumberCompact(snapshot.getAmount()),
+                    StorageAmountFormatter.formatDisplay(snapshot.getAmount(), false),
                     centerX,
                     centerY,
                     iconScale(layout));

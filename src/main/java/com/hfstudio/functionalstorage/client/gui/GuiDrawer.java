@@ -17,7 +17,6 @@ import net.minecraft.util.StatCollector;
 
 import org.lwjgl.opengl.GL11;
 
-import com.gtnewhorizon.gtnhlib.util.numberformatting.NumberFormatUtil;
 import com.hfstudio.functionalstorage.FunctionalStorage;
 import com.hfstudio.functionalstorage.api.storage.BigAspectStack;
 import com.hfstudio.functionalstorage.api.storage.BigFluidStack;
@@ -269,15 +268,16 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
     }
 
     private String amountLine(int slot) {
-        String amount = NumberFormatUtil.formatNumber(
+        boolean fluid = tile.getFluidHandler() != null;
+        String amount = StorageAmountFormatter.formatTooltip(
             tile.getActiveStorage()
                 .getSnapshot(slot)
-                .getAmount())
-            + "/"
-            + NumberFormatUtil.formatNumber(
+                .getAmount(),
+            fluid) + "/"
+            + StorageAmountFormatter.formatTooltip(
                 tile.getActiveStorage()
-                    .getCapacity(slot))
-            + (tile.getFluidHandler() == null ? "" : " " + NumberFormatUtil.getFluidUnit());
+                    .getCapacity(slot),
+                fluid);
         return StatCollector.translateToLocal("gui.functionalstorage.amount") + amount;
     }
 
@@ -375,8 +375,7 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
     }
 
     private String formatAmount(long amount) {
-        return tile.getFluidHandler() == null ? NumberFormatUtil.formatNumberCompact(amount)
-            : NumberFormatUtil.formatFluid(amount);
+        return StorageAmountFormatter.formatDisplay(amount, tile.getFluidHandler() != null);
     }
 
     private Entry entry(int slot) {
@@ -384,14 +383,22 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
             BigItemStack stored = tile.getItemHandler()
                 .getSnapshot(slot);
             return stored.hasTemplate()
-                ? new Entry(stored.getTemplate(), null, null, NumberFormatUtil.formatNumberCompact(stored.getAmount()))
+                ? new Entry(
+                    stored.getTemplate(),
+                    null,
+                    null,
+                    StorageAmountFormatter.formatDisplay(stored.getAmount(), false))
                 : null;
         }
         if (tile.getFluidHandler() != null) {
             BigFluidStack stored = tile.getFluidHandler()
                 .getSnapshot(slot);
             return stored.hasTemplate()
-                ? new Entry(null, stored.getTemplate(), null, NumberFormatUtil.formatFluid(stored.getAmount()))
+                ? new Entry(
+                    null,
+                    stored.getTemplate(),
+                    null,
+                    StorageAmountFormatter.formatDisplay(stored.getAmount(), true))
                 : null;
         }
         if (tile.getAspectHandler() != null) {
@@ -402,7 +409,7 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
                     null,
                     null,
                     AspectIcon.of(stored.getAspect()),
-                    NumberFormatUtil.formatNumberCompact(stored.getAmount()))
+                    StorageAmountFormatter.formatDisplay(stored.getAmount(), false))
                 : null;
         }
         return null;

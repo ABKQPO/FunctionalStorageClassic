@@ -8,7 +8,6 @@ import net.minecraft.util.IIcon;
 
 import org.lwjgl.opengl.GL11;
 
-import com.gtnewhorizon.gtnhlib.util.numberformatting.NumberFormatUtil;
 import com.hfstudio.functionalstorage.api.storage.BigAspectStack;
 import com.hfstudio.functionalstorage.api.storage.BigFluidStack;
 import com.hfstudio.functionalstorage.api.storage.BigItemStack;
@@ -122,14 +121,22 @@ public class DrawerInfoPanel extends Gui {
             BigItemStack stored = tile.getItemHandler()
                 .getSnapshot(slot);
             return stored.hasTemplate()
-                ? new Entry(stored.getTemplate(), null, null, NumberFormatUtil.formatNumberCompact(stored.getAmount()))
+                ? new Entry(
+                    stored.getTemplate(),
+                    null,
+                    null,
+                    StorageAmountFormatter.formatDisplay(stored.getAmount(), false))
                 : null;
         }
         if (tile.getFluidHandler() != null) {
             BigFluidStack stored = tile.getFluidHandler()
                 .getSnapshot(slot);
             return stored.hasTemplate()
-                ? new Entry(null, stored.getTemplate(), null, NumberFormatUtil.formatFluid(stored.getAmount()))
+                ? new Entry(
+                    null,
+                    stored.getTemplate(),
+                    null,
+                    StorageAmountFormatter.formatDisplay(stored.getAmount(), true))
                 : null;
         }
         if (tile.getAspectHandler() != null) {
@@ -140,7 +147,7 @@ public class DrawerInfoPanel extends Gui {
                     null,
                     null,
                     AspectIcon.of(stored.getAspect()),
-                    NumberFormatUtil.formatNumberCompact(stored.getAmount()))
+                    StorageAmountFormatter.formatDisplay(stored.getAmount(), false))
                 : null;
         }
         return null;

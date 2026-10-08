@@ -14,7 +14,6 @@ import net.minecraftforge.fluids.FluidStack;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import com.gtnewhorizon.gtnhlib.util.numberformatting.NumberFormatUtil;
 import com.hfstudio.functionalstorage.common.block.base.DrawerBlock;
 import com.hfstudio.functionalstorage.common.integration.Mods;
 import com.hfstudio.functionalstorage.common.item.upgrade.AutomationUpgradeItem;
@@ -127,12 +126,12 @@ public class DrawerTooltipData {
      */
     private static Entry toEntry(StorageContentEntry entry) {
         if (entry.item() != null) {
-            return new Entry(entry.item(), null, null, NumberFormatUtil.formatNumberCompact(entry.amount()));
+            return new Entry(entry.item(), null, null, StorageAmountFormatter.formatTooltip(entry.amount(), false));
         }
         if (entry.fluid() != null) {
-            return new Entry(null, entry.fluid(), null, NumberFormatUtil.formatFluid(entry.amount()));
+            return new Entry(null, entry.fluid(), null, StorageAmountFormatter.formatTooltip(entry.amount(), true));
         }
-        return new Entry(null, null, entry.aspect(), NumberFormatUtil.formatNumberCompact(entry.amount()));
+        return new Entry(null, null, entry.aspect(), StorageAmountFormatter.formatTooltip(entry.amount(), false));
     }
 
     /**
