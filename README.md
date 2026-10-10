@@ -26,14 +26,14 @@
 - [📑 Table of Contents](#-table-of-contents)
 - [✨ Overview](#-overview)
 - [🧱 Storage Blocks](#-storage-blocks)
-- [⬆️ Upgrade System](#️-upgrade-system)
+- [⬆️ Upgrade System](#-upgrade-system)
 - [🧪 Storage Kinds](#-storage-kinds)
 - [🔌 Mod Integration](#-mod-integration)
 - [🧩 Configuration](#-configuration)
 - [🌍 Localization](#-localization)
 - [📥 Installation](#-installation)
 - [🧱 Dependency Requirements](#-dependency-requirements)
-- [🛠️ Building](#️-building)
+- [🛠️ Building](#-building)
 - [📜 Credits & Attributions](#-credits--attributions)
 
 <hr>
@@ -47,7 +47,7 @@ synchronization behaviour.
 
 * **Long capacity storage** — a single slot holds far more than an `int`, with the amount
   rendered on the drawer face.
-* **Multiplicative storage upgrades** — copper, gold, diamond, and netherite tiers stack
+* **Multiplicative storage upgrades** — registered capacity tiers stack
   multiplicatively instead of overwriting each other.
 * **Contents survive breakage** — stored contents, filters, lock state, and installed upgrades
   are written into the dropped block's NBT.
@@ -62,16 +62,16 @@ synchronization behaviour.
 
 ### Drawers
 
-| Family | Variants | Notes |
-|:-------|:---------|:------|
-| Wood Drawers | 6 woods × 1/2/4 slots | Oak, spruce, birch, jungle, acacia, dark oak |
-| Framed Drawers | 1/2/4 slots | Exterior, front, and divider take any block's texture |
-| Fluid Drawers | 1/2/4 tanks | One long-capacity tank per slot |
-| Essentia Drawers | 1/2/4 slots | Thaumcraft essentia; registered when Thaumcraft is present |
-| Compacting Drawers | 3 tiers | Compacts 9→1 and 4→1 chains automatically |
-| Simple Compacting Drawers | 2 tiers | Lightweight compacting |
-| Ender Drawers | 1 slot | Frequency based shared storage, per save |
-| Armory Cabinet | 1 block | Bulk storage for gear and tools |
+| Family                    | Variants              | Notes                                                      |
+|:--------------------------|:----------------------|:-----------------------------------------------------------|
+| Wood Drawers              | 6 woods × 1/2/4 slots | Oak, spruce, birch, jungle, acacia, dark oak               |
+| Framed Drawers            | 1/2/4 slots           | Exterior, front, and divider take any block's texture      |
+| Fluid Drawers             | 1/2/4 tanks           | One long-capacity tank per slot                            |
+| Essentia Drawers          | 1/2/4 slots           | Thaumcraft essentia; registered when Thaumcraft is present |
+| Compacting Drawers        | 3 tiers               | Compacts 9→1 and 4→1 chains automatically                  |
+| Simple Compacting Drawers | 2 tiers               | Lightweight compacting                                     |
+| Ender Drawers             | 1 slot                | Frequency based shared storage, per save                   |
+| Armory Cabinet            | 1 block               | Bulk storage for gear and tools                            |
 
 Every drawer is a full cube that can be mounted on a **wall**, a **floor**, or a **ceiling**.
 The front faces the player. Looking steeply down or up selects floor or ceiling mounting,
@@ -100,62 +100,75 @@ Each drawer has four **storage upgrade** slots and three **utility upgrade** slo
 
 ### Storage Upgrades
 
-| Upgrade | Default Capacity Multiplier |
-|:--------|:--------------------|
-| Iron Downgrade | limits item slots to 64 items |
-| Copper Upgrade | ×8 |
-| Gold Upgrade | ×16 |
-| Diamond Upgrade | ×24 |
-| Netherite Upgrade | ×32 |
-| Max Storage Upgrade | removes the capacity ceiling |
+| Upgrade                  | Default Capacity Multiplier                                    |
+|:-------------------------|:---------------------------------------------------------------|
+| Iron Downgrade           | limits item slots to 64 items                                  |
+| Copper Upgrade           | ×8                                                             |
+| Gold Upgrade             | ×16                                                            |
+| Diamond Upgrade          | ×24                                                            |
+| Netherite Upgrade        | ×32                                                            |
+| Turtle Scute Upgrade     | ×48                                                            |
+| Nether Star Upgrade      | ×72                                                            |
+| Heavy Core Upgrade       | ×128                                                           |
+| Max Storage Upgrade      | removes the capacity ceiling                                   |
 | Creative Vending Upgrade | unlimited extraction of the configured resource; creative only |
 
-Copper, gold, diamond, and netherite multipliers come from the `storage` configuration.
+All capacity upgrade multipliers come from the `storage` configuration.
 Fluid and essentia capacity modifiers apply their configured divisors. Reopen the world
 after changing storage settings.
+
+Turtle scute and heavy core upgrades are always registered but have no crafting recipes.
+The blank upgrade is the central ingredient for T1 generators and non-tier utility upgrades;
+higher generator tiers use the preceding tier instead.
 
 Right-clicking installs an upgrade into an available slot. Use the drawer interface to
 remove an installed upgrade or exchange tiers.
 
 ### Functional Upgrades
 
-| Upgrade | Effect |
-|:--------|:-------|
-| Void Upgrade | destroys overflow that no longer fits |
-| Redstone Upgrade | comparator-style redstone output based on fill level |
-| Pulling Upgrade | pulls items, fluids, or essentia from the chosen side |
-| Pushing Upgrade | pushes items, fluids, or essentia to the chosen side |
-| Collector Upgrade | collects nearby dropped items and fluid sources |
-| Ore Dictionary Upgrade | treats ore dictionary equivalents as one stored type |
-| Wireless Pulling / Pushing | transfer to and from a recorded coordinate |
+| Upgrade                    | Effect                                                |
+|:---------------------------|:------------------------------------------------------|
+| Void Upgrade               | destroys overflow that no longer fits                 |
+| Redstone Upgrade           | comparator-style redstone output based on fill level  |
+| Pulling Upgrade            | pulls items, fluids, or essentia from the chosen side |
+| Pushing Upgrade            | pushes items, fluids, or essentia to the chosen side  |
+| Collector Upgrade          | collects nearby dropped items and fluid sources       |
+| Wireless Pulling / Pushing | transfer to and from a recorded coordinate            |
 
 ### Generation Upgrades
 
-Legacy water and stone generators have four configurable output tiers. The four legacy
-Universal Item Generation items share the configured generation interval and produce one item per operation.
+Generators have five tiers, with output amounts and operation intervals supplied by the
+`upgrades` configuration. Generation kinds and capacity tiers use instance-based registration.
 
-| Upgrade | Effect |
-|:--------|:-------|
-| Water Generation | fills a fluid drawer with water |
-| Stone Generation | produces cobblestone in a drawer |
-| Universal Item Generation | produces the configured item, or the upgrade's own filter |
-| Water Generator Upgrade | generates two buckets of water per tick |
-| Dripping Upgrade | generates 1/50 bucket of lava every 20 ticks |
-| Obsidian Upgrade | generates one obsidian every 300 ticks |
+| Upgrade                       | Effect                                                                          |
+|:------------------------------|:--------------------------------------------------------------------------------|
+| Water Generation              | fills a fluid drawer with water                                                 |
+| Stone Generation              | produces cobblestone in a drawer                                                |
+| Universal Item Generation     | produces the configured item, or the upgrade's own filter                       |
+| Dripping Upgrade              | generates lava in a fluid drawer                                                |
+| Resource Generators           | produce obsidian, dirt, sand, gravel, netherrack, end stone, soul sand, or clay |
+| Et Futurum Requiem Generators | register only when the corresponding block exists                               |
+| Milk / Honey Generators       | register only when the corresponding fluid exists in Forge's fluid registry     |
 
 The dripping recipe uses netherrack in place of pointed dripstone, which does not exist in 1.7.10.
+Et Futurum Requiem resources include cobbled deepslate, andesite, diorite, granite, blackstone,
+tuff, basalt, dripstone, prismarine, and sculk. Generator registry names and textures use
+`_1` through `_5`. Forge missing mappings migrate the former `_t1` through `_t4` names
+and unnumbered dripping and obsidian upgrades. The removed ore dictionary upgrade maps
+to the blank upgrade.
 
 ### More Functional Storage upgrades
 
 The following upgrades from **More Functional Storage** are merged into this mod:
 
-| Upgrade | Effect |
-|:--------|:-------|
-| Breaker Upgrade | breaks the block in front of the drawer and stores the drops |
-| Placer Upgrade | places blocks from the drawer into the world |
-| Refill Upgrade | refills existing stacks in the owner's hotbar, main inventory, or ender chest |
-| Dimensional Refill Upgrade | as above, across dimensions |
-| Speed Upgrade Augment | installs inside an upgrade's configuration screen to shorten its operation interval |
+| Upgrade                    | Effect                                                                              |
+|:---------------------------|:------------------------------------------------------------------------------------|
+| Breaker Upgrade            | breaks the block in front of the drawer and stores the drops                        |
+| Placer Upgrade             | places blocks from the drawer into the world                                        |
+| Refill Upgrade             | refills existing stacks in the owner's hotbar, main inventory, or ender chest       |
+| Dimensional Refill Upgrade | as above, across dimensions                                                         |
+| Speed Upgrade Augment      | installs inside an upgrade's configuration screen to shorten its operation interval |
+| Efficiency Upgrade Augment | doubles the amount processed per operation                                          |
 
 Right-click an installed automation upgrade in the drawer interface to configure its direction,
 item filters, selected slots, redstone mode, or refill destination. The filter panel has nine
@@ -168,11 +181,11 @@ and once per pulse. Stonecutting Upgrade is intentionally omitted because 1.7.10
 
 ## 🧪 Storage Kinds
 
-| Kind | Container | Interface |
-|:-----|:----------|:-----------|
-| Items | Wood, compacting, ender drawers, armory cabinet | Vanilla `IInventory` and AE2 ME inventory |
-| Fluids | Fluid drawers | Forge `IFluidHandler` |
-| Essentia | Essentia drawers | Thaumcraft `IAspectContainer` and `IEssentiaTransport` |
+| Kind     | Container                                       | Interface                                              |
+|:---------|:------------------------------------------------|:-------------------------------------------------------|
+| Items    | Wood, compacting, ender drawers, armory cabinet | Vanilla `IInventory` and AE2 ME inventory              |
+| Fluids   | Fluid drawers                                   | Forge `IFluidHandler`                                  |
+| Essentia | Essentia drawers                                | Thaumcraft `IAspectContainer` and `IEssentiaTransport` |
 
 All three kinds share one storage core. A resource kind only has to describe its identity,
 capacity, and persistence, and it inherits routing, overflow voiding, creative mode,
@@ -247,8 +260,7 @@ Categories:
 * `general` — content retention, controller range and link limit, armory size, compacting rules,
   ore dictionary filters
 * `storage` — upgrade multipliers, per-kind capacity divisors, base slot capacities
-* `upgrades` — transfer amounts and tick intervals for every automation upgrade; `universalGenerationTick`
-  controls the interval for Universal Item Generation upgrades
+* `upgrades` — transfer amounts, tick intervals, and T1–T5 generator outputs
 * `compatibility` — Waila, Applied Energistics 2, and Thaumcraft toggles
 * `client` — drawer render distance and default display options; `threeDimensionalBlockDisplay`
   defaults to `true` and can be disabled to show flat block icons on drawer faces
@@ -310,16 +322,18 @@ gradlew.bat clean build -x test
 
 ## 📜 Credits & Attributions
 
-This project is a port. The original designs, behaviour, and assets come from the following
-projects, all of which permit reuse under the terms below.
+This project is maintained by [ABKQPO](https://github.com/ABKQPO) at the
+[FunctionalStorageClassic repository](https://github.com/ABKQPO/FunctionalStorageClassic).
+It is a port and adaptation. The original designs, behaviour, assets, and implementation
+references come from the following projects.
 
-| Project | Author | License | What was used |
-|:--------|:-------|:--------|:--------------|
-| **Functional Storage** | [Buuz135](https://github.com/Buuz135), Rid | [MIT](https://mit-license.org/) | Original design, drawer and upgrade behaviour, textures |
-| **Functional Storage Legacy** | [xinyihl](https://github.com/xinyihl) | [MIT](https://mit-license.org/) | Historical 1.12.2 port reference and inherited assets; current parity work follows modern Functional Storage |
-| **More Functional Storage** | [Matyrobbrt](https://github.com/Matyrobbrt) | [MIT](https://mit-license.org/) | Breaker, placer, refill, and dimensional refill upgrades merged into this mod |
-| **GTNHLib** | [GTNewHorizons](https://github.com/GTNewHorizons/GTNHLib) | [LGPLv3](https://www.gnu.org/licenses/lgpl-3.0.html) | Configuration system, block state API, JSON model pipeline |
-| **Applied Energistics 2** | [AlgorithmX2](https://github.com/AppliedEnergistics) and contributors | [LGPLv3](https://www.gnu.org/licenses/lgpl-3.0.html) | Compile-time API for the storage bridge |
+| Project | Author | Repository | License / attribution | What was used |
+|:--------|:-------|:-----------|:---------------------|:--------------|
+| **Functional Storage** | [Buuz135](https://github.com/Buuz135) and contributors | [Buuz135/FunctionalStorage](https://github.com/Buuz135/FunctionalStorage) | [MIT](https://mit-license.org/) | Original drawer design, upgrade behaviour, and textures |
+| **Functional Storage Legacy** | [xinyihl](https://github.com/xinyihl) | [xinyihl/FunctionalStorageLegacy](https://github.com/xinyihl/FunctionalStorageLegacy) | [MIT](https://mit-license.org/) | Historical 1.12.2 port reference and inherited assets |
+| **More Functional Storage** | [Matyrobbrt](https://github.com/Matyrobbrt) | [Matyrobbrt/MoreFunctionalStorage](https://github.com/Matyrobbrt/MoreFunctionalStorage) | [MIT](https://mit-license.org/) | Breaker, placer, refill, and dimensional refill upgrades |
+| **More Functional Storage Upgrade** | [WitherRedstone](https://github.com/WitherRedstone) / ChinaEX123 | [WitherRedstone/More-Functional-Storage-Upgrade](https://github.com/WitherRedstone/More-Functional-Storage-Upgrade) | [MIT code; CC BY 4.0 assets](https://github.com/WitherRedstone/More-Functional-Storage-Upgrade/blob/main/LICENSE.md) | Resource generators, capacity upgrades, and adapted textures |
+| **FunctionalChemical** | [GTNewHorizons](https://github.com/GTNewHorizons) and contributors | [GTNewHorizons/FunctionalChemical](https://github.com/GTNewHorizons/FunctionalChemical) | Repository license | External storage integration pattern reference |
 
 ### Menus and previews
 
