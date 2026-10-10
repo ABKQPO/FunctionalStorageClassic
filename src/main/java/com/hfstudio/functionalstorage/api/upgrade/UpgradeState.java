@@ -2,8 +2,8 @@ package com.hfstudio.functionalstorage.api.upgrade;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.EnumMap;
-import java.util.EnumSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -29,13 +29,13 @@ public class UpgradeState {
     private final Set<StorageFeature> features;
 
     private UpgradeState(Builder builder) {
-        EnumMap<UpgradeAttribute, List<UpgradeModifier>> modifierCopies = new EnumMap<>(UpgradeAttribute.class);
+        Map<UpgradeAttribute, List<UpgradeModifier>> modifierCopies = new LinkedHashMap<>();
         for (Map.Entry<UpgradeAttribute, List<UpgradeModifier>> entry : builder.modifiers.entrySet()) {
             modifierCopies.put(entry.getKey(), List.copyOf(entry.getValue()));
         }
         modifiers = Collections.unmodifiableMap(modifierCopies);
         features = builder.features.isEmpty() ? Collections.emptySet()
-            : Collections.unmodifiableSet(EnumSet.copyOf(builder.features));
+            : Collections.unmodifiableSet(new LinkedHashSet<>(builder.features));
     }
 
     public static UpgradeState empty() {
@@ -64,9 +64,8 @@ public class UpgradeState {
      */
     public static class Builder {
 
-        private final EnumMap<UpgradeAttribute, List<UpgradeModifier>> modifiers = new EnumMap<>(
-            UpgradeAttribute.class);
-        private final EnumSet<StorageFeature> features = EnumSet.noneOf(StorageFeature.class);
+        private final Map<UpgradeAttribute, List<UpgradeModifier>> modifiers = new LinkedHashMap<>();
+        private final Set<StorageFeature> features = new LinkedHashSet<>();
 
         public Builder addModifier(UpgradeAttribute attribute, UpgradeModifier modifier) {
             modifiers.computeIfAbsent(Objects.requireNonNull(attribute, "attribute"), key -> new ArrayList<>())

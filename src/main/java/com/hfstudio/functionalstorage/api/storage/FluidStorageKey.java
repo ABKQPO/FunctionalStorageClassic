@@ -46,7 +46,7 @@ public class FluidStorageKey implements StorageKey {
     }
 
     /**
-     * @return a fresh one-millibucket stack carrying this key's NBT
+     * @return a fresh stack with an amount of one carrying this key's NBT
      */
     @Nonnull
     public FluidStack toFluidStack() {

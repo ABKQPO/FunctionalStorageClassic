@@ -18,10 +18,7 @@ public class FluidDrawerBlock extends DrawerBlock {
     private final DrawerLayout layout;
 
     public FluidDrawerBlock(@Nonnull DrawerLayout layout) {
-        super(
-            layout == DrawerLayout.X_1 ? DrawerFaceLayout.X_1
-                : layout == DrawerLayout.X_2 ? DrawerFaceLayout.X_2 : DrawerFaceLayout.X_4,
-            FunctionalStorage.MOD_ID + ".fluid_" + layout.getSlotCount());
+        super(layout.getFaceLayout(), FunctionalStorage.MOD_ID + ".fluid_" + layout.getSlotCount());
         this.layout = layout;
         setBlockTextureName(FunctionalStorage.MOD_ID + ":fluid_front");
     }

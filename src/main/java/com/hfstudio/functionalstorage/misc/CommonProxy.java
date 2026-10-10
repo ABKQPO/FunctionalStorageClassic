@@ -49,6 +49,7 @@ public class CommonProxy {
     }
 
     public void postInit(FMLPostInitializationEvent event) {
+        RegistrationHandler.registerOptionalFluidGenerationUpgrades();
         if (Mods.InventoryBogoSorter.isModLoaded()) BogoSorterIntegration.register();
         if (FunctionalStorageConfig.COMPATIBILITY.enableThaumcraftCompatibility && Mods.Thaumcraft.isModLoaded()) {
             ThaumcraftIntegration.register();
@@ -72,6 +73,7 @@ public class CommonProxy {
 
     public void onMissingMappings(FMLMissingMappingsEvent event) {
         for (MissingMapping mapping : event.get()) {
+            if (MissingMappingsHandler.remap(mapping)) continue;
             boolean missingEssentia = (!Mods.Thaumcraft.isModLoaded()
                 || !FunctionalStorageConfig.COMPATIBILITY.enableThaumcraftCompatibility)
                 && ("functionalstorage:essentia_1".equals(mapping.name)

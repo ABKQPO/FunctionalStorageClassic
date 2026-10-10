@@ -32,7 +32,7 @@ public class BreakerUpgradeItem extends AutomationUpgradeItem {
     public record PlannedInsert(int slot, BigItemStack stack) {}
 
     public BreakerUpgradeItem() {
-        super("breaker_upgrade", FunctionalStorageConfig.UPGRADES.breakerTick);
+        super("breaker_upgrade", () -> FunctionalStorageConfig.UPGRADES.breakerTick);
     }
 
     @Override

@@ -12,6 +12,7 @@ import com.gtnewhorizon.gtnhlib.client.model.baked.BakedModel;
 import com.hfstudio.functionalstorage.FunctionalStorage;
 import com.hfstudio.functionalstorage.client.model.FramedModelHolder;
 import com.hfstudio.functionalstorage.common.block.base.DrawerBlock;
+import com.hfstudio.functionalstorage.common.storage.DrawerLayout;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
@@ -31,6 +32,11 @@ public class FramedVariantBlock extends DrawerBlock implements FramedBlock {
     @Override
     public Class<? extends TileEntity> getTileEntityClass() {
         return delegate.getTileEntityClass();
+    }
+
+    @Override
+    public DrawerLayout getDrawerLayout() {
+        return delegate.getDrawerLayout();
     }
 
     @Override

@@ -32,7 +32,7 @@ public class RefillUpgradeItem extends AutomationUpgradeItem {
     public RefillUpgradeItem(boolean dimensional) {
         super(
             dimensional ? "dimensional_refill_upgrade" : "refill_upgrade",
-            FunctionalStorageConfig.UPGRADES.refillTick);
+            () -> FunctionalStorageConfig.UPGRADES.refillTick);
         this.dimensional = dimensional;
     }
 

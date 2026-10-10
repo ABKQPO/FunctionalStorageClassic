@@ -63,14 +63,23 @@ public class UpgradeSettings {
 
     public static int getAugmentCount(ItemStack upgrade, String key, int maximum) {
         ItemStack augment = getStack(upgrade, key);
-        return Math.min(Math.max(0, maximum), augment == null ? 0 : Math.max(0, augment.stackSize));
+        return Math.min(getAugmentLimit(key, maximum), augment == null ? 0 : Math.max(0, augment.stackSize));
+    }
+
+    public static int getAugmentLimit(String key, int maximum) {
+        return Math.min(SPEED_AUGMENTS_KEY.equals(key) ? 6 : 64, Math.max(0, maximum));
     }
 
     public static void setStack(ItemStack stack, String key, ItemStack value) {
         if (value == null) {
             tag(stack).removeTag(key);
         } else {
-            tag(stack).setTag(key, value.writeToNBT(new NBTTagCompound()));
+            ItemStack stored = value;
+            if (SPEED_AUGMENTS_KEY.equals(key) && value.stackSize > 6) {
+                stored = value.copy();
+                stored.stackSize = 6;
+            }
+            tag(stack).setTag(key, stored.writeToNBT(new NBTTagCompound()));
         }
     }
 

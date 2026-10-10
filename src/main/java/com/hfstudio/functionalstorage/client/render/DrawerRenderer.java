@@ -1,6 +1,7 @@
 package com.hfstudio.functionalstorage.client.render;
 
 import java.nio.FloatBuffer;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.WeakHashMap;
@@ -120,9 +121,9 @@ public class DrawerRenderer extends TileEntitySpecialRenderer implements IResour
     private final Map<BlockModelKey, Integer> blockModelLists = new LinkedHashMap<>(32, 0.75F, true);
     private final Map<BlockModelKey, Boolean> cacheableBlocks = new LinkedHashMap<>(32, 0.75F, true);
     private final BlockModelKey blockLookupKey = new BlockModelKey();
-    private final BigItemStack[] itemSnapshots = new BigItemStack[DrawerFaceLayout.X_4.getSlotCount()];
+    private BigItemStack[] itemSnapshots = new BigItemStack[DrawerFaceLayout.X_4.getSlotCount()];
     private final SimpleIconBatch simpleIcons = new SimpleIconBatch();
-    private final TextLabel[] textLabels = new TextLabel[DrawerFaceLayout.X_4.getSlotCount()];
+    private TextLabel[] textLabels = new TextLabel[DrawerFaceLayout.X_4.getSlotCount()];
     private int textLabelCount;
     private boolean cachedLightingEnabled;
     private boolean blockTextureBound;
@@ -296,6 +297,10 @@ public class DrawerRenderer extends TileEntitySpecialRenderer implements IResour
             textLabelCount = 0;
 
             DrawerFaceLayout layout = block.getFaceLayout();
+            if (layout.getSlotCount() > itemSnapshots.length) {
+                itemSnapshots = Arrays.copyOf(itemSnapshots, layout.getSlotCount());
+                textLabels = Arrays.copyOf(textLabels, layout.getSlotCount());
+            }
             if (options.isShowItemRender() || options.isShowItemCount()
                 || options.getAdvancedValue(ConfigurationToolItem.ConfigurationAction.INDICATOR) != 0) {
                 IBigItemHandler itemHandler = drawer.getItemHandler();

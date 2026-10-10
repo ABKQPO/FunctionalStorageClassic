@@ -39,11 +39,7 @@ public class FramedDrawerBlock extends DrawerBlock implements IBlockModelProvide
     }
 
     private static DrawerFaceLayout faceLayoutOf(@Nonnull DrawerLayout layout) {
-        return switch (layout) {
-            case X_2 -> DrawerFaceLayout.X_2;
-            case X_4 -> DrawerFaceLayout.X_4;
-            default -> DrawerFaceLayout.X_1;
-        };
+        return layout.getFaceLayout();
     }
 
     @Nonnull

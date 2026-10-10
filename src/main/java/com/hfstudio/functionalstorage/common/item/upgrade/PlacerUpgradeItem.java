@@ -19,7 +19,7 @@ import com.hfstudio.functionalstorage.util.UpgradeTargeting;
 public class PlacerUpgradeItem extends AutomationUpgradeItem {
 
     public PlacerUpgradeItem() {
-        super("placer_upgrade", FunctionalStorageConfig.UPGRADES.placerTick);
+        super("placer_upgrade", () -> FunctionalStorageConfig.UPGRADES.placerTick);
     }
 
     @Override

@@ -294,7 +294,7 @@ public class FluidContainerInteraction {
 
     private static boolean fillRegistered(IBigFluidHandler handler, int slot, ItemStack single,
         Consumer<ItemStack> exchange) {
-        for (int index = slot < 0 ? 0 : slot; index < handler.getStorageCount(); index++) {
+        for (int index = Math.max(slot, 0); index < handler.getStorageCount(); index++) {
             if (slot >= 0 && index != slot) {
                 break;
             }
@@ -328,7 +328,7 @@ public class FluidContainerInteraction {
 
     private static boolean fillMutable(IBigFluidHandler handler, int slot, ItemStack single,
         IFluidContainerItem container, Consumer<ItemStack> exchange) {
-        for (int index = slot < 0 ? 0 : slot; index < handler.getStorageCount(); index++) {
+        for (int index = Math.max(slot, 0); index < handler.getStorageCount(); index++) {
             if (slot >= 0 && index != slot) {
                 break;
             }

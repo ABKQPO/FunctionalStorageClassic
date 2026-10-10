@@ -39,7 +39,7 @@ public class TransferUtil {
             if (available == null || available.getItem() == null) {
                 continue;
             }
-            int request = (int) Math.min(limit, (long) available.stackSize);
+            int request = (int) Math.min(limit, available.stackSize);
             ItemStack extracted = inventory.decrStackSize(slot, request);
             if (extracted == null || extracted.getItem() == null) {
                 continue;

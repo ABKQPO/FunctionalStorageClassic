@@ -1,197 +1,98 @@
 package com.hfstudio.functionalstorage.common.item.upgrade;
 
-import java.util.List;
-import java.util.Locale;
+import java.util.Objects;
+import java.util.function.Function;
+import java.util.function.IntFunction;
+import java.util.function.IntSupplier;
+import java.util.function.LongSupplier;
 
 import javax.annotation.Nonnull;
 
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.init.Blocks;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.StatCollector;
-import net.minecraftforge.fluids.FluidRegistry;
 import net.minecraftforge.fluids.FluidStack;
 
-import com.gtnewhorizon.gtnhlib.util.numberformatting.NumberFormatUtil;
-import com.hfstudio.functionalstorage.api.storage.BigFluidStack;
-import com.hfstudio.functionalstorage.api.storage.BigItemStack;
-import com.hfstudio.functionalstorage.api.storage.IBigFluidHandler;
-import com.hfstudio.functionalstorage.api.storage.IBigItemHandler;
-import com.hfstudio.functionalstorage.api.storage.StorageAction;
-import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
-import com.hfstudio.functionalstorage.config.FunctionalStorageConfig;
-import com.hfstudio.functionalstorage.util.ItemUtil;
-
-import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
 import lombok.Getter;
 
-/** Produces water, cobblestone, or the configured generator item at the selected tier rate. */
-public class GenerationUpgradeItem extends AutomationUpgradeItem {
+/** A tiered resource generator configured by a registered definition. */
+public class GenerationUpgradeItem extends ResourceGenerationUpgradeItem {
 
     @Getter
-    public enum GenerationKind {
-
-        WATER("water_generation_upgrade", 1),
-        STONE("stone_generation_upgrade", 1),
-        UNIVERSAL("universal_item_generation", 1);
+    public static class GenerationKind {
 
         private final String idPrefix;
-        private final int tierCount;
+        private final Function<ItemStack, ItemStack> itemFactory;
+        private final FluidStack fluid;
+        private final LongSupplier[] rates;
+        private final IntSupplier[] intervals;
+        private final IntFunction<String> registryNames;
 
-        GenerationKind(String idPrefix, int tierCount) {
-            this.idPrefix = idPrefix;
-            this.tierCount = tierCount;
+        public GenerationKind(String idPrefix, Function<ItemStack, ItemStack> itemFactory, FluidStack fluid,
+            LongSupplier[] rates, IntSupplier[] intervals) {
+            this(idPrefix, itemFactory, fluid, rates, intervals, tier -> idPrefix + "_" + tier);
         }
 
+        public GenerationKind(String idPrefix, Function<ItemStack, ItemStack> itemFactory, FluidStack fluid,
+            LongSupplier[] rates, IntSupplier[] intervals, IntFunction<String> registryNames) {
+            this.idPrefix = Objects.requireNonNull(idPrefix, "idPrefix");
+            this.itemFactory = Objects.requireNonNull(itemFactory, "itemFactory");
+            this.fluid = fluid == null ? null : fluid.copy();
+            this.registryNames = Objects.requireNonNull(registryNames, "registryNames");
+            if (rates.length == 0 || rates.length != intervals.length) {
+                throw new IllegalArgumentException(
+                    "Generation rates and intervals must define the same nonempty tiers");
+            }
+            this.rates = rates.clone();
+            this.intervals = intervals.clone();
+            for (int index = 0; index < rates.length; index++) {
+                Objects.requireNonNull(this.rates[index], "rate");
+                Objects.requireNonNull(this.intervals[index], "interval");
+            }
+        }
+
+        public int getTierCount() {
+            return rates.length;
+        }
+
+        public FluidStack getFluid() {
+            return fluid == null ? null : fluid.copy();
+        }
+
+        public LongSupplier[] getRates() {
+            return rates.clone();
+        }
+
+        public IntSupplier[] getIntervals() {
+            return intervals.clone();
+        }
     }
 
+    @Getter
     private final GenerationKind kind;
     @Getter
     private final int tier;
 
     public GenerationUpgradeItem(@Nonnull GenerationKind kind, int tier) {
-        super(kind.getIdPrefix() + "_t" + Math.max(1, tier), 1);
+        super(registryName(kind, tier), kind.intervals[tier - 1], null, kind.getFluid(), kind.rates[tier - 1]);
         this.kind = kind;
-        this.tier = Math.max(1, tier);
-    }
-
-    @Nonnull
-    public GenerationKind getKind() {
-        return kind;
+        this.tier = tier;
     }
 
     @Override
-    public boolean hasDirection() {
-        return false;
+    protected ItemStack resolveGeneratedItem(ItemStack upgrade) {
+        return kind.itemFactory.apply(upgrade);
     }
 
     @Override
-    public int getTickInterval() {
-        return kind == GenerationKind.UNIVERSAL ? Math.max(1, FunctionalStorageConfig.UPGRADES.universalGenerationTick)
-            : super.getTickInterval();
-    }
-
-    @Override
-    public void work(@Nonnull ControllableDrawerTile tile, @Nonnull ItemStack stack, int slot) {
-        if (tile.getWorldObj() == null || tile.getWorldObj().isRemote) {
-            return;
-        }
-        switch (kind) {
-            case WATER:
-                generateWater(tile, stack);
-                break;
-            case STONE:
-                generateStone(tile, stack);
-                break;
-            default:
-                generateItem(tile, stack);
-                break;
-        }
-    }
-
-    private void generateWater(@Nonnull ControllableDrawerTile tile, ItemStack upgrade) {
-        if (tile.getFluidHandler() == null || FluidRegistry.WATER == null) {
-            return;
-        }
-        IBigFluidHandler storage = UpgradeSettings.fluidStorage(tile.getFluidHandler(), upgrade);
-        BigFluidStack request = new BigFluidStack(new FluidStack(FluidRegistry.WATER, 1), waterRate(upgrade));
-        if (storage.hasRoomInSingleSlot(request)) {
-            storage.insertIntoSingleSlot(request, StorageAction.EXECUTE);
-        }
-    }
-
-    private void generateStone(@Nonnull ControllableDrawerTile tile, ItemStack upgrade) {
-        if (tile.getItemHandler() == null) {
-            return;
-        }
-        insert(tile, upgrade, new ItemStack(Blocks.cobblestone), stoneRate(upgrade));
-    }
-
-    private void generateItem(@Nonnull ControllableDrawerTile tile, @Nonnull ItemStack stack) {
-        if (tile.getItemHandler() == null) {
-            return;
-        }
-        ItemStack filter = getFilter(stack);
-        ItemStack produced = filter != null ? filter : configuredUniversalItem();
-        if (produced == null || produced.getItem() == null) {
-            return;
-        }
-        insert(tile, stack, produced, scaleAmount(stack, 1));
-    }
-
-    private void insert(@Nonnull ControllableDrawerTile tile, ItemStack upgrade, @Nonnull ItemStack template,
-        long amount) {
-        if (template.getItem() == null || amount <= 0) {
-            return;
-        }
-        IBigItemHandler storage = UpgradeSettings.itemStorage(tile.getItemHandler(), upgrade);
-        BigItemStack request = new BigItemStack(template, amount);
-        if (storage.hasRoomInSingleSlot(request)) {
-            storage.insertIntoSingleSlot(request, StorageAction.EXECUTE);
-        }
-    }
-
-    private ItemStack configuredUniversalItem() {
-        if (!FunctionalStorageConfig.UPGRADES.universalGenerationRegistered) {
-            return null;
-        }
-        String description = FunctionalStorageConfig.UPGRADES.universalGenerationItem;
-        Item item = ItemUtil.itemFromDescription(description);
-        if (item == null) {
-            return null;
-        }
-        return new ItemStack(item, 1, ItemUtil.metadataFromDescription(description));
-    }
-
-    private long waterRate(ItemStack upgrade) {
-        int base = switch (tier) {
-            case 2 -> FunctionalStorageConfig.UPGRADES.waterGenerationTier2;
-            case 3 -> FunctionalStorageConfig.UPGRADES.waterGenerationTier3;
-            case 4 -> FunctionalStorageConfig.UPGRADES.waterGenerationTier4;
-            default -> FunctionalStorageConfig.UPGRADES.waterGenerationTier1;
-        };
-        return scaleAmount(upgrade, base);
-    }
-
-    private long stoneRate(ItemStack upgrade) {
-        int base = switch (tier) {
-            case 2 -> FunctionalStorageConfig.UPGRADES.stoneGenerationTier2;
-            case 3 -> FunctionalStorageConfig.UPGRADES.stoneGenerationTier3;
-            case 4 -> FunctionalStorageConfig.UPGRADES.stoneGenerationTier4;
-            default -> FunctionalStorageConfig.UPGRADES.stoneGenerationTier1;
-        };
-        return scaleAmount(upgrade, base);
-    }
-
-    @Override
-    @SideOnly(Side.CLIENT)
-    @SuppressWarnings({ "unchecked", "rawtypes" })
-    public void addInformation(ItemStack stack, EntityPlayer player, List tooltip, boolean advanced) {
-        super.addInformation(stack, player, tooltip, advanced);
-        if (kind == GenerationKind.WATER) {
-            tooltip.add(
-                StatCollector.translateToLocalFormatted(
-                    "functionalupgrade.desc.generate_fluid",
-                    NumberFormatUtil.formatFluid(waterRate(stack)),
-                    FluidRegistry.WATER.getLocalizedName(new FluidStack(FluidRegistry.WATER, 1))));
-        } else {
-            ItemStack produced = kind == GenerationKind.STONE ? new ItemStack(Blocks.cobblestone) : getFilter(stack);
-            if (produced == null) {
-                produced = configuredUniversalItem();
-            }
-            tooltip.add(
-                produced == null ? StatCollector.translateToLocal("functionalstorage.upgrade.filter_empty")
-                    : StatCollector.translateToLocalFormatted(
-                        "functionalupgrade.desc.generate_item",
-                        kind == GenerationKind.STONE ? stoneRate(stack) : scaleAmount(stack, 1),
-                        produced.getDisplayName()));
-        }
+    public ItemStack getGeneratedItem() {
+        ItemStack item = resolveGeneratedItem(new ItemStack(this));
+        return item == null ? null : item.copy();
     }
 
     @Nonnull
     public static String registryName(@Nonnull GenerationKind kind, int tier) {
-        return (kind.getIdPrefix() + "_t" + tier).toLowerCase(Locale.ROOT);
+        if (tier < 1 || tier > kind.getTierCount()) {
+            throw new IllegalArgumentException("Generator tier is outside its registered definition");
+        }
+        return Objects.requireNonNull(kind.registryNames.apply(tier), "registry name");
     }
 }

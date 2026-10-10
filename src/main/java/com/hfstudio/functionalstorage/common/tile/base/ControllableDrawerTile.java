@@ -736,9 +736,8 @@ public abstract class ControllableDrawerTile extends TileEntity implements Capab
             int slots = block.getFaceLayout()
                 .getSlotCount();
             if (storage.hasKey("DrawerLayout")) {
-                DrawerLayout expected = slots == 4 ? DrawerLayout.X_4
-                    : slots == 2 ? DrawerLayout.X_2 : DrawerLayout.X_1;
-                if (!expected.getId()
+                DrawerLayout expected = block.getDrawerLayout();
+                if (expected != null && !expected.getId()
                     .equals(storage.getString("DrawerLayout"))) {
                     storage.setString("DrawerLayout", expected.getId());
                     readStorageData(storage);

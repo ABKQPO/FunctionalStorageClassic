@@ -17,7 +17,6 @@ import com.hfstudio.functionalstorage.api.upgrade.IStorageUpgrade;
 import com.hfstudio.functionalstorage.api.upgrade.StorageFeature;
 import com.hfstudio.functionalstorage.api.upgrade.UpgradeAttribute;
 import com.hfstudio.functionalstorage.api.upgrade.UpgradeState;
-import com.hfstudio.functionalstorage.common.block.DrawerFaceLayout;
 import com.hfstudio.functionalstorage.common.block.base.DrawerBlock;
 import com.hfstudio.functionalstorage.common.inventory.base.BigFluidHandler;
 import com.hfstudio.functionalstorage.common.storage.DrawerLayout;
@@ -220,9 +219,8 @@ public class FluidDrawerBlockItem extends DrawerBlockItem implements IFluidConta
         if (!(field_150939_a instanceof DrawerBlock drawerBlock)) {
             return DrawerLayout.X_1;
         }
-        DrawerFaceLayout face = drawerBlock.getFaceLayout();
-        return face.getSlotCount() > 2 ? DrawerLayout.X_4
-            : face.getSlotCount() > 1 ? DrawerLayout.X_2 : DrawerLayout.X_1;
+        DrawerLayout layout = drawerBlock.getDrawerLayout();
+        return layout == null ? DrawerLayout.X_1 : layout;
     }
 
     private boolean isSingleContainer(@Nullable ItemStack stack) {

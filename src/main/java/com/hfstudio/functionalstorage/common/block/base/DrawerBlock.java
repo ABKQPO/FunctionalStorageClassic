@@ -37,6 +37,7 @@ import com.hfstudio.functionalstorage.client.model.DrawerModelProvider;
 import com.hfstudio.functionalstorage.common.block.DrawerAttachment;
 import com.hfstudio.functionalstorage.common.block.DrawerFaceLayout;
 import com.hfstudio.functionalstorage.common.integration.serverutilities.ServerUtilitiesIntegration;
+import com.hfstudio.functionalstorage.common.storage.DrawerLayout;
 import com.hfstudio.functionalstorage.common.tile.FluidDrawerTile;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 import com.hfstudio.functionalstorage.config.FunctionalStorageConfig;
@@ -81,6 +82,11 @@ public abstract class DrawerBlock extends BlockContainer implements IBlockModelP
     @Nonnull
     public DrawerFaceLayout getFaceLayout() {
         return faceLayout;
+    }
+
+    @Nullable
+    public DrawerLayout getDrawerLayout() {
+        return DrawerLayout.bySlotCount(faceLayout.getSlotCount());
     }
 
     @Override

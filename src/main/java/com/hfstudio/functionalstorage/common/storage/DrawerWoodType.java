@@ -1,7 +1,7 @@
 package com.hfstudio.functionalstorage.common.storage;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -20,27 +20,27 @@ import com.hfstudio.functionalstorage.api.storage.WoodTypeRegistry;
  * Wood variants a wooden drawer can use. Metadata values match vanilla plank
  * metadata so crafting recipes can use plain plank items.
  */
-public enum DrawerWoodType implements IWoodType {
+public class DrawerWoodType implements IWoodType {
 
-    OAK("oak", null, null, 0, 0),
-    SPRUCE("spruce", null, null, 1, 1),
-    BIRCH("birch", null, null, 2, 2),
-    JUNGLE("jungle", null, null, 3, 3),
-    ACACIA("acacia", null, null, 4, 0),
-    DARK_OAK("dark_oak", null, null, 5, 1),
+    private static final Map<String, DrawerWoodType> BY_ID = new LinkedHashMap<>();
 
-    CRIMSON("crimson", "etfuturum:crimson_stem", "etfuturum:wood_planks", 0, 0),
-    WARPED("warped", "etfuturum:warped_stem", "etfuturum:wood_planks", 0, 1),
-    MANGROVE("mangrove", "etfuturum:mangrove_log", "etfuturum:wood_planks", 0, 2),
-    CHERRY("cherry", "etfuturum:cherry_log", "etfuturum:wood_planks", 0, 3);
+    public static final DrawerWoodType OAK = define(new DrawerWoodType("oak", null, null, 0, 0));
+    public static final DrawerWoodType SPRUCE = define(new DrawerWoodType("spruce", null, null, 1, 1));
+    public static final DrawerWoodType BIRCH = define(new DrawerWoodType("birch", null, null, 2, 2));
+    public static final DrawerWoodType JUNGLE = define(new DrawerWoodType("jungle", null, null, 3, 3));
+    public static final DrawerWoodType ACACIA = define(
+        new DrawerWoodType("acacia", "minecraft:log2", "minecraft:planks", 0, 4));
+    public static final DrawerWoodType DARK_OAK = define(
+        new DrawerWoodType("dark_oak", "minecraft:log2", "minecraft:planks", 1, 5));
 
-    private static final Map<String, DrawerWoodType> BY_ID = new HashMap<>();
-
-    static {
-        for (DrawerWoodType woodType : values()) {
-            BY_ID.put(woodType.id, woodType);
-        }
-    }
+    public static final DrawerWoodType CRIMSON = define(
+        new DrawerWoodType("crimson", "etfuturum:crimson_stem", "etfuturum:wood_planks", 0, 0));
+    public static final DrawerWoodType WARPED = define(
+        new DrawerWoodType("warped", "etfuturum:warped_stem", "etfuturum:wood_planks", 0, 1));
+    public static final DrawerWoodType MANGROVE = define(
+        new DrawerWoodType("mangrove", "etfuturum:mangrove_log", "etfuturum:wood_planks", 0, 2));
+    public static final DrawerWoodType CHERRY = define(
+        new DrawerWoodType("cherry", "etfuturum:cherry_log", "etfuturum:wood_planks", 0, 3));
 
     private final String id;
     @Nullable
@@ -50,7 +50,7 @@ public enum DrawerWoodType implements IWoodType {
     private final int logMetadata;
     private final int plankMetadata;
 
-    DrawerWoodType(String id, @Nullable String logName, @Nullable String planksName, int logMetadata,
+    public DrawerWoodType(String id, @Nullable String logName, @Nullable String planksName, int logMetadata,
         int plankMetadata) {
         this.id = id;
         this.logName = logName;
@@ -97,6 +97,28 @@ public enum DrawerWoodType implements IWoodType {
             }
         }
         return false;
+    }
+
+    private static DrawerWoodType define(DrawerWoodType wood) {
+        if (BY_ID.putIfAbsent(wood.id, wood) != null) {
+            throw new IllegalArgumentException("Wood identifier already defined: " + wood.id);
+        }
+        return wood;
+    }
+
+    public static synchronized DrawerWoodType register(DrawerWoodType wood) {
+        DrawerWoodType existing = BY_ID.get(wood.id);
+        if (existing != null && existing != wood) {
+            throw new IllegalArgumentException("Wood identifier already defined: " + wood.id);
+        }
+        WoodTypeRegistry.add(wood);
+        BY_ID.put(wood.id, wood);
+        return wood;
+    }
+
+    public static synchronized DrawerWoodType[] values() {
+        return BY_ID.values()
+            .toArray(new DrawerWoodType[0]);
     }
 
     public static void registerBuiltIns() {
@@ -157,11 +179,7 @@ public enum DrawerWoodType implements IWoodType {
 
     @Nullable
     private Block vanillaLog() {
-        return switch (this) {
-            case OAK, SPRUCE, BIRCH, JUNGLE -> Blocks.log;
-            case ACACIA, DARK_OAK -> Blocks.log2;
-            default -> null;
-        };
+        return logMetadata < 4 ? Blocks.log : Blocks.log2;
     }
 
     @Nullable

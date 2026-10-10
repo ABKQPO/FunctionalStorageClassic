@@ -180,7 +180,10 @@ public class ContainerUpgrade extends Container implements GhostFilterMenu {
         @Override
         public int getSlotStackLimit() {
             return getSlotIndex() == 0 ? 1
-                : getSlotIndex() == 1 ? getConfiguredAugmentLimit(FunctionalStorageConfig.UPGRADES.maxSpeedAugments)
+                : getSlotIndex() == 1
+                    ? UpgradeSettings.getAugmentLimit(
+                        UpgradeSettings.SPEED_AUGMENTS_KEY,
+                        FunctionalStorageConfig.UPGRADES.maxSpeedAugments)
                     : getConfiguredAugmentLimit(FunctionalStorageConfig.UPGRADES.maxEfficiencyAugments);
         }
 
@@ -203,7 +206,7 @@ public class ContainerUpgrade extends Container implements GhostFilterMenu {
         ItemStack stack = UpgradeSettings.getStack(upgradeStack, key);
         if (stack == null) return null;
         int originalSize = stack.stackSize;
-        stack.stackSize = Math.min(getConfiguredAugmentLimit(maximum), Math.max(0, originalSize));
+        stack.stackSize = Math.min(UpgradeSettings.getAugmentLimit(key, maximum), Math.max(0, originalSize));
         if (stack.stackSize == 0) stack = null;
         if (!tile.getWorldObj().isRemote && originalSize != (stack == null ? 0 : stack.stackSize)) {
             UpgradeSettings.setStack(upgradeStack, key, stack);

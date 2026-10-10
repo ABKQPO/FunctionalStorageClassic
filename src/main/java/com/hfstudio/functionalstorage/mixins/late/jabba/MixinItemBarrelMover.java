@@ -18,8 +18,8 @@ import mcp.mobius.betterbarrels.common.items.dolly.ItemBarrelMover;
 public class MixinItemBarrelMover {
 
     @Inject(method = "isTEMovable", at = @At("HEAD"), cancellable = true, remap = false)
-    private void functionalStorage$isTEMovable(TileEntity tileEntity, CallbackInfoReturnable<Boolean> callbackInfo) {
-        if (tileEntity instanceof ControllableDrawerTile) {
+    private void functionalStorage$isTEMovable(TileEntity te, CallbackInfoReturnable<Boolean> callbackInfo) {
+        if (te instanceof ControllableDrawerTile) {
             callbackInfo.setReturnValue(true);
         }
     }

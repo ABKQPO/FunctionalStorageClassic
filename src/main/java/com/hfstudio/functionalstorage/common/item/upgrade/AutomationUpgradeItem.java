@@ -1,7 +1,9 @@
 package com.hfstudio.functionalstorage.common.item.upgrade;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
+import java.util.function.IntSupplier;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -62,11 +64,15 @@ public class AutomationUpgradeItem extends UpgradeItem implements IStorageUpgrad
         }
     }
 
-    private final int baseTickInterval;
+    private final IntSupplier baseTickInterval;
 
     protected AutomationUpgradeItem(@Nonnull String id, int baseTickInterval) {
+        this(id, () -> baseTickInterval);
+    }
+
+    protected AutomationUpgradeItem(@Nonnull String id, IntSupplier baseTickInterval) {
         super(id);
-        this.baseTickInterval = Math.max(1, baseTickInterval);
+        this.baseTickInterval = Objects.requireNonNull(baseTickInterval, "baseTickInterval");
     }
 
     @Override
@@ -139,13 +145,7 @@ public class AutomationUpgradeItem extends UpgradeItem implements IStorageUpgrad
     }
 
     public int getTickInterval() {
-        return Math.max(1, switch (getId()) {
-            case "breaker_upgrade" -> FunctionalStorageConfig.UPGRADES.breakerTick;
-            case "placer_upgrade" -> FunctionalStorageConfig.UPGRADES.placerTick;
-            case "refill_upgrade", "dimensional_refill_upgrade" -> FunctionalStorageConfig.UPGRADES.refillTick;
-            case "pulling_upgrade", "pushing_upgrade", "wireless_pulling_upgrade", "wireless_pushing_upgrade", "collector_upgrade" -> FunctionalStorageConfig.UPGRADES.upgradeTick;
-            default -> baseTickInterval;
-        });
+        return Math.max(1, baseTickInterval.getAsInt());
     }
 
     public int getTickInterval(ItemStack stack) {

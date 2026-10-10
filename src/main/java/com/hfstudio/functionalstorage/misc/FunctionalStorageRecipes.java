@@ -6,9 +6,11 @@ import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraftforge.fluids.FluidContainerRegistry;
+import net.minecraftforge.fluids.FluidContainerRegistry.FluidContainerData;
+import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.oredict.OreDictionary;
 import net.minecraftforge.oredict.ShapedOreRecipe;
-import net.minecraftforge.oredict.ShapelessOreRecipe;
 
 import com.hfstudio.functionalstorage.api.storage.IWoodType;
 import com.hfstudio.functionalstorage.api.storage.WoodTypeRegistry;
@@ -17,10 +19,12 @@ import com.hfstudio.functionalstorage.common.block.FramedDrawerBlock;
 import com.hfstudio.functionalstorage.common.block.WoodDrawerBlock;
 import com.hfstudio.functionalstorage.common.integration.Mods;
 import com.hfstudio.functionalstorage.common.item.upgrade.GenerationUpgradeItem;
+import com.hfstudio.functionalstorage.common.item.upgrade.ResourceGenerationUpgradeItem;
 import com.hfstudio.functionalstorage.common.recipe.DrawerCleansingRecipe;
 import com.hfstudio.functionalstorage.common.recipe.DrawerCraftingRecipe;
 import com.hfstudio.functionalstorage.common.recipe.FramedDrawerStyleRecipe;
 import com.hfstudio.functionalstorage.common.recipe.UpgradeConversionRecipe;
+import com.hfstudio.functionalstorage.common.storage.DrawerLayout;
 
 import cpw.mods.fml.common.registry.GameRegistry;
 
@@ -80,9 +84,15 @@ public class FunctionalStorageRecipes {
             if (planks == null) {
                 continue;
             }
-            registerWoodDrawer(wood, 1, planks);
-            registerWoodDrawer(wood, 2, planks);
-            registerWoodDrawer(wood, 4, planks);
+            for (WoodDrawerBlock drawer : RegistrationHandler.woodDrawers) {
+                if (drawer.getWoodType() == wood) {
+                    registerWoodDrawer(
+                        wood,
+                        drawer.getDrawerLayout()
+                            .getSlotCount(),
+                        planks);
+                }
+            }
         }
     }
 
@@ -97,29 +107,7 @@ public class FunctionalStorageRecipes {
     }
 
     private static FSItemList drawerEntry(IWoodType wood, int slots) {
-        return switch (wood.getName()) {
-            case "oak" -> slots == 1 ? FSItemList.OakDrawer1
-                : slots == 2 ? FSItemList.OakDrawer2 : FSItemList.OakDrawer4;
-            case "spruce" -> slots == 1 ? FSItemList.SpruceDrawer1
-                : slots == 2 ? FSItemList.SpruceDrawer2 : FSItemList.SpruceDrawer4;
-            case "birch" -> slots == 1 ? FSItemList.BirchDrawer1
-                : slots == 2 ? FSItemList.BirchDrawer2 : FSItemList.BirchDrawer4;
-            case "jungle" -> slots == 1 ? FSItemList.JungleDrawer1
-                : slots == 2 ? FSItemList.JungleDrawer2 : FSItemList.JungleDrawer4;
-            case "acacia" -> slots == 1 ? FSItemList.AcaciaDrawer1
-                : slots == 2 ? FSItemList.AcaciaDrawer2 : FSItemList.AcaciaDrawer4;
-            case "dark_oak" -> slots == 1 ? FSItemList.DarkOakDrawer1
-                : slots == 2 ? FSItemList.DarkOakDrawer2 : FSItemList.DarkOakDrawer4;
-            case "mangrove" -> slots == 1 ? FSItemList.MangroveDrawer1
-                : slots == 2 ? FSItemList.MangroveDrawer2 : FSItemList.MangroveDrawer4;
-            case "cherry" -> slots == 1 ? FSItemList.CherryDrawer1
-                : slots == 2 ? FSItemList.CherryDrawer2 : FSItemList.CherryDrawer4;
-            case "crimson" -> slots == 1 ? FSItemList.CrimsonDrawer1
-                : slots == 2 ? FSItemList.CrimsonDrawer2 : FSItemList.CrimsonDrawer4;
-            case "warped" -> slots == 1 ? FSItemList.WarpedDrawer1
-                : slots == 2 ? FSItemList.WarpedDrawer2 : FSItemList.WarpedDrawer4;
-            default -> null;
-        };
+        return FSItemList.byName(wood.getName() + "_" + slots);
     }
 
     private static void registerFluidDrawerRecipes() {
@@ -265,18 +253,27 @@ public class FunctionalStorageRecipes {
     }
 
     private static void registerStorageUpgradeRecipes() {
-        registerOreRecipe(FSItemList.IronDowngrade.get(), "III", "IDI", "III", 'D', DRAWER_ORE, 'I', "ingotIron");
+        registerOreRecipe(FSItemList.BlankUpgrade.get(), "ISI", "S S", "ISI", 'I', "ingotIron", 'S', "stickWood");
+        registerOreRecipe(
+            FSItemList.IronDowngrade.get(),
+            "III",
+            "IAI",
+            "III",
+            'A',
+            FSItemList.BlankUpgrade.get(),
+            'I',
+            "ingotIron");
         registerOreRecipe(
             FSItemList.CopperUpgrade.get(),
             "IBI",
-            "CDC",
+            "CAC",
             "IBI",
             'B',
             oreOr(ORE_COPPER_BLOCK, Blocks.iron_block),
             'C',
             "chestWood",
-            'D',
-            DRAWER_ORE,
+            'A',
+            FSItemList.BlankUpgrade.get(),
             'I',
             oreOr(ORE_COPPER_INGOT, Items.iron_ingot));
         registerOreRecipe(
@@ -294,9 +291,9 @@ public class FunctionalStorageRecipes {
             "ingotGold");
         registerOreRecipe(
             FSItemList.DiamondUpgrade.get(),
-            "IBI",
+            "BIB",
             "CDC",
-            "IBI",
+            "BIB",
             'B',
             "blockDiamond",
             'C',
@@ -306,96 +303,144 @@ public class FunctionalStorageRecipes {
             'I',
             "gemDiamond");
         registerOreRecipe(
-            FSItemList.MaxStorageUpgrade.get(),
-            "IBI",
+            FSItemList.NetherStarUpgrade.get(),
             "CDC",
+            "DTD",
+            "CDC",
+            'C',
+            "blockDiamond",
+            'D',
+            Items.nether_star,
+            'T',
+            FSItemList.NetheriteUpgrade.get());
+        registerOreRecipe(
+            FSItemList.MaxStorageUpgrade.get(),
+            "IDI",
+            "BNB",
             "IBI",
             'B',
             Items.nether_star,
-            'C',
-            "chestWood",
             'D',
             FSItemList.NetheriteUpgrade.get(),
             'I',
-            "gemDiamond");
+            "gemDiamond",
+            'N',
+            FSItemList.NetherStarUpgrade.get());
     }
 
     private static void registerUtilityUpgradeRecipes() {
-        registerOreRecipe(FSItemList.VoidUpgrade.get(), "III", "IDI", "III", 'D', DRAWER_ORE, 'I', Blocks.obsidian);
+        registerOreRecipe(
+            FSItemList.VoidUpgrade.get(),
+            "III",
+            "IAI",
+            "III",
+            'A',
+            FSItemList.BlankUpgrade.get(),
+            'I',
+            Blocks.obsidian);
         registerOreRecipe(
             FSItemList.RedstoneUpgrade.get(),
             "IBI",
-            "CDC",
+            "CAC",
             "IBI",
             'B',
             Blocks.redstone_block,
             'C',
             Items.comparator,
-            'D',
-            DRAWER_ORE,
+            'A',
+            FSItemList.BlankUpgrade.get(),
             'I',
             "dustRedstone");
         registerOreRecipe(
             FSItemList.PullingUpgrade.get(),
             "ICI",
-            "IDI",
+            "IAI",
             "IBI",
             'B',
             "dustRedstone",
             'C',
             Blocks.hopper,
-            'D',
-            DRAWER_ORE,
+            'A',
+            FSItemList.BlankUpgrade.get(),
             'I',
             Blocks.stone);
         registerOreRecipe(
             FSItemList.PushingUpgrade.get(),
             "IBI",
-            "IDI",
+            "IAI",
             "IRI",
             'B',
             "dustRedstone",
-            'D',
-            DRAWER_ORE,
+            'A',
+            FSItemList.BlankUpgrade.get(),
             'I',
             Blocks.stone,
             'R',
             Blocks.hopper);
-        GameRegistry
-            .addRecipe(new UpgradeConversionRecipe(FSItemList.PullingUpgrade.get(), FSItemList.PushingUpgrade.get()));
-        GameRegistry
-            .addRecipe(new UpgradeConversionRecipe(FSItemList.PushingUpgrade.get(), FSItemList.PullingUpgrade.get()));
-        registerShapeless(FSItemList.WirelessPullingUpgrade.get(), FSItemList.PullingUpgrade.get(), Items.ender_pearl);
-        registerShapeless(FSItemList.WirelessPushingUpgrade.get(), FSItemList.PushingUpgrade.get(), Items.ender_pearl);
+        GameRegistry.addRecipe(
+            new UpgradeConversionRecipe(
+                FSItemList.PullingUpgrade.get(),
+                FSItemList.PushingUpgrade.get(),
+                " U ",
+                " A ",
+                "   ",
+                'U',
+                FSItemList.PushingUpgrade.get(),
+                'A',
+                FSItemList.BlankUpgrade.get()));
+        GameRegistry.addRecipe(
+            new UpgradeConversionRecipe(
+                FSItemList.PushingUpgrade.get(),
+                FSItemList.PullingUpgrade.get(),
+                " U ",
+                " A ",
+                "   ",
+                'U',
+                FSItemList.PullingUpgrade.get(),
+                'A',
+                FSItemList.BlankUpgrade.get()));
+        registerOreRecipe(
+            FSItemList.WirelessPullingUpgrade.get(),
+            " E ",
+            " A ",
+            " U ",
+            'A',
+            FSItemList.BlankUpgrade.get(),
+            'U',
+            FSItemList.PullingUpgrade.get(),
+            'E',
+            Items.ender_pearl);
+        registerOreRecipe(
+            FSItemList.WirelessPushingUpgrade.get(),
+            " E ",
+            " A ",
+            " U ",
+            'A',
+            FSItemList.BlankUpgrade.get(),
+            'U',
+            FSItemList.PushingUpgrade.get(),
+            'E',
+            Items.ender_pearl);
         registerOreRecipe(
             FSItemList.CollectorUpgrade.get(),
             "IBI",
-            "RDR",
+            "RAR",
             "IBI",
             'B',
             Blocks.hopper,
-            'D',
-            DRAWER_ORE,
+            'A',
+            FSItemList.BlankUpgrade.get(),
             'I',
             Blocks.stone,
             'R',
             "dustRedstone");
         registerOreRecipe(
-            FSItemList.OreDictionaryUpgrade.get(),
-            "W W",
-            " C ",
-            "W W",
-            'W',
-            Items.writable_book,
-            'C',
-            Blocks.chest);
-        registerOreRecipe(
             FSItemList.BreakerUpgrade.get(),
             "RSR",
-            "SDS",
+            "SAS",
             "RPR",
-            'D',
-            DRAWER_ORE,
+            'A',
+            FSItemList.BlankUpgrade.get(),
             'P',
             Items.iron_pickaxe,
             'R',
@@ -405,10 +450,10 @@ public class FunctionalStorageRecipes {
         registerOreRecipe(
             FSItemList.PlacerUpgrade.get(),
             "RdR",
-            "dDd",
+            "dAd",
             "RtR",
-            'D',
-            DRAWER_ORE,
+            'A',
+            FSItemList.BlankUpgrade.get(),
             'R',
             "dustRedstone",
             'd',
@@ -418,12 +463,12 @@ public class FunctionalStorageRecipes {
         registerOreRecipe(
             FSItemList.RefillUpgrade.get(),
             "RPR",
-            "PDP",
+            "PAP",
             "RCR",
             'C',
             "chestWood",
-            'D',
-            DRAWER_ORE,
+            'A',
+            FSItemList.BlankUpgrade.get(),
             'P',
             Items.ender_pearl,
             'R',
@@ -431,8 +476,10 @@ public class FunctionalStorageRecipes {
         registerOreRecipe(
             FSItemList.DimensionalRefillUpgrade.get(),
             " W ",
+            "PAP",
             " U ",
-            " P ",
+            'A',
+            FSItemList.BlankUpgrade.get(),
             'P',
             Items.ender_eye,
             'U',
@@ -442,19 +489,21 @@ public class FunctionalStorageRecipes {
         registerOreRecipe(
             FSItemList.SpeedUpgradeAugment.get(),
             "RBR",
-            "BDB",
+            "BAB",
             "RBR",
             'B',
             Items.blaze_powder,
-            'D',
-            DRAWER_ORE,
+            'A',
+            FSItemList.BlankUpgrade.get(),
             'R',
             "dustRedstone");
         registerOreRecipe(
             FSItemList.EfficiencyUpgradeAugment.get(),
-            "DDD",
             "DSD",
+            "DAD",
             "DDD",
+            'A',
+            FSItemList.BlankUpgrade.get(),
             'D',
             "gemDiamond",
             'S',
@@ -465,8 +514,10 @@ public class FunctionalStorageRecipes {
         registerOreRecipe(
             FSItemList.DrippingUpgrade.get(),
             "IBI",
-            "IDI",
+            "DAD",
             "IRI",
+            'A',
+            FSItemList.BlankUpgrade.get(),
             'B',
             Blocks.netherrack,
             'D',
@@ -475,24 +526,66 @@ public class FunctionalStorageRecipes {
             Blocks.stone,
             'R',
             Items.lava_bucket);
-        registerShapeless(
+        registerOreRecipe(
             FSItemList.ObsidianUpgrade.get(),
+            "DWD",
+            " A ",
+            "D D",
+            'A',
+            FSItemList.BlankUpgrade.get(),
+            'D',
             FSItemList.DrippingUpgrade.get(),
-            FSItemList.DrippingUpgrade.get(),
-            FSItemList.DrippingUpgrade.get(),
-            FSItemList.DrippingUpgrade.get(),
+            'W',
             FSItemList.WaterGenerationUpgrade1.get());
         registerGenerationTier(RegistrationHandler.waterGenerationUpgrades, new ItemStack(Items.water_bucket));
         registerGenerationTier(RegistrationHandler.stoneGenerationUpgrades, new ItemStack(Blocks.cobblestone));
+        for (List<ResourceGenerationUpgradeItem> upgrades : RegistrationHandler.getItemGenerationUpgradeGroups()
+            .values()) {
+            ResourceGenerationUpgradeItem first = upgrades.get(0);
+            registerResourceGenerationTier(
+                upgrades,
+                first.getGeneratedItem(),
+                first == RegistrationHandler.obsidianUpgrade);
+        }
+        for (List<ResourceGenerationUpgradeItem> upgrades : RegistrationHandler.getFluidGenerationUpgradeGroups()
+            .values()) {
+            ResourceGenerationUpgradeItem first = upgrades.get(0);
+            registerResourceGenerationTier(
+                upgrades,
+                findFluidContainer(first.getGeneratedFluid()),
+                first == RegistrationHandler.drippingUpgrade);
+        }
     }
 
     private static void registerGenerationTier(List<GenerationUpgradeItem> upgrades, ItemStack resource) {
-        ItemStack core = new ItemStack(Blocks.chest);
+        ItemStack core = FSItemList.BlankUpgrade.get();
         for (GenerationUpgradeItem upgrade : upgrades) {
-            GameRegistry
-                .addRecipe(new ShapedOreRecipe(new ItemStack(upgrade), "RRR", "RCR", "RRR", 'R', resource, 'C', core));
+            registerOreRecipe(new ItemStack(upgrade), "RRR", "RCR", "RRR", 'R', resource, 'C', core);
             core = new ItemStack(upgrade);
         }
+    }
+
+    private static void registerResourceGenerationTier(List<ResourceGenerationUpgradeItem> upgrades, ItemStack resource,
+        boolean hasBaseRecipe) {
+        if (resource == null || resource.getItem() == null) return;
+        ItemStack core = hasBaseRecipe ? new ItemStack(upgrades.get(0)) : FSItemList.BlankUpgrade.get();
+        for (int tier = hasBaseRecipe ? 1 : 0; tier < upgrades.size(); tier++) {
+            ItemStack output = new ItemStack(upgrades.get(tier));
+            registerOreRecipe(output, "RRR", "RCR", "RRR", 'R', resource, 'C', core);
+            core = output;
+        }
+    }
+
+    private static ItemStack findFluidContainer(FluidStack fluid) {
+        if (fluid == null) return null;
+        for (FluidContainerData container : FluidContainerRegistry.getRegisteredFluidContainerData()) {
+            if (container.fluid != null && container.fluid.isFluidEqual(fluid)
+                && container.filledContainer != null
+                && container.filledContainer.getItem() != null) {
+                return container.filledContainer.copy();
+            }
+        }
+        return null;
     }
 
     private static void registerToolRecipes() {
@@ -547,18 +640,15 @@ public class FunctionalStorageRecipes {
         GameRegistry.addRecipe(new ShapedOreRecipe(output, recipe));
     }
 
-    private static void registerShapeless(ItemStack output, Object... ingredients) {
-        GameRegistry.addRecipe(new ShapelessOreRecipe(output, ingredients));
-    }
-
     private static Object oreOr(String preferred, Object fallback) {
         return OreDictionary.getOres(preferred)
             .isEmpty() ? fallback : preferred;
     }
 
     private static Object[] drawerRecipe(int slots, Object center, Object frame) {
-        String[] shape = slots == 1 ? new String[] { "PPP", "PCP", "PPP" }
-            : slots == 2 ? new String[] { "PCP", "PPP", "PCP" } : new String[] { "CPC", "PPP", "CPC" };
+        DrawerLayout layout = DrawerLayout.bySlotCount(slots);
+        if (layout == null) throw new IllegalArgumentException("No registered drawer layout for " + slots + " slots");
+        String[] shape = layout.getRecipePattern();
         return new Object[] { shape[0], shape[1], shape[2], 'C', center, 'P', frame };
     }
 }

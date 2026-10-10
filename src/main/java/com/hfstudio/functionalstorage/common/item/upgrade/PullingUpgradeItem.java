@@ -24,7 +24,9 @@ public class PullingUpgradeItem extends AutomationUpgradeItem {
     private final boolean wireless;
 
     public PullingUpgradeItem(boolean wireless) {
-        super(wireless ? "wireless_pulling_upgrade" : "pulling_upgrade", FunctionalStorageConfig.UPGRADES.upgradeTick);
+        super(
+            wireless ? "wireless_pulling_upgrade" : "pulling_upgrade",
+            () -> FunctionalStorageConfig.UPGRADES.upgradeTick);
         this.wireless = wireless;
     }
 

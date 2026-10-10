@@ -1,7 +1,5 @@
 package com.hfstudio.functionalstorage.api.storage;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -68,7 +66,7 @@ public class ItemStorageView {
             }
         }
         // Unmodifiable because a memoized result is handed to several readers.
-        return Collections.unmodifiableList(new ArrayList<>(byKey.values()));
+        return List.copyOf(byKey.values());
     }
 
     /**

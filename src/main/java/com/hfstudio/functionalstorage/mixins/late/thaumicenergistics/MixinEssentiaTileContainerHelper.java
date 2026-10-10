@@ -21,30 +21,36 @@ import thaumicenergistics.common.integration.tc.EssentiaTileContainerHelper;
 public class MixinEssentiaTileContainerHelper {
 
     @Inject(method = "injectEssentiaIntoContainer", at = @At("HEAD"), cancellable = true, remap = false)
-    private void functionalStorage$insert(IAspectContainer container, int amount, Aspect aspect, Actionable mode,
-        CallbackInfoReturnable<Long> callback) {
+    private void functionalStorage$insert(IAspectContainer container, int amountToFill, Aspect aspectToFill,
+        Actionable mode, CallbackInfoReturnable<Long> callback) {
         if (!FunctionalStorageConfig.COMPATIBILITY.enableAE2Compatibility
             || !FunctionalStorageConfig.COMPATIBILITY.enableThaumcraftCompatibility
             || !(container instanceof ControllableDrawerTile drawer)) return;
         IBigAspectHandler handler = drawer.getAspectHandler();
         if (handler == null) return;
         callback.setReturnValue(
-            aspect == null || amount <= 0 ? 0L
-                : handler.insertRouted(new BigAspectStack(aspect, amount), DrawerMEInventoryHandler.actionOf(mode))
+            aspectToFill == null || amountToFill <= 0 ? 0L
+                : handler
+                    .insertRouted(
+                        new BigAspectStack(aspectToFill, amountToFill),
+                        DrawerMEInventoryHandler.actionOf(mode))
                     .getProcessedAmount());
     }
 
     @Inject(method = "extractFromContainer", at = @At("HEAD"), cancellable = true, remap = false)
-    private void functionalStorage$extract(IAspectContainer container, int amount, Aspect aspect, Actionable mode,
-        CallbackInfoReturnable<Long> callback) {
+    private void functionalStorage$extract(IAspectContainer container, int amountToDrain, Aspect aspectToDrain,
+        Actionable mode, CallbackInfoReturnable<Long> callback) {
         if (!FunctionalStorageConfig.COMPATIBILITY.enableAE2Compatibility
             || !FunctionalStorageConfig.COMPATIBILITY.enableThaumcraftCompatibility
             || !(container instanceof ControllableDrawerTile drawer)) return;
         IBigAspectHandler handler = drawer.getAspectHandler();
         if (handler == null) return;
         callback.setReturnValue(
-            aspect == null || amount <= 0 ? 0L
-                : handler.extractRouted(new BigAspectStack(aspect, amount), DrawerMEInventoryHandler.actionOf(mode))
+            aspectToDrain == null || amountToDrain <= 0 ? 0L
+                : handler
+                    .extractRouted(
+                        new BigAspectStack(aspectToDrain, amountToDrain),
+                        DrawerMEInventoryHandler.actionOf(mode))
                     .getProcessedAmount());
     }
 }

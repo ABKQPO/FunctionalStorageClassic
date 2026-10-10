@@ -29,7 +29,7 @@ public class CollectorUpgradeItem extends AutomationUpgradeItem {
     private static final double COLLECT_RADIUS = 1.5D;
 
     public CollectorUpgradeItem() {
-        super("collector_upgrade", FunctionalStorageConfig.UPGRADES.upgradeTick);
+        super("collector_upgrade", () -> FunctionalStorageConfig.UPGRADES.upgradeTick);
     }
 
     @Override

@@ -9,7 +9,7 @@ import net.minecraftforge.fluids.FluidStack;
 
 /**
  * Immutable fluid snapshot composed of a defensively copied type template and
- * a long amount. A present template always holds one millibucket. A zero
+ * a long amount. A present template always has an amount of one. A zero
  * amount may retain a template to represent a locked filter; negative amounts
  * are clamped to zero. An absent resource is normalized to {@link #empty()}.
  */
@@ -66,7 +66,7 @@ public class BigFluidStack implements StorageSnapshot<BigFluidStack, FluidStorag
      * Returns a fresh copy of the normalized template. Mutating the returned
      * stack or its NBT cannot alter this snapshot.
      *
-     * @return a one-millibucket template, or {@code null}
+     * @return a template with an amount of one, or {@code null}
      */
     @Nullable
     public FluidStack getTemplate() {
