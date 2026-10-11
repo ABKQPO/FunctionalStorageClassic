@@ -358,6 +358,14 @@ public class FunctionalStorageRecipes {
             FSItemList.WarpedDrawer1,
             FSItemList.WarpedDrawer2,
             FSItemList.WarpedDrawer4);
+        registerAdaptiveDrawerRecipes(FSItemList.AdaptiveFluidDrawer1, FSItemList.FluidDrawer1);
+        registerAdaptiveDrawerRecipes(FSItemList.AdaptiveFluidDrawer2, FSItemList.FluidDrawer2);
+        registerAdaptiveDrawerRecipes(FSItemList.AdaptiveFluidDrawer4, FSItemList.FluidDrawer4);
+        if (FunctionalStorageConfig.COMPATIBILITY.enableThaumcraftCompatibility && Mods.Thaumcraft.isModLoaded()) {
+            registerAdaptiveDrawerRecipes(FSItemList.AdaptiveEssentiaDrawer1, FSItemList.EssentiaDrawer1);
+            registerAdaptiveDrawerRecipes(FSItemList.AdaptiveEssentiaDrawer2, FSItemList.EssentiaDrawer2);
+            registerAdaptiveDrawerRecipes(FSItemList.AdaptiveEssentiaDrawer4, FSItemList.EssentiaDrawer4);
+        }
     }
 
     private static void registerAdaptiveDrawerRecipes(FSItemList output, FSItemList... inputs) {

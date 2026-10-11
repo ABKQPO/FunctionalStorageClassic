@@ -78,7 +78,12 @@ public class FSItemList {
     public static final FSItemList AdaptiveCherryDrawer = register("adaptive_cherry_drawer");
     public static final FSItemList AdaptiveCrimsonDrawer = register("adaptive_crimson_drawer");
     public static final FSItemList AdaptiveWarpedDrawer = register("adaptive_warped_drawer");
-    public static final FSItemList AdaptiveEssentiaDrawer = register("adaptive_essentia_drawer");
+    public static final FSItemList AdaptiveFluidDrawer1 = register("adaptive_fluid_1");
+    public static final FSItemList AdaptiveFluidDrawer2 = register("adaptive_fluid_2");
+    public static final FSItemList AdaptiveFluidDrawer4 = register("adaptive_fluid_4");
+    public static final FSItemList AdaptiveEssentiaDrawer1 = register("adaptive_essentia_1");
+    public static final FSItemList AdaptiveEssentiaDrawer2 = register("adaptive_essentia_2");
+    public static final FSItemList AdaptiveEssentiaDrawer4 = register("adaptive_essentia_4");
     public static final FSItemList AdaptiveGrid = register("adaptive_grid");
     public static final FSItemList AdaptiveCraftingGrid = register("adaptive_crafting_grid");
     public static final FSItemList AdaptiveDeposit = register("adaptive_deposit");

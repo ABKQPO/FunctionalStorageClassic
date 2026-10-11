@@ -1,15 +1,22 @@
 package com.hfstudio.functionalstorage.common.tile;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
 import com.hfstudio.functionalstorage.common.integration.AdaptiveLinking;
 import com.hfstudio.functionalstorage.common.storage.DrawerLayout;
+import com.hfstudio.functionalstorage.common.tile.controller.AdaptiveMatrixTile;
 
-/** Essentia drawer that participates in the adaptive matrix network. */
 public class AdaptiveEssentiaDrawerTile extends EssentiaDrawerTile {
 
     private boolean automaticLinkChecked;
 
     public AdaptiveEssentiaDrawerTile() {
-        super(DrawerLayout.X_1);
+        this(DrawerLayout.X_1);
+    }
+
+    public AdaptiveEssentiaDrawerTile(@Nonnull DrawerLayout layout) {
+        super(layout);
     }
 
     @Override
@@ -19,5 +26,27 @@ public class AdaptiveEssentiaDrawerTile extends EssentiaDrawerTile {
             AdaptiveLinking.tryLink(this);
         }
         super.updateEntity();
+    }
+
+    public boolean isAdaptiveDisplayPowered() {
+        AdaptiveMatrixTile matrix = adaptiveMatrix();
+        return matrix != null && matrix.isPowered();
+    }
+
+    @Override
+    protected int getClientModelKey() {
+        return isAdaptiveDisplayPowered() ? 1 : 0;
+    }
+
+    @Nullable
+    private AdaptiveMatrixTile adaptiveMatrix() {
+        int[] position = getAdaptiveMatrixPosition();
+        if (position == null) position = getControllerPosition();
+        if (worldObj == null || position == null || !worldObj.blockExists(position[0], position[1], position[2])) {
+            return null;
+        }
+        return worldObj.getTileEntity(position[0], position[1], position[2]) instanceof AdaptiveMatrixTile matrix
+            ? matrix
+            : null;
     }
 }

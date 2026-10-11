@@ -67,14 +67,13 @@ public class ContainerDrawer extends Container
 
     private static final int PLAYER_ROWS = 3;
     private static final int PLAYER_COLUMNS = 9;
-    private static final int TERMINAL_COLUMNS = 9;
-    private static final int TERMINAL_ROWS = 3;
+    private static final int TERMINAL_COLUMNS = DrawerGuiLayout.TERMINAL_COLUMNS;
+    private static final int TERMINAL_ROWS = DrawerGuiLayout.TERMINAL_ROWS;
     private static final int MAX_VISIBLE_STORAGE_SLOTS = TERMINAL_COLUMNS * TERMINAL_ROWS;
 
     private final ControllableDrawerTile tile;
     @Getter
     private final DrawerGuiLayout layout;
-    private final int playerInventoryY;
     private final IInventory openedInventory;
     private final int storageSlotCount;
     private final InventoryBasic display;
@@ -128,15 +127,10 @@ public class ContainerDrawer extends Container
     private boolean stateDirty = true;
 
     public ContainerDrawer(@Nonnull ControllableDrawerTile tile, @Nonnull EntityPlayer player) {
-        this(tile, player, isAdaptiveTerminal(tile) ? 2 : 0);
+        this(tile, player, false);
     }
 
-    protected ContainerDrawer(@Nonnull ControllableDrawerTile tile, @Nonnull EntityPlayer player, int extraRows) {
-        this(tile, player, extraRows, -1);
-    }
-
-    protected ContainerDrawer(@Nonnull ControllableDrawerTile tile, @Nonnull EntityPlayer player, int extraRows,
-        int playerInventoryY) {
+    protected ContainerDrawer(@Nonnull ControllableDrawerTile tile, @Nonnull EntityPlayer player, boolean crafting) {
         this.tile = tile;
 
         boolean terminal = isAdaptiveTerminal(tile);
@@ -154,9 +148,8 @@ public class ContainerDrawer extends Container
         this.layout = new DrawerGuiLayout(
             storageSlots,
             ((DrawerBlock) tile.getBlockType()).getFaceLayout(),
-            terminal ? TERMINAL_COLUMNS : PLAYER_COLUMNS,
-            extraRows);
-        this.playerInventoryY = playerInventoryY >= 0 ? playerInventoryY : layout.inventoryY();
+            terminal,
+            crafting);
         IInventory storage = display;
         for (int index = 0; index < storageSlots; index++) {
             addSlotToContainer(new StorageSlot(storage, index, layout.storageX(index), layout.storageY(index)));
@@ -173,7 +166,7 @@ public class ContainerDrawer extends Container
             addSlotToContainer(new UpgradeSlot(utilityUpgrades, slot, false, 114 + slot * 18, upgradeY));
         }
 
-        int playerTop = this.playerInventoryY;
+        int playerTop = layout.inventoryY();
         for (int row = 0; row < PLAYER_ROWS; row++) {
             for (int column = 0; column < PLAYER_COLUMNS; column++) {
                 addSlotToContainer(
@@ -192,10 +185,6 @@ public class ContainerDrawer extends Container
 
     public int getVisibleStorageSlots() {
         return visibleStorageSlots();
-    }
-
-    public int getPlayerInventoryY() {
-        return playerInventoryY;
     }
 
     protected int playerInventoryEnd() {

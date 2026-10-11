@@ -33,11 +33,11 @@ import com.gtnewhorizon.gtnhlib.client.model.unbaked.UnbakedModel;
 import com.hfstudio.functionalstorage.FunctionalStorage;
 import com.hfstudio.functionalstorage.common.block.AdaptiveDrawerBlock;
 import com.hfstudio.functionalstorage.common.block.DrawerFaceLayout;
-import com.hfstudio.functionalstorage.common.block.WoodDrawerBlock;
-import com.hfstudio.functionalstorage.common.presentation.AdaptiveDisplayProvider;
 import com.hfstudio.functionalstorage.common.tile.AdaptiveCraftingGridTile;
+import com.hfstudio.functionalstorage.common.tile.AdaptiveDrawerTile;
+import com.hfstudio.functionalstorage.common.tile.AdaptiveEssentiaDrawerTile;
+import com.hfstudio.functionalstorage.common.tile.AdaptiveFluidDrawerTile;
 import com.hfstudio.functionalstorage.common.tile.AdaptiveGridTile;
-import com.hfstudio.functionalstorage.common.tile.WoodDrawerTile;
 import com.hfstudio.functionalstorage.common.tile.controller.AdaptiveMatrixTile;
 
 import cpw.mods.fml.relauncher.Side;
@@ -117,17 +117,22 @@ public class DrawerModelProvider implements IBlockModelProvider, IResourceManage
     }
 
     private static String adaptiveModelName(Block block, Object tile) {
-        if (tile instanceof WoodDrawerTile woodDrawer && tile instanceof AdaptiveDisplayProvider provider
-            && (block instanceof AdaptiveDrawerBlock || block instanceof WoodDrawerBlock)) {
-            DrawerFaceLayout layout = provider.getAdaptiveDisplayLayout();
-            if (layout == null && block instanceof AdaptiveDrawerBlock) layout = woodDrawer.getDrawerLayout()
+        if (tile instanceof AdaptiveDrawerTile drawer && block instanceof AdaptiveDrawerBlock adaptive) {
+            DrawerFaceLayout layout = drawer.getAdaptiveDisplayLayout();
+            if (layout == null) layout = drawer.getDrawerLayout()
                 .getFaceLayout();
-            String wood = adaptiveWoodName(block);
-            if (layout == null || wood == null) return null;
-            return "adaptive_" + wood
+            return "adaptive_" + adaptive.getWoodName()
                 + "_drawer"
                 + modelSuffix(layout)
-                + (woodDrawer.isAdaptiveDisplayPowered() ? "" : "_offline");
+                + (drawer.isAdaptiveDisplayPowered() ? "" : "_offline");
+        }
+        if (tile instanceof AdaptiveFluidDrawerTile fluid) {
+            return "adaptive_fluid_" + fluid.getDrawerLayout()
+                .getSlotCount() + (fluid.isAdaptiveDisplayPowered() ? "_online" : "_offline");
+        }
+        if (tile instanceof AdaptiveEssentiaDrawerTile essentia) {
+            return "adaptive_essentia_" + essentia.getDrawerLayout()
+                .getSlotCount() + (essentia.isAdaptiveDisplayPowered() ? "_online" : "_offline");
         }
         if (tile instanceof AdaptiveMatrixTile matrix) {
             return "adaptive_controller_" + (matrix.isPowered() ? "online" : "offline");
@@ -138,18 +143,6 @@ public class DrawerModelProvider implements IBlockModelProvider, IResourceManage
             return base + (matrix != null && matrix.isPowered() ? "online" : "offline");
         }
         return null;
-    }
-
-    private static String adaptiveWoodName(Block block) {
-        if (block instanceof WoodDrawerBlock woodDrawer) return woodDrawer.getWoodType()
-            .getName();
-        String id = Block.blockRegistry.getNameForObject(block);
-        if (id == null) return null;
-        int separator = id.indexOf(':');
-        String path = separator < 0 ? id : id.substring(separator + 1);
-        if ("adaptive_drawer".equals(path)) return "spruce";
-        if (!path.startsWith("adaptive_") || !path.endsWith("_drawer")) return null;
-        return path.substring("adaptive_".length(), path.length() - "_drawer".length());
     }
 
     private static String modelSuffix(DrawerFaceLayout layout) {

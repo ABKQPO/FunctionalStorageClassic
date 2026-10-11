@@ -96,6 +96,7 @@ public abstract class ControllableDrawerTile extends TileEntity implements Capab
     private StorageSubscription storageSubscription = StorageSubscription.CLOSED;
     private IStorageHandler<?, ?> subscribedStorage;
     private boolean pendingUpdatePacket;
+    private int lastClientModelKey = Integer.MIN_VALUE;
     private boolean layoutValidated;
     private IInventory inventoryView;
     private final ItemSink itemSink = new DrawerItemSink(this::getItemHandler);
@@ -646,7 +647,11 @@ public abstract class ControllableDrawerTile extends TileEntity implements Capab
             layoutValidated = true;
             reconcileBlockLayout();
         }
-        if (worldObj == null || worldObj.isRemote) {
+        if (worldObj == null) {
+            return;
+        }
+        if (worldObj.isRemote) {
+            refreshClientModel();
             return;
         }
         for (int slot = 0; slot < utilityUpgrades.length; slot++) {
@@ -743,11 +748,21 @@ public abstract class ControllableDrawerTile extends TileEntity implements Capab
         worldObj.func_147453_f(xCoord, yCoord, zCoord, block);
     }
 
-    /**
-     * Schedules at most one update packet for the next tick.
-     */
     protected final void requestUpdatePacket() {
         pendingUpdatePacket = true;
+    }
+
+    protected int getClientModelKey() {
+        return 0;
+    }
+
+    private void refreshClientModel() {
+        int key = getClientModelKey();
+        if (key == lastClientModelKey) {
+            return;
+        }
+        lastClientModelKey = key;
+        worldObj.markBlockRangeForRenderUpdate(xCoord, yCoord, zCoord, xCoord, yCoord, zCoord);
     }
 
     private void flushPendingUpdatePacket() {

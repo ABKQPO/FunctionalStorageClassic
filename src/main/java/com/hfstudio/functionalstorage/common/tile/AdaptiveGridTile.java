@@ -83,7 +83,7 @@ public class AdaptiveGridTile extends ControllerExtensionTile {
 
     @Override
     public boolean openGui(@Nonnull EntityPlayer player) {
-        if (worldObj == null || worldObj.isRemote || matrix() == null) return false;
+        if (worldObj == null || worldObj.isRemote) return false;
         player.openGui(FunctionalStorage.instance, GuiHandler.GUI_DRAWER, worldObj, xCoord, yCoord, zCoord);
         return true;
     }
@@ -128,6 +128,12 @@ public class AdaptiveGridTile extends ControllerExtensionTile {
 
     public void tryAutoLink() {
         AdaptiveLinking.tryLink(this);
+    }
+
+    @Override
+    protected int getClientModelKey() {
+        AdaptiveMatrixTile matrix = matrix();
+        return matrix != null && matrix.isPowered() ? 1 : 0;
     }
 
     @Override

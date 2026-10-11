@@ -36,15 +36,21 @@ public class ContainerAdaptiveCrafting extends ContainerDrawer {
     private int refillTarget = 1;
 
     public ContainerAdaptiveCrafting(AdaptiveCraftingGridTile tile, EntityPlayer player) {
-        super(tile, player, 1, 147);
+        super(tile, player, true);
         craftingTile = tile;
         crafting = new TerminalCraftingInventory(this, tile.getCraftingInventory());
         playerStart = getVisibleStorageSlots() + tile.getStorageUpgradeSlots() + tile.getUtilityUpgradeSlots();
         resultSlot = inventorySlots.size();
-        addSlotToContainer(new RefillingCraftingSlot(player, 134, 96));
+        addSlotToContainer(
+            new RefillingCraftingSlot(player, DrawerGuiLayout.CRAFTING_RESULT_X, DrawerGuiLayout.CRAFTING_RESULT_Y));
         ingredientStart = inventorySlots.size();
         for (int index = 0; index < 9; index++) {
-            addSlotToContainer(new Slot(crafting, index, 26 + index % 3 * 18, 78 + index / 3 * 18));
+            addSlotToContainer(
+                new Slot(
+                    crafting,
+                    index,
+                    DrawerGuiLayout.CRAFTING_MATRIX_X + index % 3 * 18,
+                    DrawerGuiLayout.CRAFTING_MATRIX_Y + index / 3 * 18));
         }
         onCraftMatrixChanged(crafting);
     }

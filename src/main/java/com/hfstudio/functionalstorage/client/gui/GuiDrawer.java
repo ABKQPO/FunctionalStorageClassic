@@ -60,10 +60,15 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
 
     private static final int WINDOW_WIDTH = 176;
     private static final int LABEL_COLOUR = 0x404040;
+    private static final int CONTROL_HEIGHT = 14;
+    private static final int CONTROL_WIDTH = 40;
+    private static final int CONTROL_PITCH = CONTROL_WIDTH + 2;
 
     private GuiTextField priority;
     private final ControllableDrawerTile tile;
     private final DrawerGuiLayout layout;
+    private final boolean terminal;
+    private final boolean crafting;
     private final DrawerInfoPanel info;
     private final StorageTooltipPainter previews = StorageTooltipPainter.INSTANCE;
     private GuiButton adaptiveModeButton;
@@ -89,8 +94,11 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
         this.tile = tile;
         this.info = new DrawerInfoPanel(tile);
         this.layout = ((ContainerDrawer) inventorySlots).getLayout();
-        this.xSize = tile instanceof AdaptiveMatrixTile || tile instanceof AdaptiveGridTile ? 193 : WINDOW_WIDTH;
-        this.ySize = tile instanceof AdaptiveCraftingGridTile ? 229 : layout.height();
+        this.terminal = layout.isTerminal();
+        this.crafting = tile instanceof AdaptiveCraftingGridTile;
+        this.xSize = terminal ? DrawerGuiLayout.TERMINAL_WIDTH : WINDOW_WIDTH;
+        this.ySize = !terminal ? layout.height()
+            : crafting ? DrawerGuiLayout.CRAFTING_TERMINAL_HEIGHT : DrawerGuiLayout.TERMINAL_HEIGHT;
     }
 
     @Nonnull
@@ -106,26 +114,43 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
         priority.setText(Integer.toString(tile.getPriority()));
         priority.setVisible(!(tile instanceof StorageNetworkTile));
         priority.setEnabled(!(tile instanceof StorageNetworkTile));
-        if (tile instanceof AdaptiveMatrixTile || tile instanceof AdaptiveGridTile) {
-            search = new GuiTextField(fontRendererObj, guiLeft + 95, guiTop + 7, 66, 12);
+        if (terminal) {
+            search = new GuiTextField(
+                fontRendererObj,
+                guiLeft + DrawerGuiLayout.TERMINAL_SEARCH_X,
+                guiTop + DrawerGuiLayout.TERMINAL_SEARCH_Y,
+                DrawerGuiLayout.TERMINAL_SEARCH_WIDTH,
+                DrawerGuiLayout.TERMINAL_SEARCH_HEIGHT);
             search.setMaxStringLength(50);
             search.setEnableBackgroundDrawing(false);
         }
-        if ((tile instanceof AdaptiveMatrixTile || tile instanceof AdaptiveGridTile)
-            && !(tile instanceof AdaptiveCraftingGridTile)) {
-            int y = guiTop + 94;
-            adaptiveModeButton = new GuiButton(200, guiLeft + 8, y, 78, 20, "");
-            adaptiveSortButton = new GuiButton(201, guiLeft + 90, y, 78, 20, "");
-            adaptiveLayoutButton = new GuiButton(202, guiLeft + 8, y + 22, 78, 20, "");
-            adaptiveOrderButton = new GuiButton(203, guiLeft + 90, y + 22, 78, 20, "");
+        if (terminal && !crafting) {
+            // Buttons sit in the strip that adaptivePanel stretches open between
+            // the resource grid and the player inventory.
+            int y = guiTop + DrawerGuiLayout.TERMINAL_STRIP_Y + 2;
+            adaptiveModeButton = new GuiButton(200, guiLeft + 6, y, CONTROL_WIDTH, CONTROL_HEIGHT, "");
+            adaptiveSortButton = new GuiButton(201, guiLeft + 6 + CONTROL_PITCH, y, CONTROL_WIDTH, CONTROL_HEIGHT, "");
+            adaptiveLayoutButton = new GuiButton(
+                202,
+                guiLeft + 6 + CONTROL_PITCH * 2,
+                y,
+                CONTROL_WIDTH,
+                CONTROL_HEIGHT,
+                "");
+            adaptiveOrderButton = new GuiButton(
+                203,
+                guiLeft + 6 + CONTROL_PITCH * 3,
+                y,
+                CONTROL_WIDTH,
+                CONTROL_HEIGHT,
+                "");
             buttonList.add(adaptiveModeButton);
             buttonList.add(adaptiveSortButton);
             buttonList.add(adaptiveLayoutButton);
             buttonList.add(adaptiveOrderButton);
             updateAdaptiveModeButton();
         }
-        ContainerDrawer menu = (ContainerDrawer) inventorySlots;
-        if (menu.isTransferViewVirtual()) {
+        if (terminal) {
             updateSearch(0);
         }
     }
@@ -229,14 +254,18 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
     @Override
     protected void drawGuiContainerBackgroundLayer(float partialTicks, int mouseX, int mouseY) {
         DrawerGuiTextures textures = DrawerGuiTextures.INSTANCE;
-        if (search != null) textures.adaptivePanel(
-            guiLeft,
-            guiTop,
-            xSize,
-            ySize,
-            tile instanceof AdaptiveCraftingGridTile,
-            ((ContainerDrawer) inventorySlots).getPlayerInventoryY());
-        else textures.panel(guiLeft, guiTop, xSize, ySize);
+        if (terminal) {
+            textures.adaptivePanel(guiLeft, guiTop, xSize, ySize, crafting);
+            for (int row = 0; row < DrawerGuiLayout.TERMINAL_ROWS; row++) {
+                textures.adaptiveRow(
+                    guiLeft + DrawerGuiLayout.TERMINAL_GRID_X - 1,
+                    guiTop + DrawerGuiLayout.TERMINAL_GRID_Y - 1 + row * 18);
+            }
+            search.drawTextBox();
+            drawScrollbar();
+            return;
+        }
+        textures.panel(guiLeft, guiTop, xSize, ySize);
         boolean drawerFace = !(tile instanceof StorageNetworkTile) && tile.getActiveStorage() != null
             && tile.getActiveStorage()
                 .getStorageCount() <= 4;
@@ -252,12 +281,9 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
         for (int index = 0; index < inventorySlots.inventorySlots.size(); index++) {
             Slot slot = inventorySlots.inventorySlots.get(index);
             if (drawerFace && index < storageSlots) continue;
-            if (search != null) continue;
             textures.slot(guiLeft + slot.xDisplayPosition, guiTop + slot.yDisplayPosition);
         }
         priority.drawTextBox();
-        if (search != null) search.drawTextBox();
-        if (search != null) drawScrollbar();
     }
 
     @Override
@@ -267,13 +293,22 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
                 StatCollector.translateToLocal(
                     tile.getBlockType()
                         .getUnlocalizedName() + ".name"),
-                search == null ? 160 : 84),
+                terminal ? DrawerGuiLayout.TERMINAL_SEARCH_X - 10 : 160),
             8,
             6,
             LABEL_COLOUR);
+        fontRendererObj.drawString(
+            StatCollector.translateToLocal("container.inventory"),
+            8,
+            layout.inventoryY() - 12,
+            LABEL_COLOUR);
+        if (terminal) {
+            drawTerminalForeground();
+            return;
+        }
         if (priority.getVisible()) fontRendererObj
             .drawString(StatCollector.translateToLocal("gui.functionalstorage.priority"), 114, 20, LABEL_COLOUR);
-        if (tile instanceof DrawerControllerTile && search == null) fontRendererObj.drawString(
+        if (tile instanceof DrawerControllerTile) fontRendererObj.drawString(
             StatCollector.translateToLocal("gui.functionalstorage.storage_range"),
             10,
             layout.upgradeY() - 11,
@@ -288,36 +323,26 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
             114,
             layout.upgradeY() - 11,
             LABEL_COLOUR);
-        fontRendererObj.drawString(
-            StatCollector.translateToLocal("container.inventory"),
-            8,
-            ((ContainerDrawer) inventorySlots).getPlayerInventoryY() - 12,
-            LABEL_COLOUR);
-        if (tile instanceof StorageNetworkTile && !(tile instanceof AdaptiveMatrixTile)
-            && !(tile instanceof AdaptiveGridTile)) {
+        if (tile instanceof StorageNetworkTile || displayStorage() == null) {
             return;
         }
-        if (search != null) {
-            if (AdaptiveMatrixTile.usesRf()) {
-                String energy = StatCollector.translateToLocalFormatted(
-                    "functionalstorage.gui.adaptive.energy",
-                    StorageAmountFormatter.formatDisplay(menu().getRfStored(), false),
-                    StorageAmountFormatter.formatDisplay(menu().getRfCapacity(), false),
-                    StorageAmountFormatter.formatDisplay(menu().getRfCost(), false));
-                float scale = Math.min(1F, 160F / Math.max(1, fontRendererObj.getStringWidth(energy)));
-                GL11.glPushMatrix();
-                GL11.glTranslatef(8F, 130F, 0F);
-                GL11.glScalef(scale, scale, 1F);
-                fontRendererObj.drawString(energy, 0, 0, LABEL_COLOUR);
-                GL11.glPopMatrix();
-            }
-            if (!menu().isOnline()) {
-                String offline = StatCollector.translateToLocal("functionalstorage.gui.adaptive.offline");
-                fontRendererObj.drawString(offline, 80 - fontRendererObj.getStringWidth(offline) / 2, 50, 0xAA3333);
-                return;
-            }
-        } else if (displayStorage() == null) return;
-        ContainerDrawer menu = (ContainerDrawer) inventorySlots;
+        drawEntries();
+    }
+
+    private void drawTerminalForeground() {
+        if (!menu().isOnline()) {
+            String offline = StatCollector.translateToLocal("functionalstorage.gui.adaptive.offline");
+            int centreX = DrawerGuiLayout.TERMINAL_GRID_X + DrawerGuiLayout.TERMINAL_COLUMNS * 9;
+            int centreY = DrawerGuiLayout.TERMINAL_GRID_Y + DrawerGuiLayout.TERMINAL_ROWS * 9 - 4;
+            fontRendererObj
+                .drawString(offline, centreX - fontRendererObj.getStringWidth(offline) / 2, centreY, 0xAA3333);
+            return;
+        }
+        drawEntries();
+    }
+
+    private void drawEntries() {
+        ContainerDrawer menu = menu();
         for (int slot = 0; slot < menu.getVisibleStorageSlots(); slot++) {
             Entry entry = entry(slot);
             if (entry == null) {
@@ -328,13 +353,12 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
             if (entry.fluid() != null || entry.aspect() != null || entry.item() != null && transferAmount(slot) == 0L) {
                 previews.drawEntry(new Entry(entry.item(), entry.fluid(), entry.aspect(), ""), x, y);
             }
-            String amount = search != null ? entry.amount()
-                : entry.amount() + "/" + formatAmount(transferCapacity(slot));
+            String amount = terminal ? entry.amount() : entry.amount() + "/" + formatAmount(transferCapacity(slot));
             GL11.glPushMatrix();
             GL11.glTranslatef(0F, 0F, 200F);
             float scale = Math
-                .min(0.72F, (search != null ? 16F : 33.12F) / Math.max(1, fontRendererObj.getStringWidth(amount)));
-            GL11.glTranslatef(x + 8, y + (search != null ? 10 : 16), 0);
+                .min(0.72F, (terminal ? 16F : 33.12F) / Math.max(1, fontRendererObj.getStringWidth(amount)));
+            GL11.glTranslatef(x + 8, y + (terminal ? 10 : 16), 0);
             GL11.glScalef(scale, scale, 1F);
             fontRendererObj.drawStringWithShadow(amount, -fontRendererObj.getStringWidth(amount) / 2, 0, 0xFFFFFF);
             GL11.glPopMatrix();
@@ -346,6 +370,7 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
         if (!Mouse.isButtonDown(0)) scrolling = false;
         if (scrolling) scrollTo(mouseY);
         super.drawScreen(mouseX, mouseY, partialTicks);
+        drawControlTooltip(mouseX, mouseY);
         if (Mods.NotEnoughItems.isModLoaded()) {
             return;
         }
@@ -357,6 +382,43 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
             return;
         }
         List<String> lines = storageTooltipLines(mouseX, mouseY);
+        if (!lines.isEmpty()) {
+            drawHoveringText(lines, mouseX, mouseY, fontRendererObj);
+        }
+    }
+
+    private void drawControlTooltip(int mouseX, int mouseY) {
+        if (adaptiveModeButton == null) {
+            return;
+        }
+        List<String> lines = new ArrayList<>();
+        if (adaptiveModeButton.func_146115_a()) {
+            lines.add(StatCollector.translateToLocal("functionalstorage.gui.adaptive.mode.button"));
+            lines.add(
+                EnumChatFormatting.GRAY + StatCollector.translateToLocal(
+                    menu().isOnline() ? "functionalstorage.gui.adaptive.online"
+                        : "functionalstorage.gui.adaptive.offline"));
+            if (AdaptiveMatrixTile.usesRf()) {
+                lines.add(
+                    EnumChatFormatting.GRAY + StatCollector.translateToLocalFormatted(
+                        "functionalstorage.gui.adaptive.energy",
+                        StorageAmountFormatter.formatDisplay(menu().getRfStored(), false),
+                        StorageAmountFormatter.formatDisplay(menu().getRfCapacity(), false),
+                        StorageAmountFormatter.formatDisplay(menu().getRfCost(), false)));
+            }
+            if (menu().getUnassignedDisplayResources() > 0) {
+                lines.add(
+                    EnumChatFormatting.GRAY + StatCollector.translateToLocalFormatted(
+                        "functionalstorage.gui.adaptive.unassigned",
+                        menu().getUnassignedDisplayResources()));
+            }
+        } else if (adaptiveSortButton.func_146115_a()) {
+            lines.add(StatCollector.translateToLocal("functionalstorage.gui.adaptive.sort.button"));
+        } else if (adaptiveLayoutButton.func_146115_a()) {
+            lines.add(StatCollector.translateToLocal("functionalstorage.gui.adaptive.layout.button"));
+        } else if (adaptiveOrderButton.func_146115_a()) {
+            lines.add(StatCollector.translateToLocal("functionalstorage.gui.adaptive.order.button"));
+        }
         if (!lines.isEmpty()) {
             drawHoveringText(lines, mouseX, mouseY, fontRendererObj);
         }
@@ -386,7 +448,7 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
             && !(tile instanceof AdaptiveGridTile)) {
             return List.of();
         }
-        if (search == null && displayStorage() == null) return List.of();
+        if (!terminal && displayStorage() == null) return List.of();
         Slot hovered = storageSlotAt(mouseX, mouseY);
         if (hovered == null) {
             return List.of();
@@ -461,16 +523,18 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
             consumeMouseButton(button);
             return;
         }
-        if (search != null) {
+        if (terminal) {
             search.mouseClicked(mouseX, mouseY, button);
             if (search.isFocused()) {
                 consumeMouseButton(button);
                 return;
             }
-            if (button == 0 && mouseX >= guiLeft + 174
-                && mouseX < guiLeft + 186
-                && mouseY >= guiTop + 20
-                && mouseY < guiTop + 92) {
+            if (button == 0 && mouseX >= guiLeft + DrawerGuiLayout.TERMINAL_SCROLLBAR_X
+                && mouseX < guiLeft + DrawerGuiLayout.TERMINAL_SCROLLBAR_X + DrawerGuiLayout.TERMINAL_SCROLLBAR_WIDTH
+                && mouseY >= guiTop + DrawerGuiLayout.TERMINAL_SCROLLBAR_Y
+                && mouseY < guiTop + DrawerGuiLayout.TERMINAL_SCROLLBAR_Y
+                    + DrawerGuiLayout.TERMINAL_SCROLLBAR_TRAVEL
+                    + DrawerGuiLayout.TERMINAL_SCROLLBAR_HEIGHT) {
                 scrolling = true;
                 scrollTo(mouseY);
                 return;
@@ -491,7 +555,7 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
     @Override
     public void handleMouseInput() {
         super.handleMouseInput();
-        if (search == null) return;
+        if (!terminal) return;
         int wheel = Mouse.getEventDWheel();
         if (wheel != 0 && !StorageShortcutInput.handlesWheel(this)) {
             updateSearch(menu().getScrollRow() + (wheel > 0 ? -1 : 1));
@@ -500,7 +564,11 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
 
     private void scrollTo(int mouseY) {
         int max = menu().getMaxScrollRow();
-        int row = max == 0 ? 0 : Math.round((mouseY - guiTop - 25.5F) / 57F * max);
+        // The handle centre tracks the cursor, so the usable track starts half a
+        // handle below the top of the bar.
+        float top = guiTop + DrawerGuiLayout.TERMINAL_SCROLLBAR_Y + DrawerGuiLayout.TERMINAL_SCROLLBAR_HEIGHT / 2F;
+        int row = max == 0 ? 0 : Math.round((mouseY - top) / DrawerGuiLayout.TERMINAL_SCROLLBAR_TRAVEL * max);
+        row = Math.max(0, Math.min(max, row));
         if (row != requestedRow) updateSearch(row);
     }
 
@@ -512,8 +580,14 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
             : scrolling ? DrawerGuiTextures.ADAPTIVE_SCROLLBAR_CLICKED : DrawerGuiTextures.ADAPTIVE_SCROLLBAR;
         mc.getTextureManager()
             .bindTexture(scrollTexture);
-        int offset = max == 0 ? 0 : Math.round(57F * row / max);
-        drawTexturedModalRect(guiLeft + 174, guiTop + 20 + offset, 0, 0, 12, 15);
+        int offset = max == 0 ? 0 : Math.round((float) DrawerGuiLayout.TERMINAL_SCROLLBAR_TRAVEL * row / max);
+        drawTexturedModalRect(
+            guiLeft + DrawerGuiLayout.TERMINAL_SCROLLBAR_X,
+            guiTop + DrawerGuiLayout.TERMINAL_SCROLLBAR_Y + offset,
+            0,
+            0,
+            DrawerGuiLayout.TERMINAL_SCROLLBAR_WIDTH,
+            DrawerGuiLayout.TERMINAL_SCROLLBAR_HEIGHT);
     }
 
     private ContainerDrawer menu() {
@@ -524,10 +598,9 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
         ContainerDrawer menu = menu();
         if (!menu.isSnapshotReady()) return;
         requestedRow = Math.max(0, Math.min(row, menu.getMaxScrollRow()));
-        String text = search == null ? ""
-            : search.getText()
-                .trim()
-                .toLowerCase(Locale.ROOT);
+        String text = search.getText()
+            .trim()
+            .toLowerCase(Locale.ROOT);
         if (text.isEmpty()) {
             lastQuery = "";
             matchedResources = new int[0];
@@ -666,7 +739,7 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
     }
 
     private int contentX(int slot) {
-        return search != null || tile.getItemHandler() != null ? layout.storageX(slot)
+        return terminal || tile.getItemHandler() != null ? layout.storageX(slot)
             : 64 + Math.round(
                 ((DrawerBlock) tile.getBlockType()).getFaceLayout()
                     .getSlotX(slot) * 48F)
@@ -674,7 +747,7 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
     }
 
     private int contentY(int slot) {
-        return search != null || tile.getItemHandler() != null ? layout.storageY(slot)
+        return terminal || tile.getItemHandler() != null ? layout.storageY(slot)
             : 16 + Math.round(
                 ((DrawerBlock) tile.getBlockType()).getFaceLayout()
                     .getSlotY(slot) * 48F)
@@ -784,12 +857,12 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
 
     private void updateAdaptiveModeButton() {
         if (adaptiveModeButton == null) return;
-        String mode = StatCollector.translateToLocal("functionalstorage.gui.adaptive.mode." + terminalMode());
-        adaptiveModeButton.displayString = StatCollector
-            .translateToLocalFormatted("functionalstorage.gui.adaptive.mode.button", mode);
-        adaptiveSortButton.displayString = buttonLabel("sort", menu().getSortId());
-        adaptiveLayoutButton.displayString = buttonLabel("layout", menu().getLayoutId());
-        adaptiveOrderButton.displayString = buttonLabel("order", menu().getOrderId());
+        // The strip is narrow, so a button shows only its current value; the
+        // category it belongs to is named in its hover tooltip.
+        adaptiveModeButton.displayString = buttonLabel("mode", terminalMode());
+        adaptiveSortButton.displayString = buttonLabel("presentation.sort", menu().getSortId());
+        adaptiveLayoutButton.displayString = buttonLabel("presentation.layout", menu().getLayoutId());
+        adaptiveOrderButton.displayString = buttonLabel("presentation.order", menu().getOrderId());
     }
 
     private String terminalMode() {
@@ -799,11 +872,9 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
     }
 
     private String buttonLabel(String group, String id) {
-        String value = StatCollector
-            .translateToLocal("functionalstorage.gui.adaptive.presentation." + group + "." + id);
         return fontRendererObj.trimStringToWidth(
-            StatCollector.translateToLocalFormatted("functionalstorage.gui.adaptive." + group + ".button", value),
-            70);
+            StatCollector.translateToLocal("functionalstorage.gui.adaptive." + group + "." + id),
+            CONTROL_WIDTH - 6);
     }
 
     @Nonnull

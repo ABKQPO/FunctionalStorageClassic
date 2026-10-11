@@ -31,6 +31,7 @@ import com.hfstudio.functionalstorage.common.block.AdaptiveCraftingGridBlock;
 import com.hfstudio.functionalstorage.common.block.AdaptiveDepositBlock;
 import com.hfstudio.functionalstorage.common.block.AdaptiveDrawerBlock;
 import com.hfstudio.functionalstorage.common.block.AdaptiveEssentiaDrawerBlock;
+import com.hfstudio.functionalstorage.common.block.AdaptiveFluidDrawerBlock;
 import com.hfstudio.functionalstorage.common.block.AdaptiveGridBlock;
 import com.hfstudio.functionalstorage.common.block.ArmoryCabinetBlock;
 import com.hfstudio.functionalstorage.common.block.DrawerBlockProperties;
@@ -104,6 +105,8 @@ public class RegistrationHandler {
     public static final List<WoodDrawerBlock> woodDrawers = new ArrayList<>();
     public static final List<FluidDrawerBlock> fluidDrawers = new ArrayList<>();
     public static final List<EssentiaDrawerBlock> essentiaDrawers = new ArrayList<>();
+    public static final List<AdaptiveFluidDrawerBlock> adaptiveFluidDrawers = new ArrayList<>();
+    public static final List<AdaptiveEssentiaDrawerBlock> adaptiveEssentiaDrawers = new ArrayList<>();
     public static final List<FramedDrawerBlock> framedDrawers = new ArrayList<>();
     public static final List<DrawerBlock> specialDrawers = new ArrayList<>();
 
@@ -118,7 +121,6 @@ public class RegistrationHandler {
     public static DrawerBlock adaptiveGrid;
     public static DrawerBlock adaptiveCraftingGrid;
     public static DrawerBlock adaptiveDeposit;
-    public static DrawerBlock adaptiveEssentiaDrawer;
 
     public static UpgradeItem blankUpgrade;
     public static UpgradeItem adaptiveUpgrade;
@@ -211,42 +213,15 @@ public class RegistrationHandler {
             specialDrawers.add(adaptiveDrawer);
             FSItemList.AdaptiveDrawer.set(adaptiveDrawer);
 
-            registerAdaptiveDrawerVariant(
-                "adaptive_oak_drawer",
-                "adaptive_oak_front_4_online",
-                FSItemList.AdaptiveOakDrawer);
-            registerAdaptiveDrawerVariant(
-                "adaptive_birch_drawer",
-                "adaptive_birch_front_4_online",
-                FSItemList.AdaptiveBirchDrawer);
-            registerAdaptiveDrawerVariant(
-                "adaptive_jungle_drawer",
-                "adaptive_jungle_front_4_online",
-                FSItemList.AdaptiveJungleDrawer);
-            registerAdaptiveDrawerVariant(
-                "adaptive_acacia_drawer",
-                "adaptive_acacia_front_4_online",
-                FSItemList.AdaptiveAcaciaDrawer);
-            registerAdaptiveDrawerVariant(
-                "adaptive_dark_oak_drawer",
-                "adaptive_dark_oak_front_4_online",
-                FSItemList.AdaptiveDarkOakDrawer);
-            registerAdaptiveDrawerVariant(
-                "adaptive_mangrove_drawer",
-                "adaptive_mangrove_front_4_online",
-                FSItemList.AdaptiveMangroveDrawer);
-            registerAdaptiveDrawerVariant(
-                "adaptive_cherry_drawer",
-                "adaptive_cherry_front_4_online",
-                FSItemList.AdaptiveCherryDrawer);
-            registerAdaptiveDrawerVariant(
-                "adaptive_crimson_drawer",
-                "adaptive_crimson_front_4_online",
-                FSItemList.AdaptiveCrimsonDrawer);
-            registerAdaptiveDrawerVariant(
-                "adaptive_warped_drawer",
-                "adaptive_warped_front_4_online",
-                FSItemList.AdaptiveWarpedDrawer);
+            registerAdaptiveDrawerVariant("adaptive_oak_drawer", "oak", FSItemList.AdaptiveOakDrawer);
+            registerAdaptiveDrawerVariant("adaptive_birch_drawer", "birch", FSItemList.AdaptiveBirchDrawer);
+            registerAdaptiveDrawerVariant("adaptive_jungle_drawer", "jungle", FSItemList.AdaptiveJungleDrawer);
+            registerAdaptiveDrawerVariant("adaptive_acacia_drawer", "acacia", FSItemList.AdaptiveAcaciaDrawer);
+            registerAdaptiveDrawerVariant("adaptive_dark_oak_drawer", "dark_oak", FSItemList.AdaptiveDarkOakDrawer);
+            registerAdaptiveDrawerVariant("adaptive_mangrove_drawer", "mangrove", FSItemList.AdaptiveMangroveDrawer);
+            registerAdaptiveDrawerVariant("adaptive_cherry_drawer", "cherry", FSItemList.AdaptiveCherryDrawer);
+            registerAdaptiveDrawerVariant("adaptive_crimson_drawer", "crimson", FSItemList.AdaptiveCrimsonDrawer);
+            registerAdaptiveDrawerVariant("adaptive_warped_drawer", "warped", FSItemList.AdaptiveWarpedDrawer);
 
             adaptiveGrid = new AdaptiveGridBlock();
             GameRegistry.registerBlock(adaptiveGrid, DrawerBlockItem.class, "adaptive_grid");
@@ -263,11 +238,22 @@ public class RegistrationHandler {
             specialDrawers.add(adaptiveDeposit);
             FSItemList.AdaptiveDeposit.set(adaptiveDeposit);
 
+            for (DrawerLayout layout : DrawerLayout.values()) {
+                AdaptiveFluidDrawerBlock block = new AdaptiveFluidDrawerBlock(layout);
+                adaptiveFluidDrawers.add(block);
+                String name = "adaptive_fluid_" + layout.getSlotCount();
+                GameRegistry.registerBlock(block, FluidDrawerBlockItem.class, name);
+                registerFsItemList(name, block);
+            }
+
             if (FunctionalStorageConfig.COMPATIBILITY.enableThaumcraftCompatibility && Mods.Thaumcraft.isModLoaded()) {
-                adaptiveEssentiaDrawer = new AdaptiveEssentiaDrawerBlock();
-                GameRegistry.registerBlock(adaptiveEssentiaDrawer, DrawerBlockItem.class, "adaptive_essentia_drawer");
-                specialDrawers.add(adaptiveEssentiaDrawer);
-                FSItemList.AdaptiveEssentiaDrawer.set(adaptiveEssentiaDrawer);
+                for (DrawerLayout layout : DrawerLayout.values()) {
+                    AdaptiveEssentiaDrawerBlock block = new AdaptiveEssentiaDrawerBlock(layout);
+                    adaptiveEssentiaDrawers.add(block);
+                    String name = "adaptive_essentia_" + layout.getSlotCount();
+                    GameRegistry.registerBlock(block, DrawerBlockItem.class, name);
+                    registerFsItemList(name, block);
+                }
             }
         }
 
@@ -335,8 +321,8 @@ public class RegistrationHandler {
             .set(block);
     }
 
-    private static void registerAdaptiveDrawerVariant(String id, String frontTexture, FSItemList item) {
-        AdaptiveDrawerBlock block = new AdaptiveDrawerBlock(id, frontTexture);
+    private static void registerAdaptiveDrawerVariant(String id, String woodName, FSItemList item) {
+        AdaptiveDrawerBlock block = new AdaptiveDrawerBlock(id, woodName, "adaptive_" + woodName + "_front_4_online");
         GameRegistry.registerBlock(block, DrawerBlockItem.class, id);
         specialDrawers.add(block);
         item.set(block);
@@ -468,15 +454,37 @@ public class RegistrationHandler {
                 .registerTileEntity(block.getTileEntityClass(), FunctionalStorage.MOD_ID + "." + block.getDrawerId());
         }
         for (FluidDrawerBlock block : fluidDrawers) {
-            String tileId = FunctionalStorage.MOD_ID + ".fluid_"
+            GameRegistry.registerTileEntity(
+                block.getTileEntityClass(),
+                FunctionalStorage.MOD_ID + ".fluid_"
+                    + block.getDrawerLayout()
+                        .getSlotCount());
+        }
+        for (AdaptiveFluidDrawerBlock block : adaptiveFluidDrawers) {
+            String tileId = FunctionalStorage.MOD_ID + ".adaptive_fluid_"
                 + block.getDrawerLayout()
                     .getSlotCount();
             if (block.getDrawerLayout()
-                .getSlotCount() == 4) {
+                .getSlotCount() == 1) {
+                // 0.1.0 shipped a single, layout-less adaptive fluid drawer.
                 GameRegistry.registerTileEntityWithAlternatives(
                     block.getTileEntityClass(),
                     tileId,
                     FunctionalStorage.MOD_ID + ".adaptive_fluid_drawer");
+            } else {
+                GameRegistry.registerTileEntity(block.getTileEntityClass(), tileId);
+            }
+        }
+        for (AdaptiveEssentiaDrawerBlock block : adaptiveEssentiaDrawers) {
+            String tileId = FunctionalStorage.MOD_ID + ".adaptive_essentia_"
+                + block.getDrawerLayout()
+                    .getSlotCount();
+            if (block.getDrawerLayout()
+                .getSlotCount() == 1) {
+                GameRegistry.registerTileEntityWithAlternatives(
+                    block.getTileEntityClass(),
+                    tileId,
+                    FunctionalStorage.MOD_ID + ".adaptive_essentia_drawer");
             } else {
                 GameRegistry.registerTileEntity(block.getTileEntityClass(), tileId);
             }
@@ -813,6 +821,8 @@ public class RegistrationHandler {
         blocks.addAll(fluidDrawers);
         blocks.addAll(framedDrawers);
         blocks.addAll(essentiaDrawers);
+        blocks.addAll(adaptiveFluidDrawers);
+        blocks.addAll(adaptiveEssentiaDrawers);
         blocks.addAll(specialDrawers);
         return blocks;
     }

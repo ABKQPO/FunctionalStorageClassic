@@ -15,9 +15,12 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.ChatComponentTranslation;
+import net.minecraft.util.StatCollector;
 import net.minecraftforge.common.util.ForgeDirection;
 import net.minecraftforge.fluids.IFluidHandler;
 
+import com.gtnewhorizon.gtnhlib.util.numberformatting.NumberFormatUtil;
 import com.hfstudio.functionalstorage.api.storage.BigItemStack;
 import com.hfstudio.functionalstorage.api.storage.ConnectedDrawerScope;
 import com.hfstudio.functionalstorage.api.storage.IBigAspectHandler;
@@ -30,6 +33,7 @@ import com.hfstudio.functionalstorage.api.storage.TransferResult;
 import com.hfstudio.functionalstorage.common.block.DrawerFaceLayout;
 import com.hfstudio.functionalstorage.common.integration.AdaptiveLinking;
 import com.hfstudio.functionalstorage.common.integration.Mods;
+import com.hfstudio.functionalstorage.common.interaction.ToolFeedback;
 import com.hfstudio.functionalstorage.common.presentation.AdaptiveDisplayEntry;
 import com.hfstudio.functionalstorage.common.presentation.AdaptiveDisplayProvider;
 import com.hfstudio.functionalstorage.common.presentation.AdaptivePresentationPlan;
@@ -64,7 +68,7 @@ public class AdaptiveMatrixTile extends DrawerControllerTile implements IEnergyR
     public static final String TERMINAL_ASPECTS = "aspects";
 
     private int energy;
-    private boolean powered = true;
+    private boolean powered;
     private String presentationSort = AdaptivePresentationRegistry.SORT_COUNT;
     private String presentationLayout = AdaptivePresentationRegistry.LAYOUT_BALANCED;
     private String presentationOrder = AdaptivePresentationRegistry.ORDER_UP;
@@ -430,6 +434,36 @@ public class AdaptiveMatrixTile extends DrawerControllerTile implements IEnergyR
             updatePowerState();
         }
         super.updateEntity();
+    }
+
+    @Override
+    public boolean onSlotActivated(EntityPlayer player, int side, float x, float y, float z, int slot) {
+        if (worldObj != null && !worldObj.isRemote && player.getHeldItem() == null) {
+            ToolFeedback.send(
+                player,
+                new ChatComponentTranslation(
+                    usesRf() ? "functionalstorage.adaptive.matrix.status.rf"
+                        : "functionalstorage.adaptive.matrix.status",
+                    StatCollector.translateToLocal(
+                        isPowered() ? "functionalstorage.gui.adaptive.online"
+                            : "functionalstorage.gui.adaptive.offline"),
+                    NumberFormatUtil.formatNumberCompact(getDrawerCount()),
+                    NumberFormatUtil.formatNumberCompact(energy),
+                    NumberFormatUtil.formatNumberCompact(getMaxEnergyStored()),
+                    NumberFormatUtil.formatNumberCompact(getEnergyCostPerTick())));
+            return true;
+        }
+        return super.onSlotActivated(player, side, x, y, z, slot);
+    }
+
+    @Override
+    public boolean openGui(@Nonnull EntityPlayer player) {
+        return false;
+    }
+
+    @Override
+    protected int getClientModelKey() {
+        return isPowered() ? 1 : 0;
     }
 
     @Optional.Method(modid = "CoFHCore")

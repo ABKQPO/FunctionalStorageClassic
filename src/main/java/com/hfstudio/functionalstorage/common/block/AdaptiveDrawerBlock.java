@@ -12,19 +12,24 @@ import com.hfstudio.functionalstorage.FunctionalStorage;
 import com.hfstudio.functionalstorage.common.block.base.DrawerBlock;
 import com.hfstudio.functionalstorage.common.tile.AdaptiveDrawerTile;
 
+import lombok.Getter;
+
 public class AdaptiveDrawerBlock extends DrawerBlock {
 
+    private final String id;
+    @Getter
+    private final String woodName;
+
     public AdaptiveDrawerBlock() {
-        this("adaptive_drawer", "spruce_front_4");
+        this("adaptive_drawer", "spruce", "adaptive_spruce_front_4_online");
     }
 
-    public AdaptiveDrawerBlock(@Nonnull String id, @Nonnull String frontTexture) {
+    public AdaptiveDrawerBlock(@Nonnull String id, @Nonnull String woodName, @Nonnull String frontTexture) {
         super(DrawerFaceLayout.X_4, FunctionalStorage.MOD_ID + "." + id);
         setBlockTextureName(FunctionalStorage.MOD_ID + ":" + frontTexture);
         this.id = id;
+        this.woodName = woodName;
     }
-
-    private final String id;
 
     @Nonnull
     @Override

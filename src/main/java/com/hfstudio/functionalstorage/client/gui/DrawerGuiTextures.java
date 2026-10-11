@@ -35,6 +35,7 @@ import com.gtnewhorizon.gtnhlib.client.renderer.cel.model.quad.ModelQuadView;
 import com.gtnewhorizon.gtnhlib.client.renderer.cel.model.quad.properties.ModelQuadFacing;
 import com.hfstudio.functionalstorage.FunctionalStorage;
 import com.hfstudio.functionalstorage.common.block.FramedBlock;
+import com.hfstudio.functionalstorage.common.container.DrawerGuiLayout;
 import com.hfstudio.functionalstorage.common.storage.FramedDrawerStyle;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 
@@ -47,6 +48,9 @@ public class DrawerGuiTextures extends Gui implements IResourceManagerReloadList
     public static final ResourceLocation ADAPTIVE_GRID = new ResourceLocation(
         FunctionalStorage.MOD_ID,
         "textures/gui/grid.png");
+    public static final ResourceLocation ADAPTIVE_GRID_ROW = new ResourceLocation(
+        FunctionalStorage.MOD_ID,
+        "textures/gui/grid/row.png");
     public static final ResourceLocation ADAPTIVE_CRAFTING_GRID = new ResourceLocation(
         FunctionalStorage.MOD_ID,
         "textures/gui/crafting_grid.png");
@@ -59,6 +63,8 @@ public class DrawerGuiTextures extends Gui implements IResourceManagerReloadList
     public static final ResourceLocation ADAPTIVE_SCROLLBAR_DISABLED = new ResourceLocation(
         FunctionalStorage.MOD_ID,
         "textures/gui/widget/scrollbar_disabled.png");
+    private static final int ROW_WIDTH = 162;
+    private static final int ROW_HEIGHT = 18;
     private final Map<Block, ResourceLocation> fronts = new HashMap<>();
     private final Cache<FrontKey, List<ModelQuadView>> framedFronts = CacheBuilder.newBuilder()
         .maximumSize(256)
@@ -76,35 +82,25 @@ public class DrawerGuiTextures extends Gui implements IResourceManagerReloadList
     }
 
     public void adaptivePanel(int x, int y, int width, int height, boolean crafting) {
-        adaptivePanel(x, y, width, height, crafting, crafting ? 147 : height - 82);
-    }
-
-    public void adaptivePanel(int x, int y, int width, int height, boolean crafting, int playerInventoryY) {
-        ResourceLocation texture = crafting ? ADAPTIVE_CRAFTING_GRID : ADAPTIVE_GRID;
-        bind(texture);
-        int sourceHeight = crafting ? 229 : 172;
-        int topHeight = Math.min(height, 73);
-        if (topHeight > 0) region(x, y, width, topHeight, 0, 0, 193, topHeight);
-        if (height <= 73) return;
-
         if (crafting) {
-            int bottomHeight = Math.min(height - 73, sourceHeight - 73);
-            if (bottomHeight > 0) {
-                region(x, y + 73, width, bottomHeight, 0, 73, 193, bottomHeight);
-            }
+            bind(ADAPTIVE_CRAFTING_GRID);
+            region(x, y, width, height, 0, 0, width, height);
             return;
         }
+        bind(ADAPTIVE_GRID);
+        // Everything above the filler row, then the filler row repeated to open
+        // the control strip, then the remainder of the texture.
+        int filler = DrawerGuiLayout.TERMINAL_STRIP_FILLER_Y;
+        int inserted = DrawerGuiLayout.TERMINAL_CONTROL_STRIP;
+        region(x, y, width, filler, 0, 0, width, filler);
+        region(x, y + filler, width, inserted, 0, filler, width, 1);
+        int below = DrawerGuiLayout.TERMINAL_TEXTURE_HEIGHT - filler;
+        region(x, y + filler + inserted, width, below, 0, filler, width, below);
+    }
 
-        int backgroundStart = Math.max(73, playerInventoryY - 1);
-        int spacerHeight = backgroundStart - 73;
-        if (spacerHeight > 0) {
-            region(x, y + 73, width, spacerHeight, 0, 73, 193, 16);
-        }
-        int bottomStart = y + 73 + spacerHeight;
-        int bottomHeight = Math.min(height - 73 - spacerHeight, sourceHeight - 89);
-        if (bottomHeight > 0) {
-            region(x, bottomStart, width, bottomHeight, 0, 89, 193, sourceHeight - 89);
-        }
+    public void adaptiveRow(int x, int y) {
+        bind(ADAPTIVE_GRID_ROW);
+        func_152125_a(x, y, 0F, 0F, ROW_WIDTH, ROW_HEIGHT, ROW_WIDTH, ROW_HEIGHT, ROW_WIDTH, ROW_HEIGHT);
     }
 
     public void slot(int x, int y) {

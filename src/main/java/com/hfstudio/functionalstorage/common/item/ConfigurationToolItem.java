@@ -16,7 +16,7 @@ import net.minecraft.world.World;
 
 import com.hfstudio.functionalstorage.common.block.base.DrawerBlock;
 import com.hfstudio.functionalstorage.common.interaction.ToolFeedback;
-import com.hfstudio.functionalstorage.common.tile.WoodDrawerTile;
+import com.hfstudio.functionalstorage.common.tile.AdaptiveDrawerTile;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 
 import cpw.mods.fml.relauncher.Side;
@@ -94,13 +94,14 @@ public class ConfigurationToolItem extends LayeredToolItem {
         }
         ConfigurationAction action = getAction(stack);
         if (action == ConfigurationAction.ADAPTIVE_RESERVATION) {
-            if (!(drawer instanceof WoodDrawerTile wood) || !(world.getBlock(x, y, z) instanceof DrawerBlock block))
-                return false;
+            if (!(drawer instanceof AdaptiveDrawerTile adaptive)
+                || !(world.getBlock(x, y, z) instanceof DrawerBlock block)) return false;
             int cell = block.getHitSlot(world, x, y, z, player);
             ToolFeedback.send(
                 player,
                 new ChatComponentTranslation(
-                    "configurationtool.adaptive_reservation." + wood.configureDisplayCell(cell, player.isSneaking())));
+                    "configurationtool.adaptive_reservation."
+                        + adaptive.configureDisplayCell(cell, player.isSneaking())));
             return true;
         }
         drawer.applyConfiguration(action);

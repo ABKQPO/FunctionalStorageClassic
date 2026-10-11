@@ -38,22 +38,27 @@ public class MissingMappingsHandler {
         if (FunctionalStorageConfig.ADAPTIVE.enabled) {
             registerLegacyBlock("adaptive_controller", RegistrationHandler.adaptiveMatrix);
             registerItem("adaptive_controller", Item.getItemFromBlock(RegistrationHandler.adaptiveMatrix));
+            registerLegacyBlock("adaptive_spruce_drawer", RegistrationHandler.adaptiveDrawer);
+            registerItem("adaptive_spruce_drawer", Item.getItemFromBlock(RegistrationHandler.adaptiveDrawer));
+            Block adaptiveFluid = RegistrationHandler.adaptiveFluidDrawers.get(0);
+            registerLegacyBlock("adaptive_fluid_drawer", adaptiveFluid);
+            registerItem("adaptive_fluid_drawer", Item.getItemFromBlock(adaptiveFluid));
+            if (!RegistrationHandler.adaptiveEssentiaDrawers.isEmpty()) {
+                Block adaptiveEssentia = RegistrationHandler.adaptiveEssentiaDrawers.get(0);
+                registerLegacyBlock("adaptive_essentia_drawer", adaptiveEssentia);
+                registerItem("adaptive_essentia_drawer", Item.getItemFromBlock(adaptiveEssentia));
+            }
+        } else {
+            registerLegacyBlock("adaptive_fluid_drawer", RegistrationHandler.fluidDrawers.get(0));
+            registerItem("adaptive_fluid_drawer", Item.getItemFromBlock(RegistrationHandler.fluidDrawers.get(0)));
         }
-        registerLegacyBlock("adaptive_fluid_drawer", RegistrationHandler.fluidDrawers.get(0));
         registerLegacyBlock("adaptive_armory", RegistrationHandler.armoryCabinet);
         registerLegacyBlock("adaptive_extender", RegistrationHandler.controllerExtension);
         registerLegacyBlock("adaptive_range_extender", RegistrationHandler.controllerExtension);
-        if (FunctionalStorageConfig.ADAPTIVE.enabled) {
-            registerLegacyBlock("adaptive_spruce_drawer", RegistrationHandler.adaptiveDrawer);
-        }
 
-        registerItem("adaptive_fluid_drawer", Item.getItemFromBlock(RegistrationHandler.fluidDrawers.get(0)));
         registerItem("adaptive_armory", Item.getItemFromBlock(RegistrationHandler.armoryCabinet));
         registerItem("adaptive_extender", Item.getItemFromBlock(RegistrationHandler.controllerExtension));
         registerItem("adaptive_range_extender", Item.getItemFromBlock(RegistrationHandler.controllerExtension));
-        if (FunctionalStorageConfig.ADAPTIVE.enabled) {
-            registerItem("adaptive_spruce_drawer", Item.getItemFromBlock(RegistrationHandler.adaptiveDrawer));
-        }
     }
 
     public static void registerItem(String legacyId, Item replacement) {
