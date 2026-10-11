@@ -37,7 +37,6 @@ import com.hfstudio.functionalstorage.common.presentation.AdaptivePresentationRe
 import com.hfstudio.functionalstorage.common.tile.AdaptiveDepositTile;
 import com.hfstudio.functionalstorage.common.tile.AdaptiveDrawerTile;
 import com.hfstudio.functionalstorage.common.tile.AdaptiveGridTile;
-import com.hfstudio.functionalstorage.common.tile.AdaptiveRangeExtenderTile;
 import com.hfstudio.functionalstorage.common.tile.ArmoryCabinetTile;
 import com.hfstudio.functionalstorage.common.tile.EssentiaDrawerTile;
 import com.hfstudio.functionalstorage.common.tile.FluidDrawerTile;
@@ -82,7 +81,7 @@ public class AdaptiveMatrixTile extends DrawerControllerTile implements IEnergyR
     private int cachedLinkingRange = -1;
 
     public static boolean usesRf() {
-        return FunctionalStorageConfig.ADAPTIVE.enabled && Mods.CoFHCore.isModLoaded();
+        return FunctionalStorageConfig.ADAPTIVE.enableRfPower && Mods.CoFHCore.isModLoaded();
     }
 
     @Override
@@ -112,11 +111,7 @@ public class AdaptiveMatrixTile extends DrawerControllerTile implements IEnergyR
     @Override
     public int getLinkingRange() {
         if (cachedLinkingRange >= 0) return cachedLinkingRange;
-        int base = Math.max(1, FunctionalStorageConfig.ADAPTIVE.linkingRange);
-        int extenderRange = Math.max(0, FunctionalStorageConfig.ADAPTIVE.rangeExtenderBonus);
-        long range = base + (long) extenderRange * linkedExtenderCount();
-        cachedLinkingRange = (int) Math
-            .min(Math.max(1, FunctionalStorageConfig.ADAPTIVE.maximumLinkingRange), Math.min(Integer.MAX_VALUE, range));
+        cachedLinkingRange = Math.max(1, FunctionalStorageConfig.ADAPTIVE.linkingRange);
         return cachedLinkingRange;
     }
 
@@ -130,16 +125,7 @@ public class AdaptiveMatrixTile extends DrawerControllerTile implements IEnergyR
         if (linkFunctionalController(x, y, z, remove)) {
             return true;
         }
-        boolean alreadyLinked = drawers.contains(pack(x, y, z));
-        boolean linked = super.linkDrawer(x, y, z, remove);
-        if (linked && !remove
-            && !alreadyLinked
-            && worldObj != null
-            && !worldObj.isRemote
-            && worldObj.getTileEntity(x, y, z) instanceof AdaptiveRangeExtenderTile) {
-            refreshAdaptiveCoverage();
-        }
-        return linked;
+        return super.linkDrawer(x, y, z, remove);
     }
 
     private boolean linkFunctionalController(int x, int y, int z, boolean remove) {
@@ -209,11 +195,6 @@ public class AdaptiveMatrixTile extends DrawerControllerTile implements IEnergyR
             }
         }
         return result;
-    }
-
-    public void refreshAdaptiveCoverage() {
-        automaticLinkChecked = false;
-        linkNearbyDrawers();
     }
 
     @Nonnull
@@ -528,23 +509,7 @@ public class AdaptiveMatrixTile extends DrawerControllerTile implements IEnergyR
             || drawer instanceof AdaptiveGridTile
             || drawer instanceof FluidDrawerTile
             || drawer instanceof ArmoryCabinetTile
-            || drawer instanceof AdaptiveRangeExtenderTile
             || (Mods.Thaumcraft.isModLoaded() && drawer instanceof EssentiaDrawerTile);
-    }
-
-    private int linkedExtenderCount() {
-        if (worldObj == null) return 0;
-        int count = 0;
-        for (long position : getDrawers()) {
-            int x = ConnectedDrawerScope.unpackX(position);
-            int y = ConnectedDrawerScope.unpackY(position);
-            int z = ConnectedDrawerScope.unpackZ(position);
-            if (worldObj.blockExists(x, y, z) && worldObj.getTileEntity(x, y, z) instanceof AdaptiveRangeExtenderTile
-                && isLinkedMember((ControllableDrawerTile) worldObj.getTileEntity(x, y, z))) {
-                count++;
-            }
-        }
-        return count;
     }
 
     @Override

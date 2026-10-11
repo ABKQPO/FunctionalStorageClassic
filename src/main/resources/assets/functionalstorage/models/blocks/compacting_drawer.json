@@ -7,9 +7,35 @@
     "fixed": { "rotation": [ 0, 0, 0 ], "translation": [ 0, 0, 0 ], "scale": [ 0.5, 0.5, 0.5 ] }
   },
   "textures": {
-    "front": "functionalstorage:blocks/compacting_drawer_front",
-    "side": "functionalstorage:blocks/machine_side",
-    "top": "functionalstorage:blocks/machine_top"
+    "particle": "functionalstorage:blocks/compacting_drawer_front",
+    "part0": "functionalstorage:blocks/compacting_drawer_front",
+    "part1": "functionalstorage:blocks/machine_side",
+    "part2": "functionalstorage:blocks/machine_side",
+    "part3": "functionalstorage:blocks/machine_side",
+    "part4": "functionalstorage:blocks/machine_top",
+    "part5": "functionalstorage:blocks/machine_top",
+    "part6": "functionalstorage:blocks/machine_top",
+    "part7": "functionalstorage:blocks/machine_top",
+    "part8": "functionalstorage:blocks/machine_top",
+    "part9": "functionalstorage:blocks/machine_top",
+    "part10": "functionalstorage:blocks/machine_side",
+    "part11": "functionalstorage:blocks/machine_side",
+    "part12": "functionalstorage:blocks/machine_side",
+    "part13": "functionalstorage:blocks/machine_bottom",
+    "part14": "functionalstorage:blocks/machine_bottom",
+    "part15": "functionalstorage:blocks/machine_bottom",
+    "part16": "functionalstorage:blocks/machine_bottom",
+    "part17": "functionalstorage:blocks/machine_bottom",
+    "part18": "functionalstorage:blocks/machine_bottom",
+    "part19": "functionalstorage:blocks/machine_side",
+    "part20": "functionalstorage:blocks/machine_side",
+    "part21": "functionalstorage:blocks/machine_side",
+    "part22": "functionalstorage:blocks/machine_divider",
+    "part23": "functionalstorage:blocks/machine_divider",
+    "part24": "functionalstorage:blocks/machine_divider",
+    "part25": "functionalstorage:blocks/machine_divider",
+    "part26": "functionalstorage:blocks/machine_divider",
+    "part27": "functionalstorage:blocks/machine_divider"
   },
-  "parent": "functionalstorage:blocks/orientable"
+  "parent": "functionalstorage:blocks/compacting_framed_drawer"
 }

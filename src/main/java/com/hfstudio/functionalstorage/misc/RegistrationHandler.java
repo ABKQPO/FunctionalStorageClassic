@@ -30,9 +30,8 @@ import com.hfstudio.functionalstorage.common.FSItemList;
 import com.hfstudio.functionalstorage.common.block.AdaptiveCraftingGridBlock;
 import com.hfstudio.functionalstorage.common.block.AdaptiveDepositBlock;
 import com.hfstudio.functionalstorage.common.block.AdaptiveDrawerBlock;
-import com.hfstudio.functionalstorage.common.block.AdaptiveFluidDrawerBlock;
+import com.hfstudio.functionalstorage.common.block.AdaptiveEssentiaDrawerBlock;
 import com.hfstudio.functionalstorage.common.block.AdaptiveGridBlock;
-import com.hfstudio.functionalstorage.common.block.AdaptiveRangeExtenderBlock;
 import com.hfstudio.functionalstorage.common.block.ArmoryCabinetBlock;
 import com.hfstudio.functionalstorage.common.block.DrawerBlockProperties;
 import com.hfstudio.functionalstorage.common.block.EnderDrawerBlock;
@@ -48,6 +47,7 @@ import com.hfstudio.functionalstorage.common.block.controller.AdaptiveMatrixBloc
 import com.hfstudio.functionalstorage.common.block.controller.ControllerExtensionBlock;
 import com.hfstudio.functionalstorage.common.block.controller.DrawerControllerBlock;
 import com.hfstudio.functionalstorage.common.integration.Mods;
+import com.hfstudio.functionalstorage.common.item.AdaptiveConfigurationToolItem;
 import com.hfstudio.functionalstorage.common.item.ConfigurationToolItem;
 import com.hfstudio.functionalstorage.common.item.DrawerBlockItem;
 import com.hfstudio.functionalstorage.common.item.EnderDrawerBlockItem;
@@ -115,11 +115,10 @@ public class RegistrationHandler {
     public static DrawerBlock armoryCabinet;
     public static DrawerBlock adaptiveMatrix;
     public static DrawerBlock adaptiveDrawer;
-    public static DrawerBlock adaptiveFluidDrawer;
     public static DrawerBlock adaptiveGrid;
     public static DrawerBlock adaptiveCraftingGrid;
     public static DrawerBlock adaptiveDeposit;
-    public static DrawerBlock adaptiveRangeExtender;
+    public static DrawerBlock adaptiveEssentiaDrawer;
 
     public static UpgradeItem blankUpgrade;
     public static UpgradeItem adaptiveUpgrade;
@@ -159,6 +158,7 @@ public class RegistrationHandler {
     public static final Map<String, List<GenerationUpgradeItem>> GENERATION_UPGRADE_GROUPS = new LinkedHashMap<>();
 
     public static ConfigurationToolItem configurationTool;
+    public static AdaptiveConfigurationToolItem adaptiveConfigurationTool;
     public static LinkingToolItem linkingTool;
 
     public static void registerBlocks() {
@@ -211,10 +211,42 @@ public class RegistrationHandler {
             specialDrawers.add(adaptiveDrawer);
             FSItemList.AdaptiveDrawer.set(adaptiveDrawer);
 
-            adaptiveFluidDrawer = new AdaptiveFluidDrawerBlock();
-            GameRegistry.registerBlock(adaptiveFluidDrawer, FluidDrawerBlockItem.class, "adaptive_fluid_drawer");
-            specialDrawers.add(adaptiveFluidDrawer);
-            FSItemList.AdaptiveFluidDrawer.set(adaptiveFluidDrawer);
+            registerAdaptiveDrawerVariant(
+                "adaptive_oak_drawer",
+                "adaptive_oak_front_4_online",
+                FSItemList.AdaptiveOakDrawer);
+            registerAdaptiveDrawerVariant(
+                "adaptive_birch_drawer",
+                "adaptive_birch_front_4_online",
+                FSItemList.AdaptiveBirchDrawer);
+            registerAdaptiveDrawerVariant(
+                "adaptive_jungle_drawer",
+                "adaptive_jungle_front_4_online",
+                FSItemList.AdaptiveJungleDrawer);
+            registerAdaptiveDrawerVariant(
+                "adaptive_acacia_drawer",
+                "adaptive_acacia_front_4_online",
+                FSItemList.AdaptiveAcaciaDrawer);
+            registerAdaptiveDrawerVariant(
+                "adaptive_dark_oak_drawer",
+                "adaptive_dark_oak_front_4_online",
+                FSItemList.AdaptiveDarkOakDrawer);
+            registerAdaptiveDrawerVariant(
+                "adaptive_mangrove_drawer",
+                "adaptive_mangrove_front_4_online",
+                FSItemList.AdaptiveMangroveDrawer);
+            registerAdaptiveDrawerVariant(
+                "adaptive_cherry_drawer",
+                "adaptive_cherry_front_4_online",
+                FSItemList.AdaptiveCherryDrawer);
+            registerAdaptiveDrawerVariant(
+                "adaptive_crimson_drawer",
+                "adaptive_crimson_front_4_online",
+                FSItemList.AdaptiveCrimsonDrawer);
+            registerAdaptiveDrawerVariant(
+                "adaptive_warped_drawer",
+                "adaptive_warped_front_4_online",
+                FSItemList.AdaptiveWarpedDrawer);
 
             adaptiveGrid = new AdaptiveGridBlock();
             GameRegistry.registerBlock(adaptiveGrid, DrawerBlockItem.class, "adaptive_grid");
@@ -231,10 +263,12 @@ public class RegistrationHandler {
             specialDrawers.add(adaptiveDeposit);
             FSItemList.AdaptiveDeposit.set(adaptiveDeposit);
 
-            adaptiveRangeExtender = new AdaptiveRangeExtenderBlock();
-            GameRegistry.registerBlock(adaptiveRangeExtender, DrawerBlockItem.class, "adaptive_range_extender");
-            specialDrawers.add(adaptiveRangeExtender);
-            FSItemList.AdaptiveRangeExtender.set(adaptiveRangeExtender);
+            if (FunctionalStorageConfig.COMPATIBILITY.enableThaumcraftCompatibility && Mods.Thaumcraft.isModLoaded()) {
+                adaptiveEssentiaDrawer = new AdaptiveEssentiaDrawerBlock();
+                GameRegistry.registerBlock(adaptiveEssentiaDrawer, DrawerBlockItem.class, "adaptive_essentia_drawer");
+                specialDrawers.add(adaptiveEssentiaDrawer);
+                FSItemList.AdaptiveEssentiaDrawer.set(adaptiveEssentiaDrawer);
+            }
         }
 
         controllerExtension = new ControllerExtensionBlock();
@@ -299,6 +333,13 @@ public class RegistrationHandler {
     private static void registerFsItemList(String name, DrawerBlock block) {
         FSItemList.register(name)
             .set(block);
+    }
+
+    private static void registerAdaptiveDrawerVariant(String id, String frontTexture, FSItemList item) {
+        AdaptiveDrawerBlock block = new AdaptiveDrawerBlock(id, frontTexture);
+        GameRegistry.registerBlock(block, DrawerBlockItem.class, id);
+        specialDrawers.add(block);
+        item.set(block);
     }
 
     private static void registerFramed(String id, FSItemList entry, DrawerBlock original, String defaultTexture) {
@@ -409,6 +450,12 @@ public class RegistrationHandler {
         GameRegistry.registerItem(configurationTool, "configuration_tool");
         FSItemList.ConfigurationTool.set(configurationTool);
 
+        if (FunctionalStorageConfig.ADAPTIVE.enabled) {
+            adaptiveConfigurationTool = new AdaptiveConfigurationToolItem();
+            GameRegistry.registerItem(adaptiveConfigurationTool, "adaptive_configuration_tool");
+            FSItemList.AdaptiveConfigurationTool.set(adaptiveConfigurationTool);
+        }
+
         linkingTool = new LinkingToolItem();
         GameRegistry.registerItem(linkingTool, "linking_tool");
         FSItemList.LinkingTool.set(linkingTool);
@@ -421,17 +468,33 @@ public class RegistrationHandler {
                 .registerTileEntity(block.getTileEntityClass(), FunctionalStorage.MOD_ID + "." + block.getDrawerId());
         }
         for (FluidDrawerBlock block : fluidDrawers) {
-            GameRegistry.registerTileEntity(
-                block.getTileEntityClass(),
-                FunctionalStorage.MOD_ID + ".fluid_"
-                    + block.getDrawerLayout()
-                        .getSlotCount());
+            String tileId = FunctionalStorage.MOD_ID + ".fluid_"
+                + block.getDrawerLayout()
+                    .getSlotCount();
+            if (block.getDrawerLayout()
+                .getSlotCount() == 4) {
+                GameRegistry.registerTileEntityWithAlternatives(
+                    block.getTileEntityClass(),
+                    tileId,
+                    FunctionalStorage.MOD_ID + ".adaptive_fluid_drawer");
+            } else {
+                GameRegistry.registerTileEntity(block.getTileEntityClass(), tileId);
+            }
         }
         for (DrawerBlock block : specialDrawers) {
             if (block instanceof FramedVariantBlock) continue;
             String name = block.getVariantNames()
                 .get(0);
-            GameRegistry.registerTileEntity(block.getTileEntityClass(), FunctionalStorage.MOD_ID + "." + name);
+            String tileId = FunctionalStorage.MOD_ID + "." + name;
+            if (block == controllerExtension) {
+                GameRegistry.registerTileEntityWithAlternatives(
+                    block.getTileEntityClass(),
+                    tileId,
+                    FunctionalStorage.MOD_ID + ".adaptive_range_extender",
+                    FunctionalStorage.MOD_ID + ".adaptive_extender");
+            } else {
+                GameRegistry.registerTileEntity(block.getTileEntityClass(), tileId);
+            }
         }
         for (FramedDrawerBlock block : framedDrawers) {
             GameRegistry

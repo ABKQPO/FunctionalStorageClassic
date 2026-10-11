@@ -44,6 +44,21 @@ public class DrawerGuiTextures extends Gui implements IResourceManagerReloadList
     public static final ResourceLocation BACKGROUND = new ResourceLocation(
         FunctionalStorage.MOD_ID,
         "textures/gui/background.png");
+    public static final ResourceLocation ADAPTIVE_GRID = new ResourceLocation(
+        FunctionalStorage.MOD_ID,
+        "textures/gui/grid.png");
+    public static final ResourceLocation ADAPTIVE_CRAFTING_GRID = new ResourceLocation(
+        FunctionalStorage.MOD_ID,
+        "textures/gui/crafting_grid.png");
+    public static final ResourceLocation ADAPTIVE_SCROLLBAR = new ResourceLocation(
+        FunctionalStorage.MOD_ID,
+        "textures/gui/widget/scrollbar.png");
+    public static final ResourceLocation ADAPTIVE_SCROLLBAR_CLICKED = new ResourceLocation(
+        FunctionalStorage.MOD_ID,
+        "textures/gui/widget/scrollbar_clicked.png");
+    public static final ResourceLocation ADAPTIVE_SCROLLBAR_DISABLED = new ResourceLocation(
+        FunctionalStorage.MOD_ID,
+        "textures/gui/widget/scrollbar_disabled.png");
     private final Map<Block, ResourceLocation> fronts = new HashMap<>();
     private final Cache<FrontKey, List<ModelQuadView>> framedFronts = CacheBuilder.newBuilder()
         .maximumSize(256)
@@ -58,6 +73,38 @@ public class DrawerGuiTextures extends Gui implements IResourceManagerReloadList
         region(x, y + height - 4, width, 4, 0, 162, 176, 4);
         region(x, y + 4, 4, height - 8, 0, 4, 4, 72);
         region(x + width - 4, y + 4, 4, height - 8, 172, 4, 4, 72);
+    }
+
+    public void adaptivePanel(int x, int y, int width, int height, boolean crafting) {
+        adaptivePanel(x, y, width, height, crafting, crafting ? 147 : height - 82);
+    }
+
+    public void adaptivePanel(int x, int y, int width, int height, boolean crafting, int playerInventoryY) {
+        ResourceLocation texture = crafting ? ADAPTIVE_CRAFTING_GRID : ADAPTIVE_GRID;
+        bind(texture);
+        int sourceHeight = crafting ? 229 : 172;
+        int topHeight = Math.min(height, 73);
+        if (topHeight > 0) region(x, y, width, topHeight, 0, 0, 193, topHeight);
+        if (height <= 73) return;
+
+        if (crafting) {
+            int bottomHeight = Math.min(height - 73, sourceHeight - 73);
+            if (bottomHeight > 0) {
+                region(x, y + 73, width, bottomHeight, 0, 73, 193, bottomHeight);
+            }
+            return;
+        }
+
+        int backgroundStart = Math.max(73, playerInventoryY - 1);
+        int spacerHeight = backgroundStart - 73;
+        if (spacerHeight > 0) {
+            region(x, y + 73, width, spacerHeight, 0, 73, 193, 16);
+        }
+        int bottomStart = y + 73 + spacerHeight;
+        int bottomHeight = Math.min(height - 73 - spacerHeight, sourceHeight - 89);
+        if (bottomHeight > 0) {
+            region(x, bottomStart, width, bottomHeight, 0, 89, 193, sourceHeight - 89);
+        }
     }
 
     public void slot(int x, int y) {

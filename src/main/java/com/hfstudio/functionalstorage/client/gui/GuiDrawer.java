@@ -44,6 +44,7 @@ import com.hfstudio.functionalstorage.common.item.upgrade.RedstoneUpgradeItem;
 import com.hfstudio.functionalstorage.common.network.MenuSettingsMessage;
 import com.hfstudio.functionalstorage.common.network.StorageSearchMessage;
 import com.hfstudio.functionalstorage.common.network.StorageTransferMessage;
+import com.hfstudio.functionalstorage.common.tile.AdaptiveCraftingGridTile;
 import com.hfstudio.functionalstorage.common.tile.AdaptiveGridTile;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 import com.hfstudio.functionalstorage.common.tile.controller.AdaptiveMatrixTile;
@@ -88,8 +89,8 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
         this.tile = tile;
         this.info = new DrawerInfoPanel(tile);
         this.layout = ((ContainerDrawer) inventorySlots).getLayout();
-        this.xSize = WINDOW_WIDTH;
-        this.ySize = layout.height();
+        this.xSize = tile instanceof AdaptiveMatrixTile || tile instanceof AdaptiveGridTile ? 193 : WINDOW_WIDTH;
+        this.ySize = tile instanceof AdaptiveCraftingGridTile ? 229 : layout.height();
     }
 
     @Nonnull
@@ -106,15 +107,17 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
         priority.setVisible(!(tile instanceof StorageNetworkTile));
         priority.setEnabled(!(tile instanceof StorageNetworkTile));
         if (tile instanceof AdaptiveMatrixTile || tile instanceof AdaptiveGridTile) {
-            search = new GuiTextField(fontRendererObj, guiLeft + 96, guiTop + 5, 72, 12);
+            search = new GuiTextField(fontRendererObj, guiLeft + 95, guiTop + 7, 66, 12);
             search.setMaxStringLength(50);
+            search.setEnableBackgroundDrawing(false);
         }
-        if (tile instanceof AdaptiveMatrixTile || tile instanceof AdaptiveGridTile) {
+        if ((tile instanceof AdaptiveMatrixTile || tile instanceof AdaptiveGridTile)
+            && !(tile instanceof AdaptiveCraftingGridTile)) {
             int y = guiTop + 94;
-            adaptiveModeButton = new GuiButton(200, guiLeft + 8, y, 78, 14, "");
-            adaptiveSortButton = new GuiButton(201, guiLeft + 90, y, 78, 14, "");
-            adaptiveLayoutButton = new GuiButton(202, guiLeft + 8, y + 18, 78, 14, "");
-            adaptiveOrderButton = new GuiButton(203, guiLeft + 90, y + 18, 78, 14, "");
+            adaptiveModeButton = new GuiButton(200, guiLeft + 8, y, 78, 20, "");
+            adaptiveSortButton = new GuiButton(201, guiLeft + 90, y, 78, 20, "");
+            adaptiveLayoutButton = new GuiButton(202, guiLeft + 8, y + 22, 78, 20, "");
+            adaptiveOrderButton = new GuiButton(203, guiLeft + 90, y + 22, 78, 20, "");
             buttonList.add(adaptiveModeButton);
             buttonList.add(adaptiveSortButton);
             buttonList.add(adaptiveLayoutButton);
@@ -226,10 +229,14 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
     @Override
     protected void drawGuiContainerBackgroundLayer(float partialTicks, int mouseX, int mouseY) {
         DrawerGuiTextures textures = DrawerGuiTextures.INSTANCE;
-        textures.panel(guiLeft, guiTop, xSize, ySize);
-        priority.drawTextBox();
-        if (search != null) search.drawTextBox();
-        if (search != null) drawScrollbar();
+        if (search != null) textures.adaptivePanel(
+            guiLeft,
+            guiTop,
+            xSize,
+            ySize,
+            tile instanceof AdaptiveCraftingGridTile,
+            ((ContainerDrawer) inventorySlots).getPlayerInventoryY());
+        else textures.panel(guiLeft, guiTop, xSize, ySize);
         boolean drawerFace = !(tile instanceof StorageNetworkTile) && tile.getActiveStorage() != null
             && tile.getActiveStorage()
                 .getStorageCount() <= 4;
@@ -245,8 +252,12 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
         for (int index = 0; index < inventorySlots.inventorySlots.size(); index++) {
             Slot slot = inventorySlots.inventorySlots.get(index);
             if (drawerFace && index < storageSlots) continue;
+            if (search != null) continue;
             textures.slot(guiLeft + slot.xDisplayPosition, guiTop + slot.yDisplayPosition);
         }
+        priority.drawTextBox();
+        if (search != null) search.drawTextBox();
+        if (search != null) drawScrollbar();
     }
 
     @Override
@@ -280,7 +291,7 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
         fontRendererObj.drawString(
             StatCollector.translateToLocal("container.inventory"),
             8,
-            layout.inventoryY() - 12,
+            ((ContainerDrawer) inventorySlots).getPlayerInventoryY() - 12,
             LABEL_COLOUR);
         if (tile instanceof StorageNetworkTile && !(tile instanceof AdaptiveMatrixTile)
             && !(tile instanceof AdaptiveGridTile)) {
@@ -456,10 +467,10 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
                 consumeMouseButton(button);
                 return;
             }
-            if (button == 0 && mouseX >= guiLeft + 158
-                && mouseX < guiLeft + 170
-                && mouseY >= guiTop + 18
-                && mouseY < guiTop + 90) {
+            if (button == 0 && mouseX >= guiLeft + 174
+                && mouseX < guiLeft + 186
+                && mouseY >= guiTop + 20
+                && mouseY < guiTop + 92) {
                 scrolling = true;
                 scrollTo(mouseY);
                 return;
@@ -497,21 +508,12 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
         int max = menu().getMaxScrollRow();
         int row = menu().getScrollRow();
         GL11.glColor4f(1F, 1F, 1F, 1F);
-        ResourceLocation track = new ResourceLocation(
-            "minecraft",
-            "textures/gui/container/creative_inventory/tab_items.png");
-        mc.getTextureManager()
-            .bindTexture(track);
-        drawTexturedModalRect(guiLeft + 157, guiTop + 17, 174, 17, 14, 1);
-        func_152125_a(guiLeft + 157, guiTop + 18, 174, 18, 14, 72, 14, 72, 256, 256);
-        drawTexturedModalRect(guiLeft + 157, guiTop + 90, 174, 128, 14, 1);
-        ResourceLocation scrollTexture = new ResourceLocation(
-            "minecraft",
-            "textures/gui/container/creative_inventory/tabs.png");
+        ResourceLocation scrollTexture = max == 0 ? DrawerGuiTextures.ADAPTIVE_SCROLLBAR_DISABLED
+            : scrolling ? DrawerGuiTextures.ADAPTIVE_SCROLLBAR_CLICKED : DrawerGuiTextures.ADAPTIVE_SCROLLBAR;
         mc.getTextureManager()
             .bindTexture(scrollTexture);
         int offset = max == 0 ? 0 : Math.round(57F * row / max);
-        drawTexturedModalRect(guiLeft + 158, guiTop + 18 + offset, max == 0 ? 244 : 232, 0, 12, 15);
+        drawTexturedModalRect(guiLeft + 174, guiTop + 20 + offset, 0, 0, 12, 15);
     }
 
     private ContainerDrawer menu() {

@@ -14,10 +14,17 @@ import com.hfstudio.functionalstorage.common.tile.controller.AdaptiveMatrixTile;
 public class AdaptiveMatrixBlock extends DrawerControllerBlock {
 
     public AdaptiveMatrixBlock() {
-        super();
-        setBlockName(FunctionalStorage.MOD_ID + ".adaptive_matrix");
-        setBlockTextureName(FunctionalStorage.MOD_ID + ":controller_front");
+        this("adaptive_matrix");
     }
+
+    public AdaptiveMatrixBlock(@Nonnull String id) {
+        super();
+        setBlockName(FunctionalStorage.MOD_ID + "." + id);
+        setBlockTextureName(FunctionalStorage.MOD_ID + ":controller_front");
+        this.id = id;
+    }
+
+    private final String id;
 
     @Nonnull
     @Override
@@ -33,6 +40,6 @@ public class AdaptiveMatrixBlock extends DrawerControllerBlock {
     @Nonnull
     @Override
     public List<String> getVariantNames() {
-        return Collections.singletonList("adaptive_matrix");
+        return Collections.singletonList(id);
     }
 }

@@ -69,12 +69,21 @@ public class FSItemList {
     public static final FSItemList ControllerExtension = register("controller_extension");
     public static final FSItemList AdaptiveMatrix = register("adaptive_matrix");
     public static final FSItemList AdaptiveDrawer = register("adaptive_drawer");
-    public static final FSItemList AdaptiveFluidDrawer = register("adaptive_fluid_drawer");
+    public static final FSItemList AdaptiveOakDrawer = register("adaptive_oak_drawer");
+    public static final FSItemList AdaptiveBirchDrawer = register("adaptive_birch_drawer");
+    public static final FSItemList AdaptiveJungleDrawer = register("adaptive_jungle_drawer");
+    public static final FSItemList AdaptiveAcaciaDrawer = register("adaptive_acacia_drawer");
+    public static final FSItemList AdaptiveDarkOakDrawer = register("adaptive_dark_oak_drawer");
+    public static final FSItemList AdaptiveMangroveDrawer = register("adaptive_mangrove_drawer");
+    public static final FSItemList AdaptiveCherryDrawer = register("adaptive_cherry_drawer");
+    public static final FSItemList AdaptiveCrimsonDrawer = register("adaptive_crimson_drawer");
+    public static final FSItemList AdaptiveWarpedDrawer = register("adaptive_warped_drawer");
+    public static final FSItemList AdaptiveEssentiaDrawer = register("adaptive_essentia_drawer");
     public static final FSItemList AdaptiveGrid = register("adaptive_grid");
     public static final FSItemList AdaptiveCraftingGrid = register("adaptive_crafting_grid");
     public static final FSItemList AdaptiveDeposit = register("adaptive_deposit");
-    public static final FSItemList AdaptiveRangeExtender = register("adaptive_range_extender");
     public static final FSItemList AdaptiveUpgrade = register("adaptive_upgrade");
+    public static final FSItemList AdaptiveConfigurationTool = register("adaptive_configuration_tool");
 
     public static final FSItemList CompactingFramedDrawer = register("compacting_framed_drawer");
     public static final FSItemList FramedSimpleCompactingDrawer = register("framed_simple_compacting_drawer");

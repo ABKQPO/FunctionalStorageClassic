@@ -11,6 +11,7 @@ import net.minecraftforge.fluids.FluidContainerRegistry.FluidContainerData;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.oredict.OreDictionary;
 import net.minecraftforge.oredict.ShapedOreRecipe;
+import net.minecraftforge.oredict.ShapelessOreRecipe;
 
 import com.hfstudio.functionalstorage.api.storage.IWoodType;
 import com.hfstudio.functionalstorage.api.storage.WoodTypeRegistry;
@@ -20,6 +21,7 @@ import com.hfstudio.functionalstorage.common.block.WoodDrawerBlock;
 import com.hfstudio.functionalstorage.common.integration.Mods;
 import com.hfstudio.functionalstorage.common.item.upgrade.GenerationUpgradeItem;
 import com.hfstudio.functionalstorage.common.item.upgrade.ResourceGenerationUpgradeItem;
+import com.hfstudio.functionalstorage.common.recipe.AdaptiveDrawerRecipe;
 import com.hfstudio.functionalstorage.common.recipe.DrawerCleansingRecipe;
 import com.hfstudio.functionalstorage.common.recipe.DrawerCraftingRecipe;
 import com.hfstudio.functionalstorage.common.recipe.FramedDrawerStyleRecipe;
@@ -239,11 +241,7 @@ public class FunctionalStorageRecipes {
     }
 
     private static void registerAdaptiveRecipes() {
-        if (!FunctionalStorageConfig.ADAPTIVE.enabled || !FSItemList.AdaptiveMatrix.hasBeenSet()
-            || !FSItemList.AdaptiveDrawer.hasBeenSet()
-            || !FSItemList.AdaptiveUpgrade.hasBeenSet()) {
-            return;
-        }
+        if (!FunctionalStorageConfig.ADAPTIVE.enabled) return;
         registerOreRecipe(
             FSItemList.AdaptiveUpgrade.get(),
             "RGR",
@@ -255,6 +253,11 @@ public class FunctionalStorageRecipes {
             Blocks.glass_pane,
             'D',
             "gemDiamond");
+        GameRegistry.addRecipe(
+            new ShapelessOreRecipe(
+                FSItemList.AdaptiveConfigurationTool.get(),
+                FSItemList.ConfigurationTool.get(),
+                Items.diamond));
         registerOreRecipe(
             FSItemList.AdaptiveMatrix.get(),
             "DGI",
@@ -282,28 +285,6 @@ public class FunctionalStorageRecipes {
             'M',
             FSItemList.AdaptiveMatrix.get());
         registerOreRecipe(
-            FSItemList.AdaptiveRangeExtender.get(),
-            "IRI",
-            "RMR",
-            "IRI",
-            'I',
-            "ingotIron",
-            'R',
-            Items.repeater,
-            'M',
-            FSItemList.AdaptiveMatrix.get());
-        registerOreRecipe(
-            FSItemList.AdaptiveFluidDrawer.get(),
-            "DUD",
-            "UBU",
-            "DUD",
-            'D',
-            FSItemList.FluidDrawer1.get(),
-            'U',
-            FSItemList.AdaptiveUpgrade.get(),
-            'B',
-            Items.bucket);
-        registerOreRecipe(
             FSItemList.AdaptiveGrid.get(),
             "IRI",
             "RMR",
@@ -327,15 +308,63 @@ public class FunctionalStorageRecipes {
             "dustRedstone",
             'G',
             FSItemList.AdaptiveGrid.get());
-        GameRegistry.addRecipe(
-            new DrawerCraftingRecipe(
-                FSItemList.AdaptiveDrawer.get(),
-                true,
-                "D U",
-                'D',
-                DRAWER_ORE,
-                'U',
-                FSItemList.AdaptiveUpgrade.get()));
+        registerAdaptiveDrawerRecipes(
+            FSItemList.AdaptiveDrawer,
+            FSItemList.SpruceDrawer1,
+            FSItemList.SpruceDrawer2,
+            FSItemList.SpruceDrawer4);
+        registerAdaptiveDrawerRecipes(
+            FSItemList.AdaptiveOakDrawer,
+            FSItemList.OakDrawer1,
+            FSItemList.OakDrawer2,
+            FSItemList.OakDrawer4);
+        registerAdaptiveDrawerRecipes(
+            FSItemList.AdaptiveBirchDrawer,
+            FSItemList.BirchDrawer1,
+            FSItemList.BirchDrawer2,
+            FSItemList.BirchDrawer4);
+        registerAdaptiveDrawerRecipes(
+            FSItemList.AdaptiveJungleDrawer,
+            FSItemList.JungleDrawer1,
+            FSItemList.JungleDrawer2,
+            FSItemList.JungleDrawer4);
+        registerAdaptiveDrawerRecipes(
+            FSItemList.AdaptiveAcaciaDrawer,
+            FSItemList.AcaciaDrawer1,
+            FSItemList.AcaciaDrawer2,
+            FSItemList.AcaciaDrawer4);
+        registerAdaptiveDrawerRecipes(
+            FSItemList.AdaptiveDarkOakDrawer,
+            FSItemList.DarkOakDrawer1,
+            FSItemList.DarkOakDrawer2,
+            FSItemList.DarkOakDrawer4);
+        registerAdaptiveDrawerRecipes(
+            FSItemList.AdaptiveMangroveDrawer,
+            FSItemList.MangroveDrawer1,
+            FSItemList.MangroveDrawer2,
+            FSItemList.MangroveDrawer4);
+        registerAdaptiveDrawerRecipes(
+            FSItemList.AdaptiveCherryDrawer,
+            FSItemList.CherryDrawer1,
+            FSItemList.CherryDrawer2,
+            FSItemList.CherryDrawer4);
+        registerAdaptiveDrawerRecipes(
+            FSItemList.AdaptiveCrimsonDrawer,
+            FSItemList.CrimsonDrawer1,
+            FSItemList.CrimsonDrawer2,
+            FSItemList.CrimsonDrawer4);
+        registerAdaptiveDrawerRecipes(
+            FSItemList.AdaptiveWarpedDrawer,
+            FSItemList.WarpedDrawer1,
+            FSItemList.WarpedDrawer2,
+            FSItemList.WarpedDrawer4);
+    }
+
+    private static void registerAdaptiveDrawerRecipes(FSItemList output, FSItemList... inputs) {
+        for (FSItemList input : inputs) {
+            GameRegistry
+                .addRecipe(new AdaptiveDrawerRecipe(output.get(), input.get(), FSItemList.AdaptiveUpgrade.get()));
+        }
     }
 
     private static void registerControllerRecipe(ItemStack controller, Object center, Object frame) {
@@ -504,10 +533,8 @@ public class FunctionalStorageRecipes {
         registerOreRecipe(
             FSItemList.WirelessPullingUpgrade.get(),
             " E ",
-            " A ",
             " U ",
-            'A',
-            FSItemList.BlankUpgrade.get(),
+            "   ",
             'U',
             FSItemList.PullingUpgrade.get(),
             'E',
@@ -515,10 +542,7 @@ public class FunctionalStorageRecipes {
         registerOreRecipe(
             FSItemList.WirelessPushingUpgrade.get(),
             " E ",
-            " A ",
             " U ",
-            'A',
-            FSItemList.BlankUpgrade.get(),
             'U',
             FSItemList.PushingUpgrade.get(),
             'E',

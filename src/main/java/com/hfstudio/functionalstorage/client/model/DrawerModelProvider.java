@@ -20,15 +20,25 @@ import com.google.gson.GsonBuilder;
 import com.gtnewhorizon.gtnhlib.api.IBlockModelProvider;
 import com.gtnewhorizon.gtnhlib.blockstate.core.BlockState;
 import com.gtnewhorizon.gtnhlib.client.model.BakedModelQuadContext;
+import com.gtnewhorizon.gtnhlib.client.model.JSONVariant;
 import com.gtnewhorizon.gtnhlib.client.model.Weighted;
 import com.gtnewhorizon.gtnhlib.client.model.baked.BakedModel;
 import com.gtnewhorizon.gtnhlib.client.model.baked.MonopartModel;
 import com.gtnewhorizon.gtnhlib.client.model.loading.ModelRegistry;
+import com.gtnewhorizon.gtnhlib.client.model.loading.ResourceLoc.ModelLoc;
 import com.gtnewhorizon.gtnhlib.client.model.state.StateDeserializer;
 import com.gtnewhorizon.gtnhlib.client.model.state.StateModelMap;
 import com.gtnewhorizon.gtnhlib.client.model.unbaked.MonopartDough;
 import com.gtnewhorizon.gtnhlib.client.model.unbaked.UnbakedModel;
 import com.hfstudio.functionalstorage.FunctionalStorage;
+import com.hfstudio.functionalstorage.common.block.AdaptiveDrawerBlock;
+import com.hfstudio.functionalstorage.common.block.DrawerFaceLayout;
+import com.hfstudio.functionalstorage.common.block.WoodDrawerBlock;
+import com.hfstudio.functionalstorage.common.presentation.AdaptiveDisplayProvider;
+import com.hfstudio.functionalstorage.common.tile.AdaptiveCraftingGridTile;
+import com.hfstudio.functionalstorage.common.tile.AdaptiveGridTile;
+import com.hfstudio.functionalstorage.common.tile.WoodDrawerTile;
+import com.hfstudio.functionalstorage.common.tile.controller.AdaptiveMatrixTile;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
@@ -46,10 +56,22 @@ public class DrawerModelProvider implements IBlockModelProvider, IResourceManage
     private final Cache<BlockState, BakedModel> models = CacheBuilder.newBuilder()
         .maximumSize(512)
         .build();
+    private final Cache<BlockState, JSONVariant> adaptiveRotations = CacheBuilder.newBuilder()
+        .maximumSize(512)
+        .build();
+    private final Cache<AdaptiveModelKey, BakedModel> adaptiveModels = CacheBuilder.newBuilder()
+        .maximumSize(1024)
+        .build();
+
+    private record AdaptiveModelKey(BlockState state, String model, int x, int y, boolean uvLock) {}
 
     @Override
     public BakedModel getModel(BakedModelQuadContext context) {
         BlockState state = context.getBlockState();
+        if (context instanceof BakedModelQuadContext.World world) {
+            BakedModel adaptive = adaptiveModel(world, state);
+            if (adaptive != null) return adaptive;
+        }
         BakedModel cached = models.getIfPresent(state);
         if (cached != null) {
             return cached;
@@ -57,6 +79,85 @@ public class DrawerModelProvider implements IBlockModelProvider, IResourceManage
         BakedModel baked = bake(state);
         models.put(state.clone(), baked);
         return baked;
+    }
+
+    private BakedModel adaptiveModel(BakedModelQuadContext.World context, BlockState state) {
+        Block block = state.getBlock();
+        Object tile = context.getWorld()
+            .getTileEntity(context.getX(), context.getY(), context.getZ());
+        String modelName = adaptiveModelName(block, tile);
+        if (modelName == null) return null;
+        JSONVariant rotation = adaptiveRotations.getIfPresent(state);
+        if (rotation == null) {
+            StateModelMap map = states.computeIfAbsent(block, this::loadState);
+            UnbakedModel selected = map.selectModel(state);
+            if (!(selected instanceof MonopartDough single) || single.variants()
+                .isEmpty()) return null;
+            rotation = single.variants()
+                .get(0)
+                .thing();
+            adaptiveRotations.put(state.clone(), rotation);
+        }
+        AdaptiveModelKey key = new AdaptiveModelKey(
+            state.clone(),
+            modelName,
+            rotation.x(),
+            rotation.y(),
+            rotation.uvLock());
+        BakedModel cached = adaptiveModels.getIfPresent(key);
+        if (cached != null) return cached;
+        JSONVariant variant = new JSONVariant(
+            new ModelLoc(FunctionalStorage.MOD_ID, "blocks/" + modelName),
+            rotation.x(),
+            rotation.y(),
+            rotation.uvLock());
+        BakedModel baked = new FaceRotatedModel(ModelRegistry.getJSONModel(variant.model())).bake(variant);
+        adaptiveModels.put(key, baked);
+        return baked;
+    }
+
+    private static String adaptiveModelName(Block block, Object tile) {
+        if (tile instanceof WoodDrawerTile woodDrawer && tile instanceof AdaptiveDisplayProvider provider
+            && (block instanceof AdaptiveDrawerBlock || block instanceof WoodDrawerBlock)) {
+            DrawerFaceLayout layout = provider.getAdaptiveDisplayLayout();
+            if (layout == null && block instanceof AdaptiveDrawerBlock) layout = woodDrawer.getDrawerLayout()
+                .getFaceLayout();
+            String wood = adaptiveWoodName(block);
+            if (layout == null || wood == null) return null;
+            return "adaptive_" + wood
+                + "_drawer"
+                + modelSuffix(layout)
+                + (woodDrawer.isAdaptiveDisplayPowered() ? "" : "_offline");
+        }
+        if (tile instanceof AdaptiveMatrixTile matrix) {
+            return "adaptive_controller_" + (matrix.isPowered() ? "online" : "offline");
+        }
+        if (tile instanceof AdaptiveGridTile grid) {
+            AdaptiveMatrixTile matrix = grid.getMatrix();
+            String base = tile instanceof AdaptiveCraftingGridTile ? "adaptive_crafting_grid_" : "adaptive_grid_";
+            return base + (matrix != null && matrix.isPowered() ? "online" : "offline");
+        }
+        return null;
+    }
+
+    private static String adaptiveWoodName(Block block) {
+        if (block instanceof WoodDrawerBlock woodDrawer) return woodDrawer.getWoodType()
+            .getName();
+        String id = Block.blockRegistry.getNameForObject(block);
+        if (id == null) return null;
+        int separator = id.indexOf(':');
+        String path = separator < 0 ? id : id.substring(separator + 1);
+        if ("adaptive_drawer".equals(path)) return "spruce";
+        if (!path.startsWith("adaptive_") || !path.endsWith("_drawer")) return null;
+        return path.substring("adaptive_".length(), path.length() - "_drawer".length());
+    }
+
+    private static String modelSuffix(DrawerFaceLayout layout) {
+        return switch (layout.getSlotCount()) {
+            case 1 -> "";
+            case 2 -> "_2x1";
+            default -> "_2x2";
+        };
     }
 
     private BakedModel bake(BlockState state) {
@@ -97,6 +198,8 @@ public class DrawerModelProvider implements IBlockModelProvider, IResourceManage
     public void onResourceManagerReload(IResourceManager manager) {
         states.clear();
         models.invalidateAll();
+        adaptiveRotations.invalidateAll();
+        adaptiveModels.invalidateAll();
         FramedModelHolder.provider()
             .clearCache();
     }

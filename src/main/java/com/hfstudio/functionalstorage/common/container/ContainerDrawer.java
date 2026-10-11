@@ -67,13 +67,14 @@ public class ContainerDrawer extends Container
 
     private static final int PLAYER_ROWS = 3;
     private static final int PLAYER_COLUMNS = 9;
-    private static final int TERMINAL_COLUMNS = 8;
-    private static final int TERMINAL_ROWS = 4;
+    private static final int TERMINAL_COLUMNS = 9;
+    private static final int TERMINAL_ROWS = 3;
     private static final int MAX_VISIBLE_STORAGE_SLOTS = TERMINAL_COLUMNS * TERMINAL_ROWS;
 
     private final ControllableDrawerTile tile;
     @Getter
     private final DrawerGuiLayout layout;
+    private final int playerInventoryY;
     private final IInventory openedInventory;
     private final int storageSlotCount;
     private final InventoryBasic display;
@@ -131,6 +132,11 @@ public class ContainerDrawer extends Container
     }
 
     protected ContainerDrawer(@Nonnull ControllableDrawerTile tile, @Nonnull EntityPlayer player, int extraRows) {
+        this(tile, player, extraRows, -1);
+    }
+
+    protected ContainerDrawer(@Nonnull ControllableDrawerTile tile, @Nonnull EntityPlayer player, int extraRows,
+        int playerInventoryY) {
         this.tile = tile;
 
         boolean terminal = isAdaptiveTerminal(tile);
@@ -150,6 +156,7 @@ public class ContainerDrawer extends Container
             ((DrawerBlock) tile.getBlockType()).getFaceLayout(),
             terminal ? TERMINAL_COLUMNS : PLAYER_COLUMNS,
             extraRows);
+        this.playerInventoryY = playerInventoryY >= 0 ? playerInventoryY : layout.inventoryY();
         IInventory storage = display;
         for (int index = 0; index < storageSlots; index++) {
             addSlotToContainer(new StorageSlot(storage, index, layout.storageX(index), layout.storageY(index)));
@@ -166,7 +173,7 @@ public class ContainerDrawer extends Container
             addSlotToContainer(new UpgradeSlot(utilityUpgrades, slot, false, 114 + slot * 18, upgradeY));
         }
 
-        int playerTop = layout.inventoryY();
+        int playerTop = this.playerInventoryY;
         for (int row = 0; row < PLAYER_ROWS; row++) {
             for (int column = 0; column < PLAYER_COLUMNS; column++) {
                 addSlotToContainer(
@@ -185,6 +192,10 @@ public class ContainerDrawer extends Container
 
     public int getVisibleStorageSlots() {
         return visibleStorageSlots();
+    }
+
+    public int getPlayerInventoryY() {
+        return playerInventoryY;
     }
 
     protected int playerInventoryEnd() {

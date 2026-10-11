@@ -15,9 +15,16 @@ import com.hfstudio.functionalstorage.common.tile.AdaptiveDrawerTile;
 public class AdaptiveDrawerBlock extends DrawerBlock {
 
     public AdaptiveDrawerBlock() {
-        super(DrawerFaceLayout.X_4, FunctionalStorage.MOD_ID + ".adaptive_drawer");
-        setBlockTextureName(FunctionalStorage.MOD_ID + ":oak_front_4");
+        this("adaptive_drawer", "spruce_front_4");
     }
+
+    public AdaptiveDrawerBlock(@Nonnull String id, @Nonnull String frontTexture) {
+        super(DrawerFaceLayout.X_4, FunctionalStorage.MOD_ID + "." + id);
+        setBlockTextureName(FunctionalStorage.MOD_ID + ":" + frontTexture);
+        this.id = id;
+    }
+
+    private final String id;
 
     @Nonnull
     @Override
@@ -33,6 +40,6 @@ public class AdaptiveDrawerBlock extends DrawerBlock {
     @Nonnull
     @Override
     public List<String> getVariantNames() {
-        return Collections.singletonList("adaptive_drawer");
+        return Collections.singletonList(id);
     }
 }

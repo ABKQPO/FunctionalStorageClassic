@@ -1,0 +1,8 @@
+{
+  "parent": "functionalstorage:blocks/storage_controller",
+  "textures": {
+    "front": "functionalstorage:blocks/controller_front_online",
+    "side": "functionalstorage:blocks/machine_side",
+    "top": "functionalstorage:blocks/machine_top"
+  }
+}

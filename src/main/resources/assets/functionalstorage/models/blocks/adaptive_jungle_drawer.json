@@ -1,0 +1,8 @@
+{
+  "parent": "functionalstorage:blocks/base_x_1",
+  "textures": {
+    "particle": "functionalstorage:blocks/jungle_side",
+    "front": "functionalstorage:blocks/adaptive_screen_scanline_online",
+    "side": "functionalstorage:blocks/jungle_side"
+  }
+}

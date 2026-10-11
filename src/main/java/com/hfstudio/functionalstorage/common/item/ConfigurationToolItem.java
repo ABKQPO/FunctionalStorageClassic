@@ -67,7 +67,11 @@ public class ConfigurationToolItem extends LayeredToolItem {
     private static final String KEY_ACTION = "ConfigurationAction";
 
     public ConfigurationToolItem() {
-        super("configuration_tool", "configuration_tool_base", "configuration_tool_mode");
+        this("configuration_tool", "configuration_tool_base", "configuration_tool_mode");
+    }
+
+    protected ConfigurationToolItem(String name, String... textures) {
+        super(name, textures);
     }
 
     public static ConfigurationAction getAction(ItemStack stack) {

@@ -113,6 +113,11 @@ public class WoodDrawerTile extends ControllableDrawerTile implements ISidedInve
         return matrix == null ? null : matrix.getDisplayLayout(ConnectedDrawerScope.pack(xCoord, yCoord, zCoord));
     }
 
+    public boolean isAdaptiveDisplayPowered() {
+        AdaptiveMatrixTile matrix = adaptiveMatrix();
+        return matrix == null || matrix.isPowered();
+    }
+
     public boolean handleAdaptiveActivation(EntityPlayer player, int side, float hitX, float hitY, float hitZ,
         int slot) {
         AdaptiveMatrixTile matrix = adaptiveMatrix();

@@ -14,7 +14,6 @@ import com.hfstudio.functionalstorage.common.block.FramedBlock;
 import com.hfstudio.functionalstorage.common.block.base.DrawerBlock;
 import com.hfstudio.functionalstorage.common.integration.Mods;
 import com.hfstudio.functionalstorage.common.tile.AdaptiveDrawerTile;
-import com.hfstudio.functionalstorage.common.tile.AdaptiveFluidDrawerTile;
 import com.hfstudio.functionalstorage.common.tile.EnderDrawerTile;
 import com.hfstudio.functionalstorage.common.tile.EssentiaDrawerTile;
 import com.hfstudio.functionalstorage.common.tile.FluidDrawerTile;
@@ -48,7 +47,6 @@ public class DrawerClientRegistry {
         }
         ClientRegistry.bindTileEntitySpecialRenderer(WoodDrawerTile.class, renderer);
         ClientRegistry.bindTileEntitySpecialRenderer(AdaptiveDrawerTile.class, renderer);
-        ClientRegistry.bindTileEntitySpecialRenderer(AdaptiveFluidDrawerTile.class, renderer);
         ClientRegistry.bindTileEntitySpecialRenderer(FramedDrawerTile.class, renderer);
         ClientRegistry.bindTileEntitySpecialRenderer(FluidDrawerTile.class, renderer);
         if (Mods.Thaumcraft.isModLoaded()) registerEssentiaRenderer(renderer);
