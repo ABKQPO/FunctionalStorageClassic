@@ -19,6 +19,7 @@ import com.hfstudio.functionalstorage.common.integration.Mods;
 import com.hfstudio.functionalstorage.common.tile.EssentiaDrawerTile;
 import com.hfstudio.functionalstorage.common.tile.FluidDrawerTile;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
+import com.hfstudio.functionalstorage.common.tile.controller.AdaptiveMatrixTile;
 import com.hfstudio.functionalstorage.util.ItemUtil;
 
 import cpw.mods.fml.common.Optional;
@@ -59,6 +60,18 @@ public class DrawerWailaProvider implements IWailaDataProvider {
         NBTTagCompound tag = accessor.getNBTData();
         if (tag == null) {
             return tooltip;
+        }
+        if (tag.hasKey("AdaptivePowered")) {
+            tooltip.add(
+                StatCollector.translateToLocal(
+                    tag.getBoolean("AdaptivePowered") ? "functionalstorage.gui.adaptive.online"
+                        : "functionalstorage.gui.adaptive.offline"));
+            if (tag.getBoolean("AdaptiveUsesRf")) tooltip.add(
+                StatCollector.translateToLocalFormatted(
+                    "functionalstorage.gui.adaptive.energy",
+                    NumberFormatUtil.formatNumberCompact(tag.getInteger("AdaptiveEnergy")),
+                    NumberFormatUtil.formatNumberCompact(tag.getInteger("AdaptiveMaxEnergy")),
+                    NumberFormatUtil.formatNumberCompact(tag.getInteger("AdaptiveCost"))));
         }
         int slots = tag.getInteger("Slots");
         for (int index = 0; index < slots; index++) {
@@ -126,6 +139,14 @@ public class DrawerWailaProvider implements IWailaDataProvider {
             return tag;
         }
         tag.setBoolean("Locked", drawer.isLocked());
+        if (drawer instanceof AdaptiveMatrixTile matrix) {
+            tag.setBoolean("AdaptivePowered", matrix.isPowered());
+            tag.setBoolean("AdaptiveUsesRf", AdaptiveMatrixTile.usesRf());
+            tag.setInteger("AdaptiveEnergy", matrix.getEnergyStored());
+            tag.setInteger("AdaptiveMaxEnergy", matrix.getMaxEnergyStored());
+            tag.setInteger("AdaptiveCost", matrix.getEnergyCostPerTick());
+            return tag;
+        }
 
         int upgrades = 0;
         for (int slot = 0; slot < drawer.getStorageUpgradeSlots(); slot++) {

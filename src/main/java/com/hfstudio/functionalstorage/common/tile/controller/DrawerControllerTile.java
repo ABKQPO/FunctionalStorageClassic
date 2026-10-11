@@ -29,7 +29,7 @@ public class DrawerControllerTile extends StorageNetworkTile {
         .comparingInt(ControllableDrawerTile::getPriority)
         .reversed();
 
-    private final Set<Long> drawers = new LinkedHashSet<>();
+    protected final Set<Long> drawers = new LinkedHashSet<>();
 
     @Override
     public void markDirty() {
@@ -75,9 +75,15 @@ public class DrawerControllerTile extends StorageNetworkTile {
             if (!drawers.remove(position)) {
                 return false;
             }
-            int[] controller = drawer.getControllerPosition();
-            if (controller != null && controller[0] == xCoord && controller[1] == yCoord && controller[2] == zCoord) {
-                drawer.clearControllerPosition();
+            if (ownsPhysicalControllerLink()) {
+                int[] controller = drawer.getControllerPosition();
+                if (controller != null && controller[0] == xCoord
+                    && controller[1] == yCoord
+                    && controller[2] == zCoord) {
+                    drawer.clearControllerPosition();
+                }
+            } else if (drawer.isLinkedToAdaptiveMatrix(xCoord, yCoord, zCoord)) {
+                drawer.clearAdaptiveMatrixPosition();
             }
             markDirty();
             invalidateNetwork();
@@ -89,8 +95,16 @@ public class DrawerControllerTile extends StorageNetworkTile {
             || (!drawers.contains(position) && drawers.size() >= FunctionalStorageConfig.GENERAL.controllerLinkLimit)) {
             return false;
         }
-        drawer.detachFromController(worldObj);
-        drawer.setControllerPosition(xCoord, yCoord, zCoord);
+        if (!ownsPhysicalControllerLink()) {
+            int[] owner = drawer.getAdaptiveMatrixPosition();
+            if (owner != null && !drawer.isLinkedToAdaptiveMatrix(xCoord, yCoord, zCoord)) {
+                return false;
+            }
+            drawer.setAdaptiveMatrixPosition(xCoord, yCoord, zCoord);
+        } else {
+            drawer.detachFromController(worldObj);
+            drawer.setControllerPosition(xCoord, yCoord, zCoord);
+        }
         addDrawer(x, y, z);
         return true;
     }
@@ -131,14 +145,16 @@ public class DrawerControllerTile extends StorageNetworkTile {
 
     @Nonnull
     public ConnectedDrawerScope connectedScope(int maxRadius) {
-        if (worldObj == null || drawers.isEmpty()) {
+        if (worldObj == null) {
             return ConnectedDrawerScope.empty();
         }
         Set<Long> members = new HashSet<>(drawers.size());
         long radius = maxRadius < 0 ? Long.MAX_VALUE : maxRadius;
-        for (long position : drawers) {
-            if (linkedDrawerAt(position, radius) != null) {
-                members.add(position);
+        for (ControllableDrawerTile drawer : connectedDrawers()) {
+            if (!(drawer instanceof StorageNetworkTile) && Math.abs((long) drawer.xCoord - xCoord) <= radius
+                && Math.abs((long) drawer.yCoord - yCoord) <= radius
+                && Math.abs((long) drawer.zCoord - zCoord) <= radius) {
+                members.add(pack(drawer.xCoord, drawer.yCoord, drawer.zCoord));
             }
         }
         return ConnectedDrawerScope.of(members);
@@ -163,7 +179,7 @@ public class DrawerControllerTile extends StorageNetworkTile {
         if (drawer instanceof StorageNetworkTile && !(drawer instanceof ControllerExtensionTile)) {
             return null;
         }
-        return drawer.isLinkedTo(xCoord, yCoord, zCoord) ? drawer : null;
+        return isLinkedMember(drawer) ? drawer : null;
     }
 
     @Override
@@ -177,7 +193,7 @@ public class DrawerControllerTile extends StorageNetworkTile {
             if (worldObj.blockExists(x, y, z)
                 && worldObj.getTileEntity(x, y, z) instanceof ControllableDrawerTile drawer
                 && !(drawer instanceof StorageNetworkTile)) {
-                if (drawer.isLinkedTo(xCoord, yCoord, zCoord)) loaded.add(drawer);
+                if (isLinkedMember(drawer)) loaded.add(drawer);
             }
         }
         loaded.sort(PRIORITY);
@@ -193,9 +209,14 @@ public class DrawerControllerTile extends StorageNetworkTile {
             int z = (int) (position << 38 >> 38);
             if (worldObj.blockExists(x, y, z)
                 && worldObj.getTileEntity(x, y, z) instanceof ControllableDrawerTile drawer) {
-                int[] controller = drawer.getControllerPosition();
-                if (controller != null && controller[0] == xCoord && controller[1] == yCoord && controller[2] == zCoord)
-                    drawer.clearControllerPosition();
+                if (ownsPhysicalControllerLink()) {
+                    int[] controller = drawer.getControllerPosition();
+                    if (controller != null && controller[0] == xCoord
+                        && controller[1] == yCoord
+                        && controller[2] == zCoord) drawer.clearControllerPosition();
+                } else if (drawer.isLinkedToAdaptiveMatrix(xCoord, yCoord, zCoord)) {
+                    drawer.clearAdaptiveMatrixPosition();
+                }
             }
         }
         drawers.clear();
@@ -223,7 +244,16 @@ public class DrawerControllerTile extends StorageNetworkTile {
         invalidateNetwork();
     }
 
-    private static long pack(int x, int y, int z) {
+    protected boolean ownsPhysicalControllerLink() {
+        return true;
+    }
+
+    protected boolean isLinkedMember(ControllableDrawerTile drawer) {
+        return ownsPhysicalControllerLink() ? drawer.isLinkedTo(xCoord, yCoord, zCoord)
+            : drawer.isLinkedToAdaptiveMatrix(xCoord, yCoord, zCoord);
+    }
+
+    protected static long pack(int x, int y, int z) {
         return ((long) (x & 0x3FFFFFF) << 38) | ((long) (y & 0xFFF) << 26) | (z & 0x3FFFFFF);
     }
 }

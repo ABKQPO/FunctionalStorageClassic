@@ -14,7 +14,9 @@ import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.StatCollector;
 import net.minecraft.world.World;
 
+import com.hfstudio.functionalstorage.common.block.base.DrawerBlock;
 import com.hfstudio.functionalstorage.common.interaction.ToolFeedback;
+import com.hfstudio.functionalstorage.common.tile.WoodDrawerTile;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 
 import cpw.mods.fml.relauncher.Side;
@@ -30,7 +32,9 @@ public class ConfigurationToolItem extends LayeredToolItem {
         TOGGLE_NUMBERS("numbers", 1, 0xFA9128, EnumChatFormatting.GOLD),
         TOGGLE_RENDER("renderItem", 1, 0x64FA28, EnumChatFormatting.GREEN),
         TOGGLE_UPGRADES("upgrades", 1, 0xA628FA, EnumChatFormatting.LIGHT_PURPLE),
-        INDICATOR("indicator", 3, 0xFF2828, EnumChatFormatting.RED);
+        INDICATOR("indicator", 3, 0xFF2828, EnumChatFormatting.RED),
+        ADAPTIVE_CELLS("adaptiveCells", 3, 0x28BDBD, EnumChatFormatting.AQUA),
+        ADAPTIVE_RESERVATION("adaptiveReservation", 1, 0xE0C040, EnumChatFormatting.YELLOW);
 
         private final String id;
         private final int maxValue;
@@ -85,13 +89,26 @@ public class ConfigurationToolItem extends LayeredToolItem {
             return false;
         }
         ConfigurationAction action = getAction(stack);
-        drawer.applyConfiguration(action);
-        if (action == ConfigurationAction.INDICATOR) {
+        if (action == ConfigurationAction.ADAPTIVE_RESERVATION) {
+            if (!(drawer instanceof WoodDrawerTile wood) || !(world.getBlock(x, y, z) instanceof DrawerBlock block))
+                return false;
+            int cell = block.getHitSlot(world, x, y, z, player);
             ToolFeedback.send(
                 player,
                 new ChatComponentTranslation(
-                    "configurationtool.configmode.indicator.mode_" + drawer.getDrawerOptions()
-                        .getAdvancedValue(action)));
+                    "configurationtool.adaptive_reservation." + wood.configureDisplayCell(cell, player.isSneaking())));
+            return true;
+        }
+        drawer.applyConfiguration(action);
+        if (action == ConfigurationAction.INDICATOR || action == ConfigurationAction.ADAPTIVE_CELLS) {
+            ToolFeedback.send(
+                player,
+                new ChatComponentTranslation(
+                    "configurationtool.configmode." + action.name()
+                        .toLowerCase(Locale.ROOT)
+                        + ".mode_"
+                        + drawer.getDrawerOptions()
+                            .getAdvancedValue(action)));
         }
         return true;
     }

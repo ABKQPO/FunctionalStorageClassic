@@ -21,7 +21,8 @@ import com.hfstudio.functionalstorage.common.tile.ArmoryCabinetTile;
 
 import lombok.Getter;
 
-public class ContainerArmory extends Container implements MenuSettingsReceiver, StorageTransferMenu {
+public class ContainerArmory extends Container
+    implements MenuSettingsReceiver, StorageTransferMenu, StorageSearchReceiver {
 
     public static final int COLUMNS = 8;
     public static final int VISIBLE_SLOTS = 32;
@@ -93,7 +94,8 @@ public class ContainerArmory extends Container implements MenuSettingsReceiver, 
         return index < filtered.size() ? filtered.get(index) : -1;
     }
 
-    public void applySearch(int requestedRow, String text, int[] matches) {
+    @Override
+    public void applySearch(EntityPlayer player, int requestedRow, String text, int[] matches) {
         query = text.trim()
             .toLowerCase(Locale.ROOT);
         searchMatches = query.isEmpty() ? null

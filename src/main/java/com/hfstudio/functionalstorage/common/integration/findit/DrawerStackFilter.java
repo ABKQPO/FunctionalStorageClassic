@@ -67,7 +67,8 @@ public class DrawerStackFilter implements Predicate<DrawerStackFilter.Query> {
     private boolean holdsItem(@Nonnull ItemStack target) {
         for (ItemStorageView view : ItemStorageView.storages(items)) {
             if (view.getSnapshot()
-                .isSameType(target)) {
+                .getAmount() > 0L && view.getSnapshot()
+                    .isSameType(target)) {
                 return true;
             }
         }

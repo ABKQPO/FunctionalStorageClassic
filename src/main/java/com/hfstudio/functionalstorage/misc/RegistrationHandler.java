@@ -27,6 +27,12 @@ import com.hfstudio.functionalstorage.api.upgrade.StorageFeature;
 import com.hfstudio.functionalstorage.api.upgrade.UpgradeAttribute;
 import com.hfstudio.functionalstorage.api.upgrade.UpgradeModifier;
 import com.hfstudio.functionalstorage.common.FSItemList;
+import com.hfstudio.functionalstorage.common.block.AdaptiveCraftingGridBlock;
+import com.hfstudio.functionalstorage.common.block.AdaptiveDepositBlock;
+import com.hfstudio.functionalstorage.common.block.AdaptiveDrawerBlock;
+import com.hfstudio.functionalstorage.common.block.AdaptiveFluidDrawerBlock;
+import com.hfstudio.functionalstorage.common.block.AdaptiveGridBlock;
+import com.hfstudio.functionalstorage.common.block.AdaptiveRangeExtenderBlock;
 import com.hfstudio.functionalstorage.common.block.ArmoryCabinetBlock;
 import com.hfstudio.functionalstorage.common.block.DrawerBlockProperties;
 import com.hfstudio.functionalstorage.common.block.EnderDrawerBlock;
@@ -38,6 +44,7 @@ import com.hfstudio.functionalstorage.common.block.WoodDrawerBlock;
 import com.hfstudio.functionalstorage.common.block.base.DrawerBlock;
 import com.hfstudio.functionalstorage.common.block.compact.CompactingDrawerBlock;
 import com.hfstudio.functionalstorage.common.block.compact.SimpleCompactingDrawerBlock;
+import com.hfstudio.functionalstorage.common.block.controller.AdaptiveMatrixBlock;
 import com.hfstudio.functionalstorage.common.block.controller.ControllerExtensionBlock;
 import com.hfstudio.functionalstorage.common.block.controller.DrawerControllerBlock;
 import com.hfstudio.functionalstorage.common.integration.Mods;
@@ -106,8 +113,16 @@ public class RegistrationHandler {
     public static DrawerBlock simpleCompactingDrawer;
     public static DrawerBlock enderDrawer;
     public static DrawerBlock armoryCabinet;
+    public static DrawerBlock adaptiveMatrix;
+    public static DrawerBlock adaptiveDrawer;
+    public static DrawerBlock adaptiveFluidDrawer;
+    public static DrawerBlock adaptiveGrid;
+    public static DrawerBlock adaptiveCraftingGrid;
+    public static DrawerBlock adaptiveDeposit;
+    public static DrawerBlock adaptiveRangeExtender;
 
     public static UpgradeItem blankUpgrade;
+    public static UpgradeItem adaptiveUpgrade;
     public static StorageUpgradeItem ironDowngrade;
     public static StorageUpgradeItem copperUpgrade;
     public static StorageUpgradeItem goldUpgrade;
@@ -184,6 +199,43 @@ public class RegistrationHandler {
         GameRegistry.registerBlock(storageController, DrawerBlockItem.class, "storage_controller");
         specialDrawers.add(storageController);
         FSItemList.StorageController.set(storageController);
+
+        if (FunctionalStorageConfig.ADAPTIVE.enabled) {
+            adaptiveMatrix = new AdaptiveMatrixBlock();
+            GameRegistry.registerBlock(adaptiveMatrix, DrawerBlockItem.class, "adaptive_matrix");
+            specialDrawers.add(adaptiveMatrix);
+            FSItemList.AdaptiveMatrix.set(adaptiveMatrix);
+
+            adaptiveDrawer = new AdaptiveDrawerBlock();
+            GameRegistry.registerBlock(adaptiveDrawer, DrawerBlockItem.class, "adaptive_drawer");
+            specialDrawers.add(adaptiveDrawer);
+            FSItemList.AdaptiveDrawer.set(adaptiveDrawer);
+
+            adaptiveFluidDrawer = new AdaptiveFluidDrawerBlock();
+            GameRegistry.registerBlock(adaptiveFluidDrawer, FluidDrawerBlockItem.class, "adaptive_fluid_drawer");
+            specialDrawers.add(adaptiveFluidDrawer);
+            FSItemList.AdaptiveFluidDrawer.set(adaptiveFluidDrawer);
+
+            adaptiveGrid = new AdaptiveGridBlock();
+            GameRegistry.registerBlock(adaptiveGrid, DrawerBlockItem.class, "adaptive_grid");
+            specialDrawers.add(adaptiveGrid);
+            FSItemList.AdaptiveGrid.set(adaptiveGrid);
+
+            adaptiveCraftingGrid = new AdaptiveCraftingGridBlock();
+            GameRegistry.registerBlock(adaptiveCraftingGrid, DrawerBlockItem.class, "adaptive_crafting_grid");
+            specialDrawers.add(adaptiveCraftingGrid);
+            FSItemList.AdaptiveCraftingGrid.set(adaptiveCraftingGrid);
+
+            adaptiveDeposit = new AdaptiveDepositBlock();
+            GameRegistry.registerBlock(adaptiveDeposit, DrawerBlockItem.class, "adaptive_deposit");
+            specialDrawers.add(adaptiveDeposit);
+            FSItemList.AdaptiveDeposit.set(adaptiveDeposit);
+
+            adaptiveRangeExtender = new AdaptiveRangeExtenderBlock();
+            GameRegistry.registerBlock(adaptiveRangeExtender, DrawerBlockItem.class, "adaptive_range_extender");
+            specialDrawers.add(adaptiveRangeExtender);
+            FSItemList.AdaptiveRangeExtender.set(adaptiveRangeExtender);
+        }
 
         controllerExtension = new ControllerExtensionBlock();
         GameRegistry.registerBlock(controllerExtension, DrawerBlockItem.class, "controller_extension");
@@ -279,6 +331,9 @@ public class RegistrationHandler {
 
     public static void registerItems() {
         blankUpgrade = registerUpgrade(new UpgradeItem("base"), "base");
+        if (FunctionalStorageConfig.ADAPTIVE.enabled) {
+            adaptiveUpgrade = registerUpgrade(new UpgradeItem("adaptive_upgrade"), "adaptive_upgrade");
+        }
         ironDowngrade = registerStorageUpgrade(
             new StorageTier(
                 "iron_downgrade",

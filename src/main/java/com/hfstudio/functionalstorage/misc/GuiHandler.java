@@ -4,14 +4,17 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
 
+import com.hfstudio.functionalstorage.client.gui.GuiAdaptiveCrafting;
 import com.hfstudio.functionalstorage.client.gui.GuiArmory;
 import com.hfstudio.functionalstorage.client.gui.GuiDrawer;
 import com.hfstudio.functionalstorage.client.gui.GuiUpgrade;
+import com.hfstudio.functionalstorage.common.container.ContainerAdaptiveCrafting;
 import com.hfstudio.functionalstorage.common.container.ContainerArmory;
 import com.hfstudio.functionalstorage.common.container.ContainerDrawer;
 import com.hfstudio.functionalstorage.common.container.ContainerUpgrade;
 import com.hfstudio.functionalstorage.common.integration.serverutilities.ServerUtilitiesIntegration;
 import com.hfstudio.functionalstorage.common.item.upgrade.AutomationUpgradeItem;
+import com.hfstudio.functionalstorage.common.tile.AdaptiveCraftingGridTile;
 import com.hfstudio.functionalstorage.common.tile.ArmoryCabinetTile;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 
@@ -39,7 +42,8 @@ public class GuiHandler implements IGuiHandler {
         }
         return id == GUI_DRAWER
             ? drawer instanceof ArmoryCabinetTile armory ? new ContainerArmory(armory, player)
-                : new ContainerDrawer(drawer, player)
+                : drawer instanceof AdaptiveCraftingGridTile grid ? new ContainerAdaptiveCrafting(grid, player)
+                    : new ContainerDrawer(drawer, player)
             : null;
     }
 
@@ -54,7 +58,9 @@ public class GuiHandler implements IGuiHandler {
             return new GuiUpgrade(player, drawer, id - GUI_UPGRADE_BASE);
         }
         return id == GUI_DRAWER
-            ? drawer instanceof ArmoryCabinetTile armory ? new GuiArmory(player, armory) : new GuiDrawer(player, drawer)
+            ? drawer instanceof ArmoryCabinetTile armory ? new GuiArmory(player, armory)
+                : drawer instanceof AdaptiveCraftingGridTile grid ? new GuiAdaptiveCrafting(player, grid)
+                    : new GuiDrawer(player, drawer)
             : null;
     }
 

@@ -37,8 +37,10 @@ import com.hfstudio.functionalstorage.client.model.DrawerModelProvider;
 import com.hfstudio.functionalstorage.common.block.DrawerAttachment;
 import com.hfstudio.functionalstorage.common.block.DrawerFaceLayout;
 import com.hfstudio.functionalstorage.common.integration.serverutilities.ServerUtilitiesIntegration;
+import com.hfstudio.functionalstorage.common.presentation.AdaptiveDisplayProvider;
 import com.hfstudio.functionalstorage.common.storage.DrawerLayout;
 import com.hfstudio.functionalstorage.common.tile.FluidDrawerTile;
+import com.hfstudio.functionalstorage.common.tile.WoodDrawerTile;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 import com.hfstudio.functionalstorage.config.FunctionalStorageConfig;
 import com.hfstudio.functionalstorage.misc.RegistrationHandler;
@@ -47,7 +49,6 @@ import com.hfstudio.functionalstorage.util.HitBoxesUtil;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
-/** Metadata encodes attachment and horizontal rotation for all twelve orientations. */
 public abstract class DrawerBlock extends BlockContainer implements IBlockModelProvider {
 
     public static final float HARDNESS = 2.5F;
@@ -294,7 +295,12 @@ public abstract class DrawerBlock extends BlockContainer implements IBlockModelP
         if (!(tile instanceof ControllableDrawerTile drawer)) {
             return false;
         }
-        int slot = getHitSlot(world.getBlockMetadata(x, y, z), side, hitX, hitY, hitZ);
+        int metadata = world.getBlockMetadata(x, y, z);
+        int slot = getHitSlot(getInteractionFaceLayout(world, x, y, z), metadata, side, hitX, hitY, hitZ);
+        if (drawer instanceof WoodDrawerTile wood
+            && wood.handleAdaptiveActivation(player, side, hitX, hitY, hitZ, slot)) {
+            return true;
+        }
         boolean handled = drawer.onSlotActivated(player, side, hitX, hitY, hitZ, slot);
         drawer.sendStorageUpdate(player);
         return handled;
@@ -314,6 +320,10 @@ public abstract class DrawerBlock extends BlockContainer implements IBlockModelP
         }
         int slot = getHitSlot(world, x, y, z, player);
         if (slot >= 0) {
+            if (drawer instanceof WoodDrawerTile wood && wood.handleAdaptiveClick(player, slot)) {
+                drawer.sendStorageUpdate(player);
+                return;
+            }
             drawer.onSlotClicked(player, slot);
             drawer.sendStorageUpdate(player);
         }
@@ -399,15 +409,30 @@ public abstract class DrawerBlock extends BlockContainer implements IBlockModelP
         double localX = hit.hitVec.xCoord - x;
         double localY = hit.hitVec.yCoord - y;
         double localZ = hit.hitVec.zCoord - z;
-        return getHitSlot(metadata, hit.sideHit, localX, localY, localZ);
+        return getHitSlot(getInteractionFaceLayout(world, x, y, z), metadata, hit.sideHit, localX, localY, localZ);
     }
 
     public int getHitSlot(int metadata, int side, double hitX, double hitY, double hitZ) {
+        return getHitSlot(faceLayout, metadata, side, hitX, hitY, hitZ);
+    }
+
+    protected DrawerFaceLayout getInteractionFaceLayout(World world, int x, int y, int z) {
+        TileEntity tile = world.getTileEntity(x, y, z);
+        if (tile instanceof AdaptiveDisplayProvider provider) {
+            DrawerFaceLayout layout = provider.getAdaptiveDisplayLayout();
+            if (layout != null) {
+                return layout;
+            }
+        }
+        return faceLayout;
+    }
+
+    private int getHitSlot(DrawerFaceLayout layout, int metadata, int side, double hitX, double hitY, double hitZ) {
         if (side != getFrontFacing(metadata).ordinal()) {
             return -1;
         }
         return HitBoxesUtil
-            .resolveSlot(faceLayout, getAttachment(metadata), getHorizontalFacing(metadata), hitX, hitY, hitZ);
+            .resolveSlot(layout, getAttachment(metadata), getHorizontalFacing(metadata), hitX, hitY, hitZ);
     }
 
     @Override
@@ -439,7 +464,7 @@ public abstract class DrawerBlock extends BlockContainer implements IBlockModelP
                 .hasKey("TileData", 10);
     }
 
-    private static final String[] CONTENT_KEYS = { "Items", "Tanks", "Aspects", "Compacting" };
+    private static final String[] CONTENT_KEYS = { "Items", "Tanks", "Aspects", "Compacting", "Crafting" };
 
     @Nullable
     public static ItemStack cleanseContents(@Nullable ItemStack stack) {
@@ -481,8 +506,8 @@ public abstract class DrawerBlock extends BlockContainer implements IBlockModelP
         }
         NBTTagList entries = payload.getTagList("Entries", 10);
         for (int index = 0; index < entries.tagCount(); index++) {
-            if (entries.getCompoundTagAt(index)
-                .getLong("Amount") > 0L) {
+            NBTTagCompound entry = entries.getCompoundTagAt(index);
+            if (entry.getLong("Amount") > 0L || entry.getByte("Count") > 0) {
                 return true;
             }
         }

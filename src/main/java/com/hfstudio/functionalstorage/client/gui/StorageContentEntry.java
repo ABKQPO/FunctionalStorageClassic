@@ -13,7 +13,7 @@ import net.minecraftforge.fluids.FluidStack;
 
 import com.hfstudio.functionalstorage.client.gui.DrawerTooltipData.AspectIcon;
 
-public final class StorageContentEntry {
+public class StorageContentEntry {
 
     public final ItemStack item;
     public final FluidStack fluid;
@@ -108,7 +108,7 @@ public final class StorageContentEntry {
         return sum < 0L ? Long.MAX_VALUE : sum;
     }
 
-    public static final class ItemIdentity {
+    public static class ItemIdentity {
 
         public final ItemStack stack;
 
@@ -134,7 +134,7 @@ public final class StorageContentEntry {
         }
     }
 
-    public static final class FluidIdentity {
+    public static class FluidIdentity {
 
         public final FluidStack stack;
 
@@ -157,7 +157,7 @@ public final class StorageContentEntry {
         }
     }
 
-    public static final class AspectIdentity {
+    public static class AspectIdentity {
 
         public final String name;
 

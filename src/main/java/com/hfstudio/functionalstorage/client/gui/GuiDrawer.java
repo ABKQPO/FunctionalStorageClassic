@@ -1,29 +1,39 @@
 package com.hfstudio.functionalstorage.client.gui;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
+import java.util.function.Predicate;
 
 import javax.annotation.Nonnull;
 
 import net.minecraft.client.gui.FontRenderer;
+import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiTextField;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.Slot;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.StatCollector;
+import net.minecraftforge.fluids.FluidRegistry;
+import net.minecraftforge.fluids.FluidStack;
 
+import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.GL11;
 
 import com.hfstudio.functionalstorage.FunctionalStorage;
 import com.hfstudio.functionalstorage.api.storage.BigAspectStack;
 import com.hfstudio.functionalstorage.api.storage.BigFluidStack;
 import com.hfstudio.functionalstorage.api.storage.BigItemStack;
+import com.hfstudio.functionalstorage.api.storage.IStorageHandler;
 import com.hfstudio.functionalstorage.client.gui.DrawerTooltipData.AspectIcon;
 import com.hfstudio.functionalstorage.client.gui.DrawerTooltipData.Entry;
 import com.hfstudio.functionalstorage.client.integration.NEIGuiIntegration;
+import com.hfstudio.functionalstorage.client.integration.StorageShortcutInput;
 import com.hfstudio.functionalstorage.client.integration.StorageShortcutScreen;
 import com.hfstudio.functionalstorage.common.block.base.DrawerBlock;
 import com.hfstudio.functionalstorage.common.container.ContainerDrawer;
@@ -32,10 +42,18 @@ import com.hfstudio.functionalstorage.common.integration.Mods;
 import com.hfstudio.functionalstorage.common.item.upgrade.AutomationUpgradeItem;
 import com.hfstudio.functionalstorage.common.item.upgrade.RedstoneUpgradeItem;
 import com.hfstudio.functionalstorage.common.network.MenuSettingsMessage;
+import com.hfstudio.functionalstorage.common.network.StorageSearchMessage;
+import com.hfstudio.functionalstorage.common.network.StorageTransferMessage;
+import com.hfstudio.functionalstorage.common.tile.AdaptiveGridTile;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
+import com.hfstudio.functionalstorage.common.tile.controller.AdaptiveMatrixTile;
 import com.hfstudio.functionalstorage.common.tile.controller.DrawerControllerTile;
 import com.hfstudio.functionalstorage.common.tile.controller.StorageNetworkTile;
 import com.hfstudio.functionalstorage.misc.GuiHandler;
+
+import cpw.mods.fml.common.Loader;
+import cpw.mods.fml.common.ModContainer;
+import cpw.mods.fml.common.registry.GameData;
 
 public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
 
@@ -47,11 +65,26 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
     private final DrawerGuiLayout layout;
     private final DrawerInfoPanel info;
     private final StorageTooltipPainter previews = StorageTooltipPainter.INSTANCE;
+    private GuiButton adaptiveModeButton;
+    private GuiButton adaptiveSortButton;
+    private GuiButton adaptiveLayoutButton;
+    private GuiButton adaptiveOrderButton;
+    private GuiTextField search;
+    private boolean scrolling;
+    private int requestedRow;
+    private int searchRevision;
+    private String lastQuery = "";
+    private int[] matchedResources = new int[0];
+    private Predicate<ItemStack> itemSearch;
     private int consumedMouseButtons;
     private int pendingUpgradeSlot = -1;
 
     public GuiDrawer(@Nonnull EntityPlayer player, @Nonnull ControllableDrawerTile tile) {
-        super(new ContainerDrawer(tile, player));
+        this(player, tile, new ContainerDrawer(tile, player));
+    }
+
+    protected GuiDrawer(EntityPlayer player, ControllableDrawerTile tile, ContainerDrawer container) {
+        super(container);
         this.tile = tile;
         this.info = new DrawerInfoPanel(tile);
         this.layout = ((ContainerDrawer) inventorySlots).getLayout();
@@ -72,18 +105,64 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
         priority.setText(Integer.toString(tile.getPriority()));
         priority.setVisible(!(tile instanceof StorageNetworkTile));
         priority.setEnabled(!(tile instanceof StorageNetworkTile));
+        if (tile instanceof AdaptiveMatrixTile || tile instanceof AdaptiveGridTile) {
+            search = new GuiTextField(fontRendererObj, guiLeft + 96, guiTop + 5, 72, 12);
+            search.setMaxStringLength(50);
+        }
+        if (tile instanceof AdaptiveMatrixTile || tile instanceof AdaptiveGridTile) {
+            int y = guiTop + 94;
+            adaptiveModeButton = new GuiButton(200, guiLeft + 8, y, 78, 14, "");
+            adaptiveSortButton = new GuiButton(201, guiLeft + 90, y, 78, 14, "");
+            adaptiveLayoutButton = new GuiButton(202, guiLeft + 8, y + 18, 78, 14, "");
+            adaptiveOrderButton = new GuiButton(203, guiLeft + 90, y + 18, 78, 14, "");
+            buttonList.add(adaptiveModeButton);
+            buttonList.add(adaptiveSortButton);
+            buttonList.add(adaptiveLayoutButton);
+            buttonList.add(adaptiveOrderButton);
+            updateAdaptiveModeButton();
+        }
+        ContainerDrawer menu = (ContainerDrawer) inventorySlots;
+        if (menu.isTransferViewVirtual()) {
+            updateSearch(0);
+        }
     }
 
     @Override
     public void updateScreen() {
         super.updateScreen();
         priority.updateCursorCounter();
+        if (search != null) {
+            search.updateCursorCounter();
+            if (!search.getText()
+                .trim()
+                .toLowerCase(Locale.ROOT)
+                .equals(lastQuery) || searchRevision != menu().getSearchRevision()) {
+                updateSearch(menu().getScrollRow());
+            }
+        }
         if (!priority.isFocused()) priority.setText(Integer.toString(tile.getPriority()));
+        updateAdaptiveModeButton();
+    }
+
+    @Override
+    protected void actionPerformed(GuiButton button) {
+        if (button == adaptiveModeButton) {
+            FunctionalStorage.network
+                .sendToServer(new MenuSettingsMessage(inventorySlots.windowId, 0, "adaptive_mode_next"));
+            return;
+        }
+        if (button == adaptiveSortButton || button == adaptiveLayoutButton || button == adaptiveOrderButton) {
+            String setting = button == adaptiveSortButton ? "adaptive_sort_next"
+                : button == adaptiveLayoutButton ? "adaptive_layout_next" : "adaptive_order_next";
+            FunctionalStorage.network.sendToServer(new MenuSettingsMessage(inventorySlots.windowId, 0, setting));
+            return;
+        }
+        super.actionPerformed(button);
     }
 
     @Override
     public boolean isTextInputFocused() {
-        return priority != null && priority.isFocused();
+        return priority != null && priority.isFocused() || search != null && search.isFocused();
     }
 
     @Override
@@ -94,6 +173,22 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
         return null;
     }
 
+    @Override
+    protected void handleMouseClick(Slot slot, int slotId, int button, int mode) {
+        ContainerDrawer menu = menu();
+        if (menu.isTransferViewVirtual() && slot != null
+            && slotId >= 0
+            && slotId < menu.getTransferSlotCount()
+            && mode != 5) {
+            if (!menu.hasTransferStorage()) return;
+            FunctionalStorage.network.sendToServer(
+                StorageTransferMessage
+                    .click(inventorySlots.windowId, slotId, button, mode, menu.getSession(), menu.getViewRevision()));
+            return;
+        }
+        super.handleMouseClick(slot, slotId, button, mode);
+    }
+
     public int getFilterSlotAt(int mouseX, int mouseY) {
         if (!tile.isLocked() || tile.getItemHandler() == null) return -1;
         Slot slot = storageSlotAt(mouseX, mouseY);
@@ -102,6 +197,13 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
 
     @Override
     protected void keyTyped(char character, int key) {
+        if (search != null && search.isFocused() && key != 1) {
+            String previous = search.getText();
+            if (search.textboxKeyTyped(character, key)) {
+                if (!previous.equals(search.getText())) updateSearch(0);
+                return;
+            }
+        }
         if (priority.isFocused()
             && (Character.isDigit(character) || character < 32 || key == 211 || key == 203 || key == 205)) {
             String previous = priority.getText();
@@ -117,7 +219,8 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
                 return;
             }
         }
-        if (key == 1 || !priority.isFocused()) super.keyTyped(character, key);
+        if (key == 1 || !priority.isFocused() && (search == null || !search.isFocused()))
+            super.keyTyped(character, key);
     }
 
     @Override
@@ -125,6 +228,8 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
         DrawerGuiTextures textures = DrawerGuiTextures.INSTANCE;
         textures.panel(guiLeft, guiTop, xSize, ySize);
         priority.drawTextBox();
+        if (search != null) search.drawTextBox();
+        if (search != null) drawScrollbar();
         boolean drawerFace = !(tile instanceof StorageNetworkTile) && tile.getActiveStorage() != null
             && tile.getActiveStorage()
                 .getStorageCount() <= 4;
@@ -151,13 +256,13 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
                 StatCollector.translateToLocal(
                     tile.getBlockType()
                         .getUnlocalizedName() + ".name"),
-                160),
+                search == null ? 160 : 84),
             8,
             6,
             LABEL_COLOUR);
         if (priority.getVisible()) fontRendererObj
             .drawString(StatCollector.translateToLocal("gui.functionalstorage.priority"), 114, 20, LABEL_COLOUR);
-        if (tile instanceof DrawerControllerTile) fontRendererObj.drawString(
+        if (tile instanceof DrawerControllerTile && search == null) fontRendererObj.drawString(
             StatCollector.translateToLocal("gui.functionalstorage.storage_range"),
             10,
             layout.upgradeY() - 11,
@@ -177,32 +282,48 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
             8,
             layout.inventoryY() - 12,
             LABEL_COLOUR);
-        if (tile instanceof StorageNetworkTile || tile.getActiveStorage() == null) {
+        if (tile instanceof StorageNetworkTile && !(tile instanceof AdaptiveMatrixTile)
+            && !(tile instanceof AdaptiveGridTile)) {
             return;
         }
-        for (int slot = 0; slot < Math.min(
-            36,
-            tile.getActiveStorage()
-                .getStorageCount()); slot++) {
+        if (search != null) {
+            if (AdaptiveMatrixTile.usesRf()) {
+                String energy = StatCollector.translateToLocalFormatted(
+                    "functionalstorage.gui.adaptive.energy",
+                    StorageAmountFormatter.formatDisplay(menu().getRfStored(), false),
+                    StorageAmountFormatter.formatDisplay(menu().getRfCapacity(), false),
+                    StorageAmountFormatter.formatDisplay(menu().getRfCost(), false));
+                float scale = Math.min(1F, 160F / Math.max(1, fontRendererObj.getStringWidth(energy)));
+                GL11.glPushMatrix();
+                GL11.glTranslatef(8F, 130F, 0F);
+                GL11.glScalef(scale, scale, 1F);
+                fontRendererObj.drawString(energy, 0, 0, LABEL_COLOUR);
+                GL11.glPopMatrix();
+            }
+            if (!menu().isOnline()) {
+                String offline = StatCollector.translateToLocal("functionalstorage.gui.adaptive.offline");
+                fontRendererObj.drawString(offline, 80 - fontRendererObj.getStringWidth(offline) / 2, 50, 0xAA3333);
+                return;
+            }
+        } else if (displayStorage() == null) return;
+        ContainerDrawer menu = (ContainerDrawer) inventorySlots;
+        for (int slot = 0; slot < menu.getVisibleStorageSlots(); slot++) {
             Entry entry = entry(slot);
             if (entry == null) {
                 continue;
             }
             int x = contentX(slot);
             int y = contentY(slot);
-            if (entry.aspect() != null || entry.item() != null && tile.getActiveStorage()
-                .getSnapshot(slot)
-                .getAmount() == 0) {
+            if (entry.fluid() != null || entry.aspect() != null || entry.item() != null && transferAmount(slot) == 0L) {
                 previews.drawEntry(new Entry(entry.item(), entry.fluid(), entry.aspect(), ""), x, y);
             }
-            String amount = entry.amount() + "/"
-                + formatAmount(
-                    tile.getActiveStorage()
-                        .getCapacity(slot));
+            String amount = search != null ? entry.amount()
+                : entry.amount() + "/" + formatAmount(transferCapacity(slot));
             GL11.glPushMatrix();
             GL11.glTranslatef(0F, 0F, 200F);
-            float scale = Math.min(0.72F, 33.12F / Math.max(1, fontRendererObj.getStringWidth(amount)));
-            GL11.glTranslatef(x + 8, y + 16, 0);
+            float scale = Math
+                .min(0.72F, (search != null ? 16F : 33.12F) / Math.max(1, fontRendererObj.getStringWidth(amount)));
+            GL11.glTranslatef(x + 8, y + (search != null ? 10 : 16), 0);
             GL11.glScalef(scale, scale, 1F);
             fontRendererObj.drawStringWithShadow(amount, -fontRendererObj.getStringWidth(amount) / 2, 0, 0xFFFFFF);
             GL11.glPopMatrix();
@@ -211,6 +332,8 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
 
     @Override
     public void drawScreen(int mouseX, int mouseY, float partialTicks) {
+        if (!Mouse.isButtonDown(0)) scrolling = false;
+        if (scrolling) scrollTo(mouseY);
         super.drawScreen(mouseX, mouseY, partialTicks);
         if (Mods.NotEnoughItems.isModLoaded()) {
             return;
@@ -248,9 +371,11 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
     }
 
     public List<String> storageTooltipLines(int mouseX, int mouseY) {
-        if (tile instanceof StorageNetworkTile || tile.getActiveStorage() == null) {
+        if (tile instanceof StorageNetworkTile && !(tile instanceof AdaptiveMatrixTile)
+            && !(tile instanceof AdaptiveGridTile)) {
             return List.of();
         }
+        if (search == null && displayStorage() == null) return List.of();
         Slot hovered = storageSlotAt(mouseX, mouseY);
         if (hovered == null) {
             return List.of();
@@ -260,30 +385,62 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
             Entry entry = entry(hovered.getSlotIndex());
             lines.add(entry == null ? StatCollector.translateToLocal("gui.functionalstorage.empty") : entry.name());
         }
+        String mod = resourceModName(hovered.getSlotIndex());
+        if (!mod.isEmpty()) lines.add(EnumChatFormatting.GRAY.toString() + EnumChatFormatting.ITALIC + mod);
         lines.add(EnumChatFormatting.GRAY + amountLine(hovered.getSlotIndex()));
-        lines.add(
+        if (menu().isTransferViewVirtual() && menu().getUnassignedDisplayResources() > 0) {
+            lines.add(
+                EnumChatFormatting.GRAY + StatCollector.translateToLocalFormatted(
+                    "functionalstorage.gui.adaptive.unassigned",
+                    menu().getUnassignedDisplayResources()));
+        }
+        if (isAspectTerminal()) {
+            BigAspectStack aspect = menu().getTransferAspectSnapshot(hovered.getSlotIndex());
+            if (aspect.hasTemplate()) lines.add(
+                EnumChatFormatting.GRAY + aspect.getAspect()
+                    .getLocalizedDescription());
+        }
+        if (mc.gameSettings.advancedItemTooltips) lines.add(
             EnumChatFormatting.GRAY + StatCollector.translateToLocal("gui.functionalstorage.slot")
                 + hovered.getSlotIndex());
         return lines;
     }
 
     private String amountLine(int slot) {
-        boolean fluid = tile.getFluidHandler() != null;
-        String amount = StorageAmountFormatter.formatTooltip(
-            tile.getActiveStorage()
-                .getSnapshot(slot)
-                .getAmount(),
-            fluid) + "/"
-            + StorageAmountFormatter.formatTooltip(
-                tile.getActiveStorage()
-                    .getCapacity(slot),
-                fluid);
-        return StatCollector.translateToLocal("gui.functionalstorage.amount") + amount;
+        boolean fluid = isFluidTerminal();
+        String amount = StorageAmountFormatter.formatTooltip(transferAmount(slot), fluid) + "/"
+            + StorageAmountFormatter.formatTooltip(transferCapacity(slot), fluid);
+        long capacity = transferCapacity(slot);
+        String percent = capacity <= 0L ? ""
+            : String.format(Locale.ROOT, " (%.1f%%)", Math.min(100D, 100D * transferAmount(slot) / capacity));
+        return StatCollector.translateToLocal("gui.functionalstorage.amount") + amount + percent;
     }
 
     private Slot storageSlotAt(int mouseX, int mouseY) {
         Slot slot = getSlotAt(mouseX, mouseY);
         return slot instanceof ContainerDrawer.StorageSlot ? slot : null;
+    }
+
+    private String resourceModName(int slot) {
+        if (isAspectTerminal()) return "Thaumcraft";
+        ModContainer owner;
+        if (isFluidTerminal()) {
+            FluidStack fluid = menu().getTransferFluidSnapshot(slot)
+                .getTemplate();
+            if (fluid == null) return "";
+            owner = GameData.findModOwner(FluidRegistry.getDefaultFluidName(fluid.getFluid()));
+        } else {
+            ItemStack item = menu().getTransferItemSnapshot(slot)
+                .getTemplate();
+            if (item == null) return "";
+            String name = Item.itemRegistry.getNameForObject(item.getItem());
+            int colon = name == null ? -1 : name.indexOf(':');
+            owner = colon < 0 ? null
+                : Loader.instance()
+                    .getIndexedModList()
+                    .get(name.substring(0, colon));
+        }
+        return owner == null ? "Minecraft" : owner.getName();
     }
 
     @Override
@@ -292,6 +449,21 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
         if (priority.isFocused()) {
             consumeMouseButton(button);
             return;
+        }
+        if (search != null) {
+            search.mouseClicked(mouseX, mouseY, button);
+            if (search.isFocused()) {
+                consumeMouseButton(button);
+                return;
+            }
+            if (button == 0 && mouseX >= guiLeft + 158
+                && mouseX < guiLeft + 170
+                && mouseY >= guiTop + 18
+                && mouseY < guiTop + 90) {
+                scrolling = true;
+                scrollTo(mouseY);
+                return;
+            }
         }
         if (button == 1 && mc.thePlayer.inventory.getItemStack() == null
             && !(Mods.NotEnoughItems.isModLoaded() && NEIGuiIntegration.isDragging())) {
@@ -303,6 +475,139 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
             }
         }
         super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
+    public void handleMouseInput() {
+        super.handleMouseInput();
+        if (search == null) return;
+        int wheel = Mouse.getEventDWheel();
+        if (wheel != 0 && !StorageShortcutInput.handlesWheel(this)) {
+            updateSearch(menu().getScrollRow() + (wheel > 0 ? -1 : 1));
+        }
+    }
+
+    private void scrollTo(int mouseY) {
+        int max = menu().getMaxScrollRow();
+        int row = max == 0 ? 0 : Math.round((mouseY - guiTop - 25.5F) / 57F * max);
+        if (row != requestedRow) updateSearch(row);
+    }
+
+    private void drawScrollbar() {
+        int max = menu().getMaxScrollRow();
+        int row = menu().getScrollRow();
+        GL11.glColor4f(1F, 1F, 1F, 1F);
+        ResourceLocation track = new ResourceLocation(
+            "minecraft",
+            "textures/gui/container/creative_inventory/tab_items.png");
+        mc.getTextureManager()
+            .bindTexture(track);
+        drawTexturedModalRect(guiLeft + 157, guiTop + 17, 174, 17, 14, 1);
+        func_152125_a(guiLeft + 157, guiTop + 18, 174, 18, 14, 72, 14, 72, 256, 256);
+        drawTexturedModalRect(guiLeft + 157, guiTop + 90, 174, 128, 14, 1);
+        ResourceLocation scrollTexture = new ResourceLocation(
+            "minecraft",
+            "textures/gui/container/creative_inventory/tabs.png");
+        mc.getTextureManager()
+            .bindTexture(scrollTexture);
+        int offset = max == 0 ? 0 : Math.round(57F * row / max);
+        drawTexturedModalRect(guiLeft + 158, guiTop + 18 + offset, max == 0 ? 244 : 232, 0, 12, 15);
+    }
+
+    private ContainerDrawer menu() {
+        return (ContainerDrawer) inventorySlots;
+    }
+
+    private void updateSearch(int row) {
+        ContainerDrawer menu = menu();
+        if (!menu.isSnapshotReady()) return;
+        requestedRow = Math.max(0, Math.min(row, menu.getMaxScrollRow()));
+        String text = search == null ? ""
+            : search.getText()
+                .trim()
+                .toLowerCase(Locale.ROOT);
+        if (text.isEmpty()) {
+            lastQuery = "";
+            matchedResources = new int[0];
+            searchRevision = menu.getSearchRevision();
+            FunctionalStorage.network.sendToServer(
+                new StorageSearchMessage(
+                    inventorySlots.windowId,
+                    requestedRow,
+                    "",
+                    matchedResources,
+                    menu.getSession(),
+                    menu.getViewRevision()));
+            return;
+        }
+        if (!text.equals(lastQuery) || searchRevision != menu.getSearchRevision()) {
+            int count = menu.getTransferResourceCount();
+            int[] matches = new int[count];
+            int matched = 0;
+            if (isItemTerminal()) {
+                itemSearch = Mods.NotEnoughItems.isModLoaded() ? NEIGuiIntegration.search(text)
+                    : item -> matchesItem(item, text);
+            }
+            for (int index = 0; index < count; index++) {
+                if (matchesResource(menu, index, text)) matches[matched++] = index;
+            }
+            matchedResources = Arrays.copyOf(matches, matched);
+            lastQuery = text;
+            searchRevision = menu.getSearchRevision();
+        }
+        FunctionalStorage.network.sendToServer(
+            new StorageSearchMessage(
+                inventorySlots.windowId,
+                requestedRow,
+                text,
+                matchedResources,
+                menu.getSession(),
+                menu.getViewRevision()));
+    }
+
+    private boolean matchesResource(ContainerDrawer menu, int index, String text) {
+        if (isItemTerminal()) {
+            BigItemStack item = menu.getResourceItemSnapshot(index);
+            return item.hasTemplate() && itemSearch != null && itemSearch.test(item.getTemplate());
+        }
+        if (isFluidTerminal()) {
+            BigFluidStack fluid = menu.getResourceFluidSnapshot(index);
+            return fluid.hasTemplate() && (fluid.getTemplate()
+                .getLocalizedName() + " "
+                + fluid.getTemplate()
+                    .getFluid()
+                    .getName()
+                + " "
+                + FluidRegistry.getDefaultFluidName(
+                    fluid.getTemplate()
+                        .getFluid())).toLowerCase(Locale.ROOT)
+                            .contains(text);
+        }
+        BigAspectStack aspect = menu.getResourceAspectSnapshot(index);
+        return aspect.hasTemplate() && (aspect.getAspect()
+            .getName() + " "
+            + aspect.getAspect()
+                .getLocalizedDescription()
+            + " "
+            + aspect.getAspect()
+                .getTag()
+            + " thaumcraft").toLowerCase(Locale.ROOT)
+                .contains(text);
+    }
+
+    private boolean matchesItem(ItemStack item, String text) {
+        if (item.getDisplayName()
+            .toLowerCase(Locale.ROOT)
+            .contains(text)
+            || Item.itemRegistry.getNameForObject(item.getItem())
+                .toLowerCase(Locale.ROOT)
+                .contains(text))
+            return true;
+        for (String line : item.getTooltip(mc.thePlayer, false)) {
+            if (line.toLowerCase(Locale.ROOT)
+                .contains(text)) return true;
+        }
+        return false;
     }
 
     private int upgradeSlotAt(int mouseX, int mouseY) {
@@ -359,7 +664,7 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
     }
 
     private int contentX(int slot) {
-        return tile.getItemHandler() != null ? layout.storageX(slot)
+        return search != null || tile.getItemHandler() != null ? layout.storageX(slot)
             : 64 + Math.round(
                 ((DrawerBlock) tile.getBlockType()).getFaceLayout()
                     .getSlotX(slot) * 48F)
@@ -367,7 +672,7 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
     }
 
     private int contentY(int slot) {
-        return tile.getItemHandler() != null ? layout.storageY(slot)
+        return search != null || tile.getItemHandler() != null ? layout.storageY(slot)
             : 16 + Math.round(
                 ((DrawerBlock) tile.getBlockType()).getFaceLayout()
                     .getSlotY(slot) * 48F)
@@ -375,13 +680,33 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
     }
 
     private String formatAmount(long amount) {
-        return StorageAmountFormatter.formatDisplay(amount, tile.getFluidHandler() != null);
+        return StorageAmountFormatter.formatDisplay(amount, isFluidTerminal());
     }
 
     private Entry entry(int slot) {
-        if (tile.getItemHandler() != null) {
-            BigItemStack stored = tile.getItemHandler()
-                .getSnapshot(slot);
+        ContainerDrawer menu = (ContainerDrawer) inventorySlots;
+        if (isFluidTerminal()) {
+            BigFluidStack stored = menu.getTransferFluidSnapshot(slot);
+            return stored.hasTemplate()
+                ? new Entry(
+                    null,
+                    stored.getTemplate(),
+                    null,
+                    StorageAmountFormatter.formatDisplay(stored.getAmount(), true))
+                : null;
+        }
+        if (isAspectTerminal()) {
+            BigAspectStack stored = menu.getTransferAspectSnapshot(slot);
+            return stored.hasTemplate()
+                ? new Entry(
+                    null,
+                    null,
+                    AspectIcon.of(stored.getAspect()),
+                    StorageAmountFormatter.formatDisplay(stored.getAmount(), false))
+                : null;
+        }
+        if (isItemTerminal()) {
+            BigItemStack stored = menu.getTransferItemSnapshot(slot);
             return stored.hasTemplate()
                 ? new Entry(
                     stored.getTemplate(),
@@ -391,8 +716,7 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
                 : null;
         }
         if (tile.getFluidHandler() != null) {
-            BigFluidStack stored = tile.getFluidHandler()
-                .getSnapshot(slot);
+            BigFluidStack stored = menu.getTransferFluidSnapshot(slot);
             return stored.hasTemplate()
                 ? new Entry(
                     null,
@@ -402,8 +726,7 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
                 : null;
         }
         if (tile.getAspectHandler() != null) {
-            BigAspectStack stored = tile.getAspectHandler()
-                .getSnapshot(slot);
+            BigAspectStack stored = menu.getTransferAspectSnapshot(slot);
             return stored.hasTemplate()
                 ? new Entry(
                     null,
@@ -413,6 +736,72 @@ public class GuiDrawer extends GuiContainer implements StorageShortcutScreen {
                 : null;
         }
         return null;
+    }
+
+    private long transferAmount(int slot) {
+        ContainerDrawer menu = (ContainerDrawer) inventorySlots;
+        if (isFluidTerminal()) return menu.getTransferFluidSnapshot(slot)
+            .getAmount();
+        if (isAspectTerminal()) return menu.getTransferAspectSnapshot(slot)
+            .getAmount();
+        return menu.getTransferItemSnapshot(slot)
+            .getAmount();
+    }
+
+    private long transferCapacity(int slot) {
+        return ((ContainerDrawer) inventorySlots).getTransferCapacity(slot);
+    }
+
+    private IStorageHandler<?, ?> displayStorage() {
+        if (isFluidTerminal()) return tile.getFluidHandler();
+        if (isAspectTerminal()) return tile.getAspectHandler();
+        if (isItemTerminal()) return tile.getItemHandler();
+        return tile.getActiveStorage();
+    }
+
+    private boolean isItemTerminal() {
+        if (menu().isTransferViewVirtual()) return AdaptiveMatrixTile.TERMINAL_ITEMS.equals(menu().getViewMode());
+        if (tile instanceof AdaptiveMatrixTile matrix) return matrix.isTerminalItems();
+        if (tile instanceof AdaptiveGridTile grid) return grid.isTerminalItems();
+        return tile.getItemHandler() != null;
+    }
+
+    private boolean isFluidTerminal() {
+        if (menu().isTransferViewVirtual()) return AdaptiveMatrixTile.TERMINAL_FLUIDS.equals(menu().getViewMode());
+        if (tile instanceof AdaptiveMatrixTile matrix) return matrix.isTerminalFluids();
+        if (tile instanceof AdaptiveGridTile grid) return grid.isTerminalFluids();
+        return tile.getItemHandler() == null && tile.getFluidHandler() != null;
+    }
+
+    private boolean isAspectTerminal() {
+        if (menu().isTransferViewVirtual()) return AdaptiveMatrixTile.TERMINAL_ASPECTS.equals(menu().getViewMode());
+        if (tile instanceof AdaptiveMatrixTile matrix) return matrix.isTerminalAspects();
+        if (tile instanceof AdaptiveGridTile grid) return grid.isTerminalAspects();
+        return tile.getItemHandler() == null && tile.getFluidHandler() == null && tile.getAspectHandler() != null;
+    }
+
+    private void updateAdaptiveModeButton() {
+        if (adaptiveModeButton == null) return;
+        String mode = StatCollector.translateToLocal("functionalstorage.gui.adaptive.mode." + terminalMode());
+        adaptiveModeButton.displayString = StatCollector
+            .translateToLocalFormatted("functionalstorage.gui.adaptive.mode.button", mode);
+        adaptiveSortButton.displayString = buttonLabel("sort", menu().getSortId());
+        adaptiveLayoutButton.displayString = buttonLabel("layout", menu().getLayoutId());
+        adaptiveOrderButton.displayString = buttonLabel("order", menu().getOrderId());
+    }
+
+    private String terminalMode() {
+        return menu().isTransferViewVirtual() ? menu().getViewMode()
+            : tile instanceof AdaptiveMatrixTile matrix ? matrix.getTerminalMode()
+                : tile instanceof AdaptiveGridTile grid ? grid.getTerminalMode() : AdaptiveMatrixTile.TERMINAL_ITEMS;
+    }
+
+    private String buttonLabel(String group, String id) {
+        String value = StatCollector
+            .translateToLocal("functionalstorage.gui.adaptive.presentation." + group + "." + id);
+        return fontRendererObj.trimStringToWidth(
+            StatCollector.translateToLocalFormatted("functionalstorage.gui.adaptive." + group + ".button", value),
+            70);
     }
 
     @Nonnull

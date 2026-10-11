@@ -39,6 +39,11 @@ public class FunctionalStorageConfig {
     @Config.Order(5)
     public static final Client CLIENT = new Client();
 
+    @Config.Comment("Adaptive storage and RF behaviour")
+    @Config.RequiresMcRestart
+    @Config.Order(6)
+    public static final Adaptive ADAPTIVE = new Adaptive();
+
     public static class General {
 
         @Config.Comment("Keep stored contents, filters, lock state, and upgrades in the dropped block when broken")
@@ -649,5 +654,67 @@ public class FunctionalStorageConfig {
         @Config.DefaultBoolean(true)
         @Config.Order(6)
         public boolean prioritizeFluidContainerDeposit = true;
+    }
+
+    public static class Adaptive {
+
+        @Config.Comment("Register Adaptive Functional Storage content")
+        @Config.DefaultBoolean(true)
+        @Config.Order(1)
+        public boolean enabled = true;
+
+        @Config.Comment("Maximum linking range of an adaptive matrix in blocks")
+        @Config.RangeInt(min = 1, max = 64)
+        @Config.DefaultInt(24)
+        @Config.Order(2)
+        public int linkingRange = 24;
+
+        @Config.Comment("Additional linking radius provided by each adaptive range extender")
+        @Config.RangeInt(min = 0, max = 64)
+        @Config.DefaultInt(24)
+        @Config.Order(3)
+        public int rangeExtenderBonus = 24;
+
+        @Config.Comment("Maximum linking radius after applying adaptive range extenders")
+        @Config.RangeInt(min = 1, max = 256)
+        @Config.DefaultInt(64)
+        @Config.Order(4)
+        public int maximumLinkingRange = 64;
+
+        @Config.Comment("RF buffer capacity of an adaptive matrix")
+        @Config.RangeInt(min = 1, max = 2147483647)
+        @Config.DefaultInt(1000000)
+        @Config.Order(5)
+        public int energyCapacity = 1000000;
+
+        @Config.Comment("Maximum RF received by an adaptive matrix in one operation")
+        @Config.RangeInt(min = 1, max = 2147483647)
+        @Config.DefaultInt(1000000)
+        @Config.Order(6)
+        public int maxEnergyReceive = 1000000;
+
+        @Config.Comment("Base RF consumed by an adaptive matrix per tick")
+        @Config.RangeInt(min = 0, max = 2147483647)
+        @Config.DefaultInt(20)
+        @Config.Order(7)
+        public int baseEnergyCost = 20;
+
+        @Config.Comment("Additional RF consumed per loaded item drawer per tick")
+        @Config.RangeInt(min = 0, max = 2147483647)
+        @Config.DefaultInt(5)
+        @Config.Order(8)
+        public int itemDrawerEnergyCost = 5;
+
+        @Config.Comment("Maximum resource entries in one terminal synchronization packet")
+        @Config.RangeInt(min = 1, max = 64)
+        @Config.DefaultInt(16)
+        @Config.Order(9)
+        public int terminalEntriesPerPacket = 16;
+
+        @Config.Comment("Maximum terminal synchronization packets sent per viewer per tick")
+        @Config.RangeInt(min = 1, max = 16)
+        @Config.DefaultInt(2)
+        @Config.Order(10)
+        public int terminalPacketsPerTick = 2;
     }
 }

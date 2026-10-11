@@ -100,6 +100,37 @@ public interface IBigAspectHandler extends IStorageHandler<BigAspectStack, Aspec
     }
 
     /**
+     * Routes insertion only through indices that already retain the requested
+     * aspect. This is used when a terminal entry represents one existing aspect
+     * and must not silently configure another empty slot.
+     *
+     * @param request requested aspect and amount
+     * @param action  simulation or execution
+     * @return the amount accepted by matching indices
+     */
+    @Nonnull
+    default TransferResult<BigAspectStack, AspectStorageKey> insertMatchingRouted(@Nonnull BigAspectStack request,
+        @Nonnull StorageAction action) {
+        Objects.requireNonNull(action, "action");
+        long requested = request.isEmpty() ? 0L : request.getAmount();
+        if (requested == 0L) {
+            return new TransferResult<>(0L, BigAspectStack.empty(), action);
+        }
+        long processedTotal = 0L;
+        int count = Math.max(0, getStorageCount());
+        for (int index = 0; index < count && processedTotal < requested; index++) {
+            BigAspectStack current = getSnapshot(index);
+            if (!current.hasTemplate() || !current.isSameType(request)) {
+                continue;
+            }
+            long remaining = requested - processedTotal;
+            long processed = insert(index, request.withAmount(remaining), action).getProcessedAmount();
+            processedTotal = saturatedAdd(processedTotal, Math.min(remaining, Math.max(0L, processed)));
+        }
+        return new TransferResult<>(requested, request.withAmount(processedTotal), action);
+    }
+
+    /**
      * Routes extraction through matching generic indices.
      *
      * @param request requested aspect and amount

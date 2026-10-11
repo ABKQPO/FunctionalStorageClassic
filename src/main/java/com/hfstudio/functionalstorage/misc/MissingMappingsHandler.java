@@ -17,9 +17,9 @@ public class MissingMappingsHandler {
     private static final Map<String, Item> ITEM_REMAPPINGS = new LinkedHashMap<>();
 
     public static void registerLegacyItems() {
-        registerTieredItems("water_generation_upgrade", RegistrationHandler.waterGenerationUpgrades, false);
-        registerTieredItems("stone_generation_upgrade", RegistrationHandler.stoneGenerationUpgrades, false);
-        registerTieredItems("universal_item_generation", RegistrationHandler.universalGenerationUpgrades, false);
+        registerTieredItems("water_generation_upgrade", RegistrationHandler.waterGenerationUpgrades, true);
+        registerTieredItems("stone_generation_upgrade", RegistrationHandler.stoneGenerationUpgrades, true);
+        registerTieredItems("universal_item_generation", RegistrationHandler.universalGenerationUpgrades, true);
         registerTieredItems(
             "obsidian_upgrade",
             RegistrationHandler.getItemGenerationUpgradeGroups()
@@ -53,6 +53,7 @@ public class MissingMappingsHandler {
         for (int index = 0; index < replacements.size(); index++) {
             Item replacement = replacements.get(index);
             registerItem(legacyPrefix + "_t" + (index + 1), replacement);
+            registerItem(legacyPrefix + "_" + (index + 1), replacement);
             if (index == 0 && unnumberedFirstTier) registerItem(legacyPrefix, replacement);
         }
     }

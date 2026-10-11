@@ -68,6 +68,7 @@ public abstract class ControllableDrawerTile extends TileEntity implements Capab
     private static final String KEY_OPTIONS = "DrawerOptions";
     private static final String KEY_LOCKED = "Locked";
     private static final String KEY_CONTROLLER = "ControllerPos";
+    private static final String KEY_ADAPTIVE_MATRIX = "AdaptiveMatrixPos";
     private static final String KEY_TILE_DATA = "TileData";
     private static final String KEY_SLOT = "Slot";
 
@@ -87,6 +88,10 @@ public abstract class ControllableDrawerTile extends TileEntity implements Capab
     private int controllerX = Integer.MIN_VALUE;
     private int controllerY = Integer.MIN_VALUE;
     private int controllerZ = Integer.MIN_VALUE;
+
+    private int adaptiveMatrixX = Integer.MIN_VALUE;
+    private int adaptiveMatrixY = Integer.MIN_VALUE;
+    private int adaptiveMatrixZ = Integer.MIN_VALUE;
 
     private StorageSubscription storageSubscription = StorageSubscription.CLOSED;
     private IStorageHandler<?, ?> subscribedStorage;
@@ -323,6 +328,32 @@ public abstract class ControllableDrawerTile extends TileEntity implements Capab
         requestUpdatePacket();
     }
 
+    @Nullable
+    public int[] getAdaptiveMatrixPosition() {
+        return adaptiveMatrixX == Integer.MIN_VALUE ? null
+            : new int[] { adaptiveMatrixX, adaptiveMatrixY, adaptiveMatrixZ };
+    }
+
+    public boolean isLinkedToAdaptiveMatrix(int x, int y, int z) {
+        return adaptiveMatrixX == x && adaptiveMatrixY == y && adaptiveMatrixZ == z;
+    }
+
+    public void setAdaptiveMatrixPosition(int x, int y, int z) {
+        adaptiveMatrixX = x;
+        adaptiveMatrixY = y;
+        adaptiveMatrixZ = z;
+        markDirty();
+        requestUpdatePacket();
+    }
+
+    public void clearAdaptiveMatrixPosition() {
+        adaptiveMatrixX = Integer.MIN_VALUE;
+        adaptiveMatrixY = Integer.MIN_VALUE;
+        adaptiveMatrixZ = Integer.MIN_VALUE;
+        markDirty();
+        requestUpdatePacket();
+    }
+
     public void detachFromController(@Nonnull World world) {
         if (controllerX == Integer.MIN_VALUE) {
             return;
@@ -554,6 +585,9 @@ public abstract class ControllableDrawerTile extends TileEntity implements Capab
         if (controllerX != Integer.MIN_VALUE) {
             tag.setIntArray(KEY_CONTROLLER, new int[] { controllerX, controllerY, controllerZ });
         }
+        if (adaptiveMatrixX != Integer.MIN_VALUE) {
+            tag.setIntArray(KEY_ADAPTIVE_MATRIX, new int[] { adaptiveMatrixX, adaptiveMatrixY, adaptiveMatrixZ });
+        }
         writeStorageData(tag);
         return tag;
     }
@@ -576,6 +610,17 @@ public abstract class ControllableDrawerTile extends TileEntity implements Capab
                 controllerX = position[0];
                 controllerY = position[1];
                 controllerZ = position[2];
+            }
+        }
+        adaptiveMatrixX = Integer.MIN_VALUE;
+        adaptiveMatrixY = Integer.MIN_VALUE;
+        adaptiveMatrixZ = Integer.MIN_VALUE;
+        if (tag.hasKey(KEY_ADAPTIVE_MATRIX)) {
+            int[] position = tag.getIntArray(KEY_ADAPTIVE_MATRIX);
+            if (position.length == 3) {
+                adaptiveMatrixX = position[0];
+                adaptiveMatrixY = position[1];
+                adaptiveMatrixZ = position[2];
             }
         }
         readStorageData(tag);

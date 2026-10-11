@@ -26,6 +26,7 @@ public enum Mods implements IMod, ITargetMod {
     ServerUtilities("serverutilities"),
     Thaumcraft("Thaumcraft"),
     ThaumicEnergistics("thaumicenergistics"),
+    CoFHCore("CoFHCore"),
     Jabba("JABBA"),
     LogisticsPipes("LogisticsPipes"),
     GregTech("gregtech_nh"),

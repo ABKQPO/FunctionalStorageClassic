@@ -52,7 +52,7 @@ public class DrawerNetworkFindProvider implements IStackFilter.IStackFilterProvi
         return null;
     }
 
-    private static class SingleDrawerFilter implements IStackFilter {
+    public static class SingleDrawerFilter implements IStackFilter {
 
         private final DrawerStackFilter filter;
 
@@ -67,7 +67,7 @@ public class DrawerNetworkFindProvider implements IStackFilter.IStackFilterProvi
         }
     }
 
-    private static class ControllerNetworkFilter implements IStackFilter {
+    public static class ControllerNetworkFilter implements IStackFilter {
 
         private final DrawerControllerTile controller;
 
@@ -87,7 +87,8 @@ public class DrawerNetworkFindProvider implements IStackFilter.IStackFilterProvi
         }
 
         private boolean anyLinkedDrawerMatches(@Nonnull DrawerStackFilter.Query query) {
-            for (long position : controller.getDrawers()) {
+            for (long position : controller.connectedScope(-1)
+                .getPositions()) {
                 DrawerStackFilter filter = filterAt(position);
                 if (filter != null && filter.test(query)) {
                     return true;

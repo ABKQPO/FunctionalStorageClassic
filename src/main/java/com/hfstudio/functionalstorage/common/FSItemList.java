@@ -67,6 +67,14 @@ public class FSItemList {
     public static final FSItemList ArmoryCabinet = register("armory_cabinet");
     public static final FSItemList StorageController = register("storage_controller");
     public static final FSItemList ControllerExtension = register("controller_extension");
+    public static final FSItemList AdaptiveMatrix = register("adaptive_matrix");
+    public static final FSItemList AdaptiveDrawer = register("adaptive_drawer");
+    public static final FSItemList AdaptiveFluidDrawer = register("adaptive_fluid_drawer");
+    public static final FSItemList AdaptiveGrid = register("adaptive_grid");
+    public static final FSItemList AdaptiveCraftingGrid = register("adaptive_crafting_grid");
+    public static final FSItemList AdaptiveDeposit = register("adaptive_deposit");
+    public static final FSItemList AdaptiveRangeExtender = register("adaptive_range_extender");
+    public static final FSItemList AdaptiveUpgrade = register("adaptive_upgrade");
 
     public static final FSItemList CompactingFramedDrawer = register("compacting_framed_drawer");
     public static final FSItemList FramedSimpleCompactingDrawer = register("framed_simple_compacting_drawer");

@@ -10,6 +10,8 @@ import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.fluids.IFluidHandler;
 
+import com.hfstudio.functionalstorage.api.storage.BigAspectStack;
+import com.hfstudio.functionalstorage.api.storage.BigFluidStack;
 import com.hfstudio.functionalstorage.api.storage.IBigAspectHandler;
 import com.hfstudio.functionalstorage.api.storage.IBigFluidHandler;
 import com.hfstudio.functionalstorage.api.storage.IBigItemHandler;
@@ -27,6 +29,8 @@ import com.hfstudio.functionalstorage.common.inventory.adapter.DrawerInventoryAc
 import com.hfstudio.functionalstorage.common.inventory.adapter.DrawerItemInventory;
 import com.hfstudio.functionalstorage.common.item.ConfigurationToolItem.ConfigurationAction;
 import com.hfstudio.functionalstorage.common.item.LayeredToolItem;
+import com.hfstudio.functionalstorage.common.tile.EssentiaDrawerTile;
+import com.hfstudio.functionalstorage.common.tile.FluidDrawerTile;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 import com.hfstudio.functionalstorage.config.FunctionalStorageConfig;
 
@@ -54,6 +58,10 @@ public abstract class StorageNetworkTile extends ControllableDrawerTile
     private long checkedAt = Long.MIN_VALUE;
 
     protected abstract List<ControllableDrawerTile> connectedDrawers();
+
+    protected boolean networkAvailable() {
+        return true;
+    }
 
     @Override
     public void updateEntity() {
@@ -102,7 +110,8 @@ public abstract class StorageNetworkTile extends ControllableDrawerTile
         itemHandlers.clear();
         fluidHandlers.clear();
         aspectHandlers.clear();
-        for (ControllableDrawerTile drawer : connectedDrawers()) {
+        for (ControllableDrawerTile drawer : networkAvailable() ? connectedDrawers()
+            : List.<ControllableDrawerTile>of()) {
             if (drawer instanceof StorageNetworkTile) continue;
             if (drawer.getItemHandler() != null) itemHandlers.add(drawer.getItemHandler());
             if (drawer.getFluidHandler() != null) fluidHandlers.add(drawer.getFluidHandler());
@@ -212,12 +221,12 @@ public abstract class StorageNetworkTile extends ControllableDrawerTile
             && !(held.getItem() instanceof IStorageUpgrade)) {
             IBigFluidHandler fluids = getFluidHandler();
             if (fluids != null && fluids.getStorageCount() > 0
-                && FluidContainerInteraction.activate(player, fluids, ROUTED)) {
+                && FluidContainerInteraction.activate(player, fluids, ROUTED, this::prepareLockedFluidSlot)) {
                 return true;
             }
             IBigAspectHandler aspects = getAspectHandler();
             if (aspects != null && aspects.getStorageCount() > 0
-                && EssentiaContainerRegistry.activate(player, aspects, ROUTED)) {
+                && EssentiaContainerRegistry.activate(player, aspects, ROUTED, this::prepareLockedAspectSlot)) {
                 return true;
             }
         }
@@ -246,4 +255,35 @@ public abstract class StorageNetworkTile extends ControllableDrawerTile
 
     @Override
     public void onSlotClicked(@Nonnull EntityPlayer player, int slot) {}
+
+    public Runnable prepareLockedFluidSlot(int index, BigFluidStack request) {
+        int offset = 0;
+        for (ControllableDrawerTile drawer : connectedDrawers()) {
+            IBigFluidHandler handler = drawer.getFluidHandler();
+            if (handler == null) continue;
+            int count = handler.getStorageCount();
+            if (index < offset + count) {
+                return drawer instanceof FluidDrawerTile fluid ? fluid.prepareLockedSlot(index - offset, request)
+                    : null;
+            }
+            offset += count;
+        }
+        return null;
+    }
+
+    public Runnable prepareLockedAspectSlot(int index, BigAspectStack request) {
+        int offset = 0;
+        for (ControllableDrawerTile drawer : connectedDrawers()) {
+            IBigAspectHandler handler = drawer.getAspectHandler();
+            if (handler == null) continue;
+            int count = handler.getStorageCount();
+            if (index < offset + count) {
+                return drawer instanceof EssentiaDrawerTile essentia
+                    ? essentia.prepareLockedSlot(index - offset, request)
+                    : null;
+            }
+            offset += count;
+        }
+        return null;
+    }
 }

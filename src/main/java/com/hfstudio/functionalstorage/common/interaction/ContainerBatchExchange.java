@@ -1,11 +1,14 @@
 package com.hfstudio.functionalstorage.common.interaction;
 
+import java.util.function.BiPredicate;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 
 import com.hfstudio.functionalstorage.api.storage.BigItemStack;
+import com.hfstudio.functionalstorage.common.integration.bogosorter.BogoSorterIntegration;
 
 /** Collects equivalent container results without losing stack counts. */
 public class ContainerBatchExchange {
@@ -17,6 +20,30 @@ public class ContainerBatchExchange {
     public ContainerBatchExchange(EntityPlayer player, Consumer<ItemStack> replace) {
         this.player = player;
         this.replace = replace;
+    }
+
+    public static int exchangeInventorySlot(EntityPlayer player, int inventorySlot, int limit,
+        Predicate<ItemStack> accepts, BiPredicate<ItemStack, Consumer<ItemStack>> transfer) {
+        if (player == null || inventorySlot < 0
+            || inventorySlot >= player.inventory.mainInventory.length
+            || limit <= 0
+            || BogoSorterIntegration.isProtectedSlot(player, inventorySlot)) return 0;
+        ItemStack source = player.inventory.getStackInSlot(inventorySlot);
+        if (source == null || source.stackSize <= 0 || !accepts.test(source)) return 0;
+        ItemStack remaining = source.copy();
+        ContainerBatchExchange exchange = new ContainerBatchExchange(
+            player,
+            stack -> player.inventory.setInventorySlotContents(inventorySlot, stack));
+        int transferred = 0;
+        while (remaining.stackSize > 0 && transferred < limit && accepts.test(remaining)) {
+            ItemStack single = remaining.copy();
+            single.stackSize = 1;
+            if (!transfer.test(single, exchange::accept)) break;
+            remaining.stackSize--;
+            transferred++;
+        }
+        if (transferred > 0) exchange.complete(remaining);
+        return transferred;
     }
 
     public void accept(ItemStack exchanged) {

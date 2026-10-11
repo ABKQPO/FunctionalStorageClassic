@@ -23,7 +23,7 @@ import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
 @SideOnly(Side.CLIENT)
-public final class DrawerContentCollector {
+public class DrawerContentCollector {
 
     @Nonnull
     public static List<StorageContentEntry> collectDrawer(@Nonnull ControllableDrawerTile tile,

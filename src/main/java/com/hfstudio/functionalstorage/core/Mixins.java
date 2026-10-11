@@ -22,7 +22,11 @@ public enum Mixins implements IMixins {
     FINDIT_DRAWER_NETWORK(
         new MixinBuilder().addClientMixins("findit.MixinClientBlockFindService", "findit.MixinClientItemFindService")
             .addRequiredMod(Mods.FindIt)
-            .setPhase(Phase.LATE));
+            .setPhase(Phase.LATE)),
+    GREGTECH_TEXTURE_ACCESS(new MixinBuilder()
+        .addClientMixins("gregtech.AccessorGTMultiTextureRender", "gregtech.AccessorGTSidedTextureRender")
+        .addRequiredMod(Mods.GregTech)
+        .setPhase(Phase.LATE));
 
     private final MixinBuilder builder;
 

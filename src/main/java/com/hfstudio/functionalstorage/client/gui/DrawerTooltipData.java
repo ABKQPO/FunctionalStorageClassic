@@ -157,10 +157,7 @@ public class DrawerTooltipData {
         for (int index = 0; index < list.tagCount(); index++) {
             NBTTagCompound entry = list.getCompoundTagAt(index);
             NBTTagCompound template = entry.getCompoundTag("Template");
-            long count = entry.getLong("Amount");
-            if (count <= 0L) {
-                continue;
-            }
+            long count = Math.max(0L, entry.getLong("Amount"));
             if (kind == ContentKind.ITEM) {
                 ItemStack item = ItemUtil.readStack(template);
                 if (item != null) {

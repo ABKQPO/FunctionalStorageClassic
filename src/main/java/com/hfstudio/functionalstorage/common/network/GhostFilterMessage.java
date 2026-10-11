@@ -4,8 +4,8 @@ import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
 
 import com.gtnewhorizon.gtnhlib.util.ServerThreadUtil;
-import com.hfstudio.functionalstorage.common.container.GhostFilterMenu;
 import com.hfstudio.functionalstorage.common.container.ContainerAdaptiveCrafting;
+import com.hfstudio.functionalstorage.common.container.GhostFilterMenu;
 
 import cpw.mods.fml.common.network.ByteBufUtils;
 import cpw.mods.fml.common.network.simpleimpl.IMessage;

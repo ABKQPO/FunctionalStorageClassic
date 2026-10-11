@@ -25,6 +25,7 @@ import com.hfstudio.functionalstorage.common.recipe.DrawerCraftingRecipe;
 import com.hfstudio.functionalstorage.common.recipe.FramedDrawerStyleRecipe;
 import com.hfstudio.functionalstorage.common.recipe.UpgradeConversionRecipe;
 import com.hfstudio.functionalstorage.common.storage.DrawerLayout;
+import com.hfstudio.functionalstorage.config.FunctionalStorageConfig;
 
 import cpw.mods.fml.common.registry.GameRegistry;
 
@@ -234,6 +235,107 @@ public class FunctionalStorageRecipes {
         registerControllerRecipe(FSItemList.ControllerExtension.get(), Items.repeater, Blocks.stone);
         registerControllerRecipe(FSItemList.FramedStorageController.get(), Items.comparator, ironNugget);
         registerControllerRecipe(FSItemList.FramedControllerExtension.get(), Items.repeater, ironNugget);
+        registerAdaptiveRecipes();
+    }
+
+    private static void registerAdaptiveRecipes() {
+        if (!FunctionalStorageConfig.ADAPTIVE.enabled || !FSItemList.AdaptiveMatrix.hasBeenSet()
+            || !FSItemList.AdaptiveDrawer.hasBeenSet()
+            || !FSItemList.AdaptiveUpgrade.hasBeenSet()) {
+            return;
+        }
+        registerOreRecipe(
+            FSItemList.AdaptiveUpgrade.get(),
+            "RGR",
+            "GDG",
+            "RGR",
+            'R',
+            "dustRedstone",
+            'G',
+            Blocks.glass_pane,
+            'D',
+            "gemDiamond");
+        registerOreRecipe(
+            FSItemList.AdaptiveMatrix.get(),
+            "DGI",
+            "GBG",
+            "IGD",
+            'D',
+            "gemDiamond",
+            'G',
+            Blocks.glass,
+            'I',
+            "ingotIron",
+            'B',
+            FSItemList.StorageController.get());
+        registerOreRecipe(
+            FSItemList.AdaptiveDeposit.get(),
+            "IHI",
+            "RMR",
+            "III",
+            'I',
+            "ingotIron",
+            'H',
+            Blocks.hopper,
+            'R',
+            "dustRedstone",
+            'M',
+            FSItemList.AdaptiveMatrix.get());
+        registerOreRecipe(
+            FSItemList.AdaptiveRangeExtender.get(),
+            "IRI",
+            "RMR",
+            "IRI",
+            'I',
+            "ingotIron",
+            'R',
+            Items.repeater,
+            'M',
+            FSItemList.AdaptiveMatrix.get());
+        registerOreRecipe(
+            FSItemList.AdaptiveFluidDrawer.get(),
+            "DUD",
+            "UBU",
+            "DUD",
+            'D',
+            FSItemList.FluidDrawer1.get(),
+            'U',
+            FSItemList.AdaptiveUpgrade.get(),
+            'B',
+            Items.bucket);
+        registerOreRecipe(
+            FSItemList.AdaptiveGrid.get(),
+            "IRI",
+            "RMR",
+            "IRI",
+            'I',
+            "ingotIron",
+            'R',
+            Items.redstone,
+            'M',
+            FSItemList.AdaptiveMatrix.get());
+        registerOreRecipe(
+            FSItemList.AdaptiveCraftingGrid.get(),
+            "ICI",
+            "RGR",
+            "III",
+            'I',
+            "ingotIron",
+            'C',
+            Blocks.crafting_table,
+            'R',
+            "dustRedstone",
+            'G',
+            FSItemList.AdaptiveGrid.get());
+        GameRegistry.addRecipe(
+            new DrawerCraftingRecipe(
+                FSItemList.AdaptiveDrawer.get(),
+                true,
+                "D U",
+                'D',
+                DRAWER_ORE,
+                'U',
+                FSItemList.AdaptiveUpgrade.get()));
     }
 
     private static void registerControllerRecipe(ItemStack controller, Object center, Object frame) {

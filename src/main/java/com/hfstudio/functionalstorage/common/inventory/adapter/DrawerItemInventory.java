@@ -164,9 +164,7 @@ public class DrawerItemInventory implements ISidedInventory, IExtendedStackLimit
             refresh(index);
             return null;
         }
-        ItemStack template = snapshot.getTemplate();
-        int requested = Math.min(count, Math.max(1, template.getMaxStackSize()));
-        BigItemStack extracted = handler.extract(index, requested, StorageAction.EXECUTE)
+        BigItemStack extracted = handler.extract(index, count, StorageAction.EXECUTE)
             .getProcessed();
         ItemStack rollback = extracted.toItemStack();
         if (extracted.getAmount() > 0L && rollback != null) {

@@ -8,8 +8,8 @@ import com.hfstudio.functionalstorage.FunctionalStorage;
 import com.hfstudio.functionalstorage.api.storage.BigAspectStack;
 import com.hfstudio.functionalstorage.api.storage.BigFluidStack;
 import com.hfstudio.functionalstorage.api.storage.BigItemStack;
-import com.hfstudio.functionalstorage.common.container.StorageTransferMenu;
 import com.hfstudio.functionalstorage.common.container.ContainerDrawer;
+import com.hfstudio.functionalstorage.common.container.StorageTransferMenu;
 import com.hfstudio.functionalstorage.common.integration.Mods;
 import com.hfstudio.functionalstorage.common.interaction.StorageTransfers.Action;
 import com.hfstudio.functionalstorage.common.network.StorageTransferMessage;
@@ -26,8 +26,14 @@ public class StorageShortcutInput {
         if (supports(gui) && supportsSlot(gui, slot)) {
             ContainerDrawer menu = gui.inventorySlots instanceof ContainerDrawer drawer ? drawer : null;
             FunctionalStorage.network.sendToServer(
-                new StorageTransferMessage(gui.inventorySlots.windowId, slot.slotNumber, action, amount, reverse,
-                    menu == null ? 0L : menu.getSession(), menu == null ? 0L : menu.getViewRevision()));
+                new StorageTransferMessage(
+                    gui.inventorySlots.windowId,
+                    slot.slotNumber,
+                    action,
+                    amount,
+                    reverse,
+                    menu == null ? 0L : menu.getSession(),
+                    menu == null ? 0L : menu.getViewRevision()));
         }
     }
 
@@ -43,9 +49,13 @@ public class StorageShortcutInput {
         if (slot.inventory == Minecraft.getMinecraft().thePlayer.inventory) return slot.getStack() != null;
         StorageTransferMenu menu = (StorageTransferMenu) gui.inventorySlots;
         int index = slot.getSlotIndex();
-        if (menu.isTransferViewVirtual()
-            && (menu.getTransferFluidStorage() != null || menu.getTransferAspectStorage() != null)) {
-            return true;
+        if (menu.isTransferViewVirtual()) {
+            return menu.hasTransferStorage() && (menu.getTransferItemSnapshot(index)
+                .hasTemplate()
+                || menu.getTransferFluidSnapshot(index)
+                    .hasTemplate()
+                || menu.getTransferAspectSnapshot(index)
+                    .hasTemplate());
         }
         if (menu.getTransferFluidStorage() != null) {
             BigFluidStack fluid = menu.getTransferFluidSnapshot(index);

@@ -3,6 +3,7 @@ package com.hfstudio.functionalstorage.client.render;
 import java.nio.FloatBuffer;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
 
@@ -58,6 +59,8 @@ import com.hfstudio.functionalstorage.common.block.base.DrawerBlock;
 import com.hfstudio.functionalstorage.common.integration.Mods;
 import com.hfstudio.functionalstorage.common.item.ConfigurationToolItem;
 import com.hfstudio.functionalstorage.common.options.DrawerOptions;
+import com.hfstudio.functionalstorage.common.presentation.AdaptiveDisplayEntry;
+import com.hfstudio.functionalstorage.common.presentation.AdaptiveDisplayProvider;
 import com.hfstudio.functionalstorage.common.tile.EnderDrawerTile;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 import com.hfstudio.functionalstorage.config.FunctionalStorageConfig;
@@ -306,7 +309,16 @@ public class DrawerRenderer extends TileEntitySpecialRenderer implements IResour
                 IBigItemHandler itemHandler = drawer.getItemHandler();
                 IBigFluidHandler fluidHandler = drawer.getFluidHandler();
                 IBigAspectHandler aspectHandler = drawer.getAspectHandler();
-                if (itemHandler != null) {
+                AdaptiveDisplayProvider provider = drawer instanceof AdaptiveDisplayProvider adaptive ? adaptive : null;
+                List<AdaptiveDisplayEntry> adaptiveEntries = provider == null ? null
+                    : provider.getAdaptiveDisplayEntries();
+                if (adaptiveEntries != null) {
+                    DrawerFaceLayout adaptiveLayout = provider.getAdaptiveDisplayLayout();
+                    if (adaptiveLayout != null) {
+                        layout = adaptiveLayout;
+                    }
+                    renderAdaptiveItemSlots(adaptiveEntries, layout, options);
+                } else if (itemHandler != null) {
                     renderItemSlots(itemHandler, layout, options);
                 } else if (fluidHandler != null) {
                     renderFluidSlots(drawer, fluidHandler, layout, options);
@@ -384,6 +396,44 @@ public class DrawerRenderer extends TileEntitySpecialRenderer implements IResour
                     scale,
                     ratio(snapshot.getAmount(), handler.getCapacity(slot)),
                     options);
+            }
+        }
+    }
+
+    private void renderAdaptiveItemSlots(@Nonnull List<AdaptiveDisplayEntry> entries, @Nonnull DrawerFaceLayout layout,
+        @Nonnull DrawerOptions options) {
+        int slotCount = Math.min(layout.getSlotCount(), entries.size());
+        boolean showCount = options.isShowItemCount();
+        boolean showIndicator = options.getAdvancedValue(ConfigurationToolItem.ConfigurationAction.INDICATOR) != 0;
+        boolean renderLabels = showCount || showIndicator;
+        float scale = iconScale(layout);
+        for (int slot = 0; slot < slotCount; slot++) {
+            BigItemStack snapshot = entries.get(slot)
+                .content();
+            if (renderLabels) {
+                itemSnapshots[slot] = snapshot;
+            }
+            if (snapshot.hasTemplate() && options.isShowItemRender()) {
+                renderStack(snapshot.getTemplate(), layout.getSlotX(slot), layout.getSlotY(slot), scale);
+            }
+        }
+        simpleIcons.flush();
+        if (!renderLabels) {
+            return;
+        }
+        for (int slot = 0; slot < slotCount; slot++) {
+            AdaptiveDisplayEntry entry = entries.get(slot);
+            BigItemStack snapshot = entry.content();
+            if (!snapshot.hasTemplate()) {
+                continue;
+            }
+            float centerX = layout.getSlotX(slot);
+            float centerY = layout.getSlotY(slot);
+            if (showCount) {
+                renderText(StorageAmountFormatter.formatDisplay(snapshot.getAmount(), false), centerX, centerY, scale);
+            }
+            if (showIndicator) {
+                renderIndicator(centerX, centerY, scale, ratio(snapshot.getAmount(), entry.capacity()), options);
             }
         }
     }

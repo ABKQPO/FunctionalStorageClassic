@@ -5,6 +5,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -15,7 +17,6 @@ import com.hfstudio.functionalstorage.api.storage.IBigAspectHandler;
 import com.hfstudio.functionalstorage.api.storage.StorageAction;
 import com.hfstudio.functionalstorage.api.storage.TransferResult;
 import com.hfstudio.functionalstorage.common.interaction.ContainerBatchExchange;
-import com.hfstudio.functionalstorage.common.interaction.ContainerExchange;
 
 import thaumcraft.api.aspects.Aspect;
 import thaumcraft.api.aspects.AspectList;
@@ -66,7 +67,8 @@ public class EssentiaContainerRegistry {
             handler,
             slot,
             stack -> player.inventory.setInventorySlotContents(player.inventory.currentItem, stack),
-            prepareLockedSlot);
+            prepareLockedSlot,
+            null);
     }
 
     public static boolean activateCursor(EntityPlayer player, IBigAspectHandler handler, int slot,
@@ -75,20 +77,37 @@ public class EssentiaContainerRegistry {
         if (!isEssentiaContainer(cursor)) {
             return false;
         }
-        return activateBatch(player, cursor, handler, slot, player.inventory::setItemStack, prepareLockedSlot);
+        return activateBatch(player, cursor, handler, slot, player.inventory::setItemStack, prepareLockedSlot, null);
+    }
+
+    public static boolean activateCursor(EntityPlayer player, IBigAspectHandler handler, BigAspectStack selected,
+        BiFunction<Integer, BigAspectStack, Runnable> prepareLockedSlot) {
+        ItemStack cursor = player.inventory.getItemStack();
+        if (!isEssentiaContainer(cursor)) {
+            return false;
+        }
+        return activateBatch(
+            player,
+            cursor,
+            handler,
+            ROUTED,
+            player.inventory::setItemStack,
+            prepareLockedSlot,
+            selected);
     }
 
     private static boolean activateBatch(EntityPlayer player, ItemStack source, IBigAspectHandler handler, int slot,
-        Consumer<ItemStack> replace, BiFunction<Integer, BigAspectStack, Runnable> prepareLockedSlot) {
+        Consumer<ItemStack> replace, BiFunction<Integer, BigAspectStack, Runnable> prepareLockedSlot,
+        @Nullable BigAspectStack selected) {
         if (player.capabilities.isCreativeMode) {
-            activate(source, handler, slot, result -> {}, prepareLockedSlot);
+            activate(source, handler, slot, result -> {}, prepareLockedSlot, selected);
             return true;
         }
         ItemStack remaining = source.copy();
         ContainerBatchExchange exchange = new ContainerBatchExchange(player, replace);
         int transfers = source.stackSize;
         for (int index = 0; index < transfers; index++) {
-            if (!activate(singleContainer(remaining), handler, slot, exchange::accept, prepareLockedSlot)) {
+            if (!activate(singleContainer(remaining), handler, slot, exchange::accept, prepareLockedSlot, selected)) {
                 break;
             }
             remaining.stackSize--;
@@ -120,32 +139,25 @@ public class EssentiaContainerRegistry {
 
     public static int depositInventorySlot(EntityPlayer player, IBigAspectHandler handler, int inventorySlot,
         int limit) {
-        if (player == null || handler == null
-            || inventorySlot < 0
-            || inventorySlot >= player.inventory.mainInventory.length
-            || limit <= 0) {
-            return 0;
-        }
-        int transferred = 0;
-        ItemStack source = player.inventory.getStackInSlot(inventorySlot);
-        while (source != null && transferred < limit && isFilled(source)) {
-            ItemStack current = source;
-            if (!activate(
-                current,
-                handler,
-                ROUTED,
-                result -> ContainerExchange.complete(
-                    player,
-                    current,
-                    stack -> player.inventory.setInventorySlotContents(inventorySlot, stack),
-                    result),
-                null)) {
-                break;
-            }
-            transferred++;
-            source = player.inventory.getStackInSlot(inventorySlot);
-        }
-        return transferred;
+        if (handler == null) return 0;
+        return ContainerBatchExchange.exchangeInventorySlot(
+            player,
+            inventorySlot,
+            limit,
+            EssentiaContainerRegistry::isFilled,
+            (single, exchange) -> activate(single, handler, ROUTED, exchange, null));
+    }
+
+    public static int depositInventorySlot(EntityPlayer player, IBigAspectHandler handler, int inventorySlot,
+        @Nullable Aspect selected, int limit) {
+        if (handler == null) return 0;
+        BigAspectStack selection = selected == null ? null : new BigAspectStack(selected, 1L);
+        return ContainerBatchExchange.exchangeInventorySlot(
+            player,
+            inventorySlot,
+            limit,
+            source -> isFilled(source) && (selected == null || getContainedAspect(source) == selected),
+            (single, exchange) -> activate(single, handler, ROUTED, exchange, null, selection));
     }
 
     public static int fillInventory(EntityPlayer player, IBigAspectHandler handler, int slot) {
@@ -153,33 +165,42 @@ public class EssentiaContainerRegistry {
     }
 
     public static int fillInventory(EntityPlayer player, IBigAspectHandler handler, int slot, int limit) {
-        if (player == null || handler == null || slot < 0 || slot >= handler.getStorageCount() || limit <= 0) {
+        if (player == null || handler == null || slot < 0 || slot >= handler.getStorageCount() || limit <= 0) return 0;
+        int transferred = 0;
+        for (int inventorySlot = 0; inventorySlot < player.inventory.mainInventory.length
+            && transferred < limit; inventorySlot++) {
+            transferred += ContainerBatchExchange.exchangeInventorySlot(
+                player,
+                inventorySlot,
+                limit - transferred,
+                source -> isEssentiaContainer(source) && isEmpty(source),
+                (single, exchange) -> activate(single, handler, slot, exchange, null));
+        }
+        return transferred;
+    }
+
+    public static int fillInventory(EntityPlayer player, IBigAspectHandler handler, BigAspectStack selected,
+        int limit) {
+        if (player == null || handler == null || selected == null || !selected.hasTemplate() || limit <= 0) {
             return 0;
         }
         int transferred = 0;
         for (int inventorySlot = 0; inventorySlot < player.inventory.mainInventory.length
             && transferred < limit; inventorySlot++) {
-            ItemStack source = player.inventory.getStackInSlot(inventorySlot);
-            int slotIndex = inventorySlot;
-            while (source != null && transferred < limit && isEssentiaContainer(source)) {
-                ItemStack current = source;
-                if (!isEmpty(current) || !activate(
-                    current,
-                    handler,
-                    slot,
-                    result -> ContainerExchange.complete(
-                        player,
-                        current,
-                        stack -> player.inventory.setInventorySlotContents(slotIndex, stack),
-                        result),
-                    null)) {
-                    break;
-                }
-                transferred++;
-                source = player.inventory.getStackInSlot(slotIndex);
-            }
+            transferred += fillInventorySlot(player, handler, inventorySlot, selected, limit - transferred);
         }
         return transferred;
+    }
+
+    public static int fillInventorySlot(EntityPlayer player, IBigAspectHandler handler, int inventorySlot,
+        @Nullable BigAspectStack selected, int limit) {
+        if (handler == null) return 0;
+        return ContainerBatchExchange.exchangeInventorySlot(
+            player,
+            inventorySlot,
+            limit,
+            source -> isEssentiaContainer(source) && isEmpty(source),
+            (single, exchange) -> activate(single, handler, ROUTED, exchange, null, selected));
     }
 
     private static boolean isEmpty(ItemStack stack) {
@@ -194,17 +215,31 @@ public class EssentiaContainerRegistry {
         return isEssentiaContainer(stack) && !isEmpty(stack);
     }
 
+    @Nullable
+    public static Aspect getContainedAspect(ItemStack stack) {
+        if (stack == null || !(stack.getItem() instanceof IEssentiaContainerItem container)) {
+            return null;
+        }
+        AspectList content = container.getAspects(singleContainer(stack));
+        return content == null || content.size() != 1 ? null : content.getAspects()[0];
+    }
+
     public static boolean activate(ItemStack held, IBigAspectHandler handler, int slot, Consumer<ItemStack> exchange) {
         return activate(held, handler, slot, exchange, null);
     }
 
     public static boolean activate(ItemStack held, IBigAspectHandler handler, int slot, Consumer<ItemStack> exchange,
         BiFunction<Integer, BigAspectStack, Runnable> prepareLockedSlot) {
+        return activate(held, handler, slot, exchange, prepareLockedSlot, null);
+    }
+
+    private static boolean activate(ItemStack held, IBigAspectHandler handler, int slot, Consumer<ItemStack> exchange,
+        BiFunction<Integer, BigAspectStack, Runnable> prepareLockedSlot, @Nullable BigAspectStack selected) {
         if (held == null || handler.getStorageCount() <= 0) {
             return false;
         }
-        int target = resolveContainer(handler, held, slot);
-        if (target < 0) {
+        int target = selected == null ? resolveContainer(handler, held, slot) : ROUTED;
+        if (target < 0 && selected == null) {
             return false;
         }
         ContainerDefinition definition = CONTAINERS.get(held.getItem());
@@ -218,21 +253,27 @@ public class EssentiaContainerRegistry {
         if (content != null && content.size() == 1) {
             Aspect aspect = content.getAspects()[0];
             BigAspectStack request = new BigAspectStack(aspect, content.getAmount(aspect));
+            if (selected != null && selected.getAspect() != aspect) return false;
             if (!request.isEmpty()) {
-                Runnable rollbackFilter = prepareLockedSlot == null ? () -> {}
+                Runnable rollbackFilter = selected != null || prepareLockedSlot == null ? () -> {}
                     : prepareLockedSlot.apply(target, request);
                 if (rollbackFilter != null) {
-                    if (handler.insert(target, request, StorageAction.SIMULATE)
-                        .isComplete()) {
-                        TransferResult<BigAspectStack, AspectStorageKey> inserted = handler
-                            .insert(target, request, StorageAction.EXECUTE);
+                    TransferResult<BigAspectStack, AspectStorageKey> simulated = selected == null
+                        ? handler.insert(target, request, StorageAction.SIMULATE)
+                        : handler.insertMatchingRouted(request, StorageAction.SIMULATE);
+                    if (simulated.isComplete()) {
+                        TransferResult<BigAspectStack, AspectStorageKey> inserted = selected == null
+                            ? handler.insert(target, request, StorageAction.EXECUTE)
+                            : handler.insertMatchingRouted(request, StorageAction.EXECUTE);
                         if (inserted.isComplete()) {
                             container.setAspects(result, new AspectList());
                             result.setItemDamage(definition.emptyMetadata());
                             exchange.accept(result);
                             transferred = true;
                         } else if (inserted.getProcessedAmount() > 0L) {
-                            handler.extract(target, inserted.getProcessedAmount(), StorageAction.EXECUTE);
+                            if (selected == null)
+                                handler.extract(target, inserted.getProcessedAmount(), StorageAction.EXECUTE);
+                            else handler.extractRouted(inserted.getProcessed(), StorageAction.EXECUTE);
                         }
                     }
                     if (!transferred) {
@@ -241,18 +282,26 @@ public class EssentiaContainerRegistry {
                 }
             }
         } else if (content == null || content.size() == 0) {
-            BigAspectStack available = handler.getSnapshot(target);
-            if (available.getAspect() != null && handler.extract(target, definition.capacity(), StorageAction.SIMULATE)
-                .isComplete()) {
-                TransferResult<BigAspectStack, AspectStorageKey> extracted = handler
-                    .extract(target, definition.capacity(), StorageAction.EXECUTE);
+            BigAspectStack available = selected != null ? selected : handler.getSnapshot(target);
+            TransferResult<BigAspectStack, AspectStorageKey> simulated = selected == null
+                ? handler.extract(target, definition.capacity(), StorageAction.SIMULATE)
+                : handler.extractRouted(
+                    new BigAspectStack(available.getAspect(), definition.capacity()),
+                    StorageAction.SIMULATE);
+            if (available.getAspect() != null && simulated.isComplete()) {
+                TransferResult<BigAspectStack, AspectStorageKey> extracted = selected == null
+                    ? handler.extract(target, definition.capacity(), StorageAction.EXECUTE)
+                    : handler.extractRouted(
+                        new BigAspectStack(available.getAspect(), definition.capacity()),
+                        StorageAction.EXECUTE);
                 if (extracted.isComplete()) {
                     result.setItemDamage(definition.filledMetadata());
                     container.setAspects(result, new AspectList().add(available.getAspect(), definition.capacity()));
                     exchange.accept(result);
                     transferred = true;
                 } else if (extracted.getProcessedAmount() > 0L) {
-                    handler.insert(target, extracted.getProcessed(), StorageAction.EXECUTE);
+                    if (selected == null) handler.insert(target, extracted.getProcessed(), StorageAction.EXECUTE);
+                    else handler.insertMatchingRouted(extracted.getProcessed(), StorageAction.EXECUTE);
                 }
             }
         }
@@ -281,8 +330,8 @@ public class EssentiaContainerRegistry {
             return -1;
         }
         for (int index = 0; index < handler.getStorageCount(); index++) {
-            if (handler.getSnapshot(index)
-                .getAspect() != null) {
+            BigAspectStack snapshot = handler.getSnapshot(index);
+            if (snapshot.getAspect() != null && snapshot.getAmount() > 0L) {
                 return index;
             }
         }

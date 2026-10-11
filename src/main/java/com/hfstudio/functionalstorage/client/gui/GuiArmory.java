@@ -23,8 +23,8 @@ import com.hfstudio.functionalstorage.client.integration.StorageShortcutInput;
 import com.hfstudio.functionalstorage.client.integration.StorageShortcutScreen;
 import com.hfstudio.functionalstorage.common.container.ContainerArmory;
 import com.hfstudio.functionalstorage.common.integration.Mods;
-import com.hfstudio.functionalstorage.common.network.ArmorySearchMessage;
 import com.hfstudio.functionalstorage.common.network.MenuSettingsMessage;
+import com.hfstudio.functionalstorage.common.network.StorageSearchMessage;
 import com.hfstudio.functionalstorage.common.tile.ArmoryCabinetTile;
 
 public class GuiArmory extends GuiContainer implements StorageShortcutScreen {
@@ -96,7 +96,7 @@ public class GuiArmory extends GuiContainer implements StorageShortcutScreen {
             searchRevision = container.getSearchRevision();
         }
         FunctionalStorage.network
-            .sendToServer(new ArmorySearchMessage(inventorySlots.windowId, requestedRow, query, matchedSlots));
+            .sendToServer(new StorageSearchMessage(inventorySlots.windowId, requestedRow, query, matchedSlots));
     }
 
     private boolean matches(ItemStack item, String query) {

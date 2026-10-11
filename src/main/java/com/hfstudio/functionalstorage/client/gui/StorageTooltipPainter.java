@@ -304,6 +304,12 @@ public class StorageTooltipPainter extends Gui {
     private void drawFluidIcon(FluidStack fluid, int x, int y) {
         IIcon icon = fluid.getFluid()
             .getStillIcon();
+        if (icon == null && fluid.getFluid()
+            .getBlock() != null) {
+            icon = fluid.getFluid()
+                .getBlock()
+                .getIcon(0, 0);
+        }
         if (icon == null) {
             return;
         }
@@ -320,6 +326,9 @@ public class StorageTooltipPainter extends Gui {
     }
 
     private void drawAspectIcon(AspectIcon aspect, int x, int y) {
+        if (aspect.texture() == null) {
+            return;
+        }
         Minecraft minecraft = Minecraft.getMinecraft();
         GL11.glDisable(GL11.GL_LIGHTING);
         GL11.glEnable(GL11.GL_BLEND);

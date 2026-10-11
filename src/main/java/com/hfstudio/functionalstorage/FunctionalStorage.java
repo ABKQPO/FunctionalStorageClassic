@@ -6,9 +6,10 @@ import org.apache.logging.log4j.Logger;
 import com.gtnewhorizon.gtnhlib.config.ConfigException;
 import com.hfstudio.functionalstorage.api.storage.IWoodType;
 import com.hfstudio.functionalstorage.api.storage.WoodTypeRegistry;
-import com.hfstudio.functionalstorage.common.network.ArmorySearchMessage;
 import com.hfstudio.functionalstorage.common.network.GhostFilterMessage;
 import com.hfstudio.functionalstorage.common.network.MenuSettingsMessage;
+import com.hfstudio.functionalstorage.common.network.StorageSearchMessage;
+import com.hfstudio.functionalstorage.common.network.StorageSnapshotMessage;
 import com.hfstudio.functionalstorage.common.network.StorageTransferMessage;
 import com.hfstudio.functionalstorage.common.storage.DrawerWoodType;
 import com.hfstudio.functionalstorage.config.FunctionalStorageConfig;
@@ -61,9 +62,10 @@ public class FunctionalStorage {
         }
         network = NetworkRegistry.INSTANCE.newSimpleChannel(MOD_ID);
         network.registerMessage(MenuSettingsMessage.Handler.class, MenuSettingsMessage.class, 0, Side.SERVER);
-        network.registerMessage(ArmorySearchMessage.Handler.class, ArmorySearchMessage.class, 1, Side.SERVER);
+        network.registerMessage(StorageSearchMessage.Handler.class, StorageSearchMessage.class, 1, Side.SERVER);
         network.registerMessage(StorageTransferMessage.Handler.class, StorageTransferMessage.class, 2, Side.SERVER);
         network.registerMessage(GhostFilterMessage.Handler.class, GhostFilterMessage.class, 3, Side.SERVER);
+        network.registerMessage(new StorageSnapshotMessage(), StorageSnapshotMessage.class, 4, Side.CLIENT);
         NetworkRegistry.INSTANCE.registerGuiHandler(this, new GuiHandler());
         DrawerWoodType.registerBuiltIns();
         proxy.preInit(event);

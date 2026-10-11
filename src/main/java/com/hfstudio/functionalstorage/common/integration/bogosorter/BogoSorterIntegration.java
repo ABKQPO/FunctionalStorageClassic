@@ -8,10 +8,15 @@ import com.cleanroommc.bogosorter.api.IBogoSortAPI;
 import com.cleanroommc.bogosorter.common.PinnedSlots;
 import com.cleanroommc.bogosorter.mixins.early.minecraft.SlotAccessor;
 import com.hfstudio.functionalstorage.common.container.ContainerDrawer.StorageSlot;
+import com.hfstudio.functionalstorage.common.integration.Mods;
 
 import cpw.mods.fml.common.Optional;
 
 public class BogoSorterIntegration {
+
+    public static boolean isProtectedSlot(EntityPlayer player, int inventorySlot) {
+        return Mods.InventoryBogoSorter.isModLoaded() && isPinned(player, inventorySlot);
+    }
 
     @Optional.Method(modid = "bogosorter")
     public static void register() {
