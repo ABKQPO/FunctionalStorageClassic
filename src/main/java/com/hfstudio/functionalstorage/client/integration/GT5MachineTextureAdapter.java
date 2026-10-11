@@ -1,13 +1,14 @@
 package com.hfstudio.functionalstorage.client.integration;
 
-import java.lang.reflect.Field;
-
 import javax.annotation.Nullable;
 
 import net.minecraft.block.Block;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.IIcon;
 import net.minecraftforge.common.util.ForgeDirection;
+
+import com.hfstudio.functionalstorage.mixins.late.gregtech.AccessorGTMultiTextureRender;
+import com.hfstudio.functionalstorage.mixins.late.gregtech.AccessorGTSidedTextureRender;
 
 import cpw.mods.fml.common.Optional;
 import cpw.mods.fml.relauncher.Side;
@@ -26,8 +27,6 @@ import gregtech.common.render.IIconTexture;
 public class GT5MachineTextureAdapter {
 
     private static final int PIPE_CONNECTIONS = IConnectable.CONNECTED_WEST | IConnectable.CONNECTED_EAST;
-    private static final Field MULTI_TEXTURES = findTextureField(GTMultiTextureRender.class);
-    private static final Field SIDED_TEXTURES = findTextureField(GTSidedTextureRender.class);
 
     private GT5MachineTextureAdapter() {}
 
@@ -84,32 +83,16 @@ public class GT5MachineTextureAdapter {
     private static IIcon iconFor(@Nullable ITexture texture, int side) {
         if (texture instanceof IIconTexture iconTexture) return iconTexture.getIcon(side, null);
         if (texture instanceof GTMultiTextureRender) {
-            return iconFor(firstTexture(texture, MULTI_TEXTURES, 0), side);
+            return iconFor(
+                firstLayer(((AccessorGTMultiTextureRender) texture).functionalStorage$getTextures(), 0),
+                side);
         }
         if (texture instanceof GTSidedTextureRender) {
-            return iconFor(firstTexture(texture, SIDED_TEXTURES, side), side);
+            return iconFor(
+                firstLayer(((AccessorGTSidedTextureRender) texture).functionalStorage$getTextures(), side),
+                side);
         }
         return null;
     }
 
-    @Nullable
-    private static ITexture firstTexture(ITexture texture, @Nullable Field field, int index) {
-        if (field == null) return null;
-        try {
-            return firstLayer((ITexture[]) field.get(texture), index);
-        } catch (IllegalAccessException | RuntimeException ignored) {
-            return null;
-        }
-    }
-
-    @Nullable
-    private static Field findTextureField(Class<?> textureType) {
-        try {
-            Field field = textureType.getDeclaredField("mTextures");
-            field.setAccessible(true);
-            return field;
-        } catch (NoSuchFieldException | RuntimeException ignored) {
-            return null;
-        }
-    }
 }

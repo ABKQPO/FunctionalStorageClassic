@@ -32,15 +32,16 @@ public class MouseTweaksShortcuts {
         if (!StorageShortcutInput.supportsSlot(gui, slot)) return;
         int wheel = Mouse.getDWheel();
         if (wheel == 0) return;
-        if (slot.getStack() == null || ((StorageShortcutScreen) gui).isTextInputFocused()) return;
+        if (!StorageShortcutInput.hasTransferResource(gui, slot) || ((StorageShortcutScreen) gui).isTextInputFocused())
+            return;
         ItemStack cursor = minecraft.thePlayer.inventory.getItemStack();
-        if (BigItemStack.matches(cursor, slot.getStack())) return;
+        if (slot.getStack() != null && BigItemStack.matches(cursor, slot.getStack())) return;
         boolean push = wheel < 0;
         if ((MTConfig.WheelScrollDirection == 2 || MTConfig.WheelScrollDirection == 3)
             && slot.inventory == minecraft.thePlayer.inventory) push = !push;
         if (MTConfig.WheelScrollDirection == 1 || MTConfig.WheelScrollDirection == 3) push = !push;
         int amount = ModCompatibility.isLwjgl3Loaded() || MTConfig.ScrollItemScaling != 0 ? 1
-            : Math.max(1, Math.min(64, Math.abs(wheel / 120)));
+            : Math.clamp(Math.abs(wheel / 120), 1, 64);
         StorageShortcutInput.send(gui, slot, push ? Action.PUSH : Action.PULL, amount, MTConfig.WheelSearchOrder != 0);
     }
 

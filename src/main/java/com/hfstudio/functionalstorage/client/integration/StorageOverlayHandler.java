@@ -11,8 +11,12 @@ import net.minecraft.item.ItemStack;
 
 import com.hfstudio.functionalstorage.client.gui.DrawerContentCollector;
 import com.hfstudio.functionalstorage.client.gui.GuiDrawer;
+import com.hfstudio.functionalstorage.client.gui.GuiAdaptiveCrafting;
 import com.hfstudio.functionalstorage.client.gui.StorageContentEntry;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
+import com.hfstudio.functionalstorage.common.container.ContainerAdaptiveCrafting;
+import com.hfstudio.functionalstorage.FunctionalStorage;
+import com.hfstudio.functionalstorage.common.network.GhostFilterMessage;
 
 import codechicken.nei.PositionedStack;
 import codechicken.nei.api.API;
@@ -35,6 +39,7 @@ public class StorageOverlayHandler implements IOverlayHandler {
         StorageOverlayHandler handler = new StorageOverlayHandler();
         for (String ident : knownOverlayIdents()) {
             API.registerGuiOverlayHandler(GuiDrawer.class, handler, ident);
+            API.registerGuiOverlayHandler(GuiAdaptiveCrafting.class, handler, ident);
         }
     }
 
@@ -64,7 +69,40 @@ public class StorageOverlayHandler implements IOverlayHandler {
     @Override
     @Optional.Method(modid = "NotEnoughItems")
     public void overlayRecipe(GuiContainer firstGui, IRecipeHandler recipe, int recipeIndex, boolean maxTransfer) {
-        // Drawers expose stored contents but no crafting grid, so nothing is moved.
+        if (!(firstGui.inventorySlots instanceof ContainerAdaptiveCrafting menu)
+            || !"crafting".equals(recipe.getOverlayIdentifier())) return;
+        ItemStack[] templates = new ItemStack[9];
+        for (PositionedStack ingredient : recipe.getIngredientStacks(recipeIndex)) {
+            int column = (ingredient.relx - 25) / 18;
+            int row = (ingredient.rely - 6) / 18;
+            if (column < 0 || column >= 3 || row < 0 || row >= 3) return;
+            ItemStack selected = null;
+            for (ItemStack candidate : ingredient.items) {
+                if (candidate != null && available(menu, firstGui.mc.thePlayer, candidate)) {
+                    selected = candidate.copy();
+                    selected.stackSize = 1;
+                    break;
+                }
+            }
+            if (selected == null) return;
+            templates[row * 3 + column] = selected;
+        }
+        FunctionalStorage.network.sendToServer(new GhostFilterMessage(menu.windowId, templates, maxTransfer));
+    }
+
+    private static boolean available(ContainerAdaptiveCrafting menu, EntityPlayer player, ItemStack candidate) {
+        for (int index = 0; index < menu.getItemResourceCount(); index++) {
+            if (menu.getResourceItemSnapshot(index).getAmount() > 0L
+                && menu.getResourceItemSnapshot(index).isSameType(candidate)) return true;
+        }
+        for (ItemStack stack : player.inventory.mainInventory) {
+            if (stack != null && stack.isItemEqual(candidate) && ItemStack.areItemStackTagsEqual(stack, candidate)) return true;
+        }
+        for (int index = 0; index < 9; index++) {
+            ItemStack stack = menu.getCraftingInventory().getStackInSlot(index);
+            if (stack != null && stack.isItemEqual(candidate) && ItemStack.areItemStackTagsEqual(stack, candidate)) return true;
+        }
+        return false;
     }
 
     @Override
