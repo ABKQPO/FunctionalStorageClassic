@@ -17,6 +17,8 @@ import net.minecraftforge.common.util.FakePlayer;
 import net.minecraftforge.common.util.ForgeDirection;
 import net.minecraftforge.event.world.BlockEvent;
 
+import org.jetbrains.annotations.NotNull;
+
 import com.hfstudio.functionalstorage.api.storage.BigItemStack;
 import com.hfstudio.functionalstorage.api.storage.StorageAction;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
@@ -46,7 +48,7 @@ public class BreakerUpgradeItem extends AutomationUpgradeItem {
     }
 
     @Override
-    public void work(ControllableDrawerTile tile, ItemStack stack, int slot) {
+    public void work(@NotNull ControllableDrawerTile tile, @NotNull ItemStack stack, int slot) {
         if (!(tile.getWorldObj() instanceof WorldServer world) || tile.getItemHandler() == null) return;
         ItemStack tool = UpgradeSettings.getStack(stack, "Tool");
         if (tool == null) return;

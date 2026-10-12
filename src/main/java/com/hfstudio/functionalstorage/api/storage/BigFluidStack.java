@@ -56,7 +56,7 @@ public class BigFluidStack implements StorageSnapshot<BigFluidStack, FluidStorag
     }
 
     // Only existing snapshots may share the private, never-exposed template.
-    private BigFluidStack(FluidStack template, FluidStorageKey key, long amount) {
+    private BigFluidStack(@Nullable FluidStack template, @Nullable FluidStorageKey key, long amount) {
         this.template = template;
         this.key = key;
         this.amount = amount;

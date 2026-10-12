@@ -10,6 +10,8 @@ import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.fluids.IFluidHandler;
 
+import org.jetbrains.annotations.NotNull;
+
 import com.hfstudio.functionalstorage.api.storage.BigAspectStack;
 import com.hfstudio.functionalstorage.api.storage.BigFluidStack;
 import com.hfstudio.functionalstorage.api.storage.IBigAspectHandler;
@@ -211,7 +213,7 @@ public abstract class StorageNetworkTile extends ControllableDrawerTile
     }
 
     @Override
-    public boolean onSlotActivated(EntityPlayer player, int side, float x, float y, float z, int slot) {
+    public boolean onSlotActivated(@NotNull EntityPlayer player, int side, float x, float y, float z, int slot) {
         if (worldObj == null || worldObj.isRemote) {
             return false;
         }

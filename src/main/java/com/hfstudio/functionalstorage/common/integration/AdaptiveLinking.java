@@ -57,11 +57,15 @@ public class AdaptiveLinking {
     }
 
     public static boolean isWithinRange(ControllableDrawerTile member, AdaptiveMatrixTile matrix) {
-        return isWithinRange(member.xCoord, member.yCoord, member.zCoord, matrix);
+        return member != null && !member.isInvalid()
+            && isWithinRange(member.xCoord, member.yCoord, member.zCoord, matrix);
     }
 
     public static boolean isWithinRange(int x, int y, int z, AdaptiveMatrixTile matrix) {
-        int range = matrix.getLinkingRange();
+        if (matrix == null || matrix.isInvalid()) {
+            return false;
+        }
+        int range = Math.max(0, matrix.getLinkingRange());
         return Math.abs((long) x - matrix.xCoord) <= range && Math.abs((long) y - matrix.yCoord) <= range
             && Math.abs((long) z - matrix.zCoord) <= range;
     }

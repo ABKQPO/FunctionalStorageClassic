@@ -1,6 +1,7 @@
 package com.hfstudio.functionalstorage.common.presentation;
 
 import java.util.List;
+import java.util.Objects;
 
 import javax.annotation.Nullable;
 
@@ -86,8 +87,7 @@ public interface AdaptiveDisplayProvider {
             boolean retained = false;
             for (int slot = 0; slot < storage.getStorageCount(); slot++) {
                 StorageSnapshot<?, ?> current = storage.getSnapshot(slot);
-                if (template.getKey()
-                    .equals(current.getKey())) retained = true;
+                if (Objects.equals(template.getKey(), current.getKey())) retained = true;
                 if (!current.hasTemplate() && empty < 0) empty = slot;
             }
             if (retained || empty < 0) continue;

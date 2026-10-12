@@ -7,6 +7,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.annotation.Nonnull;
+
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 
@@ -101,7 +103,7 @@ public class RoutingEquivalenceTest {
             }
 
             @Override
-            protected boolean isCompatible(BigItemStack template, BigItemStack candidate) {
+            protected boolean isCompatible(@Nonnull BigItemStack template, @Nonnull BigItemStack candidate) {
                 return template.getTemplate()
                     .getItemDamage()
                     == candidate.getTemplate()

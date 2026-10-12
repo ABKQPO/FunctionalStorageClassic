@@ -8,6 +8,8 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 
+import org.jetbrains.annotations.NotNull;
+
 import com.hfstudio.functionalstorage.api.storage.BigAspectStack;
 import com.hfstudio.functionalstorage.common.integration.AdaptiveLinking;
 import com.hfstudio.functionalstorage.common.integration.thaumcraft.EssentiaContainerRegistry;
@@ -53,7 +55,7 @@ public class AdaptiveEssentiaDrawerTile extends EssentiaDrawerTile implements Ad
     }
 
     @Override
-    protected int getClientModelKey() {
+    protected int calculateClientModelKey() {
         return getAdaptiveModelKey();
     }
 
@@ -83,7 +85,7 @@ public class AdaptiveEssentiaDrawerTile extends EssentiaDrawerTile implements Ad
     }
 
     @Override
-    public ItemStack createPickBlockStack(ItemStack base) {
+    public @NotNull ItemStack createPickBlockStack(@NotNull ItemStack base) {
         return base;
     }
 

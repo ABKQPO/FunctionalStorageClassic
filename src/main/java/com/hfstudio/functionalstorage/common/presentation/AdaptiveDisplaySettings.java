@@ -8,16 +8,15 @@ import net.minecraft.nbt.NBTTagList;
 
 import com.hfstudio.functionalstorage.api.storage.StorageSnapshot;
 
+import lombok.Getter;
+
 public class AdaptiveDisplaySettings {
 
     private int reservationMask;
     private final StorageSnapshot<?, ?>[] reservations = new StorageSnapshot<?, ?>[4];
     private final StorageSnapshot<?, ?>[] lockedEntries = new StorageSnapshot<?, ?>[4];
+    @Getter
     private int lockedCellCount;
-
-    public int getLockedCellCount() {
-        return lockedCellCount;
-    }
 
     public StorageSnapshot<?, ?> getLockedEntry(int cell) {
         return cell >= 0 && cell < lockedEntries.length ? lockedEntries[cell] : null;

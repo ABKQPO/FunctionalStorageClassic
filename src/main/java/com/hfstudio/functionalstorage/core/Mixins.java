@@ -1,5 +1,7 @@
 package com.hfstudio.functionalstorage.core;
 
+import org.jetbrains.annotations.NotNull;
+
 import com.gtnewhorizon.gtnhmixins.builders.IMixins;
 import com.gtnewhorizon.gtnhmixins.builders.MixinBuilder;
 import com.hfstudio.functionalstorage.common.integration.Mods;
@@ -35,7 +37,7 @@ public enum Mixins implements IMixins {
     }
 
     @Override
-    public MixinBuilder getBuilder() {
+    public @NotNull MixinBuilder getBuilder() {
         return builder;
     }
 }

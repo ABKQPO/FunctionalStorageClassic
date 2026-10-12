@@ -58,12 +58,13 @@ public class AdaptiveDrawerTile extends WoodDrawerTile implements AdaptiveDispla
     }
 
     @Override
-    protected int getClientModelKey() {
+    protected int calculateClientModelKey() {
         return getAdaptiveModelKey();
     }
 
     @Override
-    public boolean onSlotActivated(EntityPlayer player, int side, float hitX, float hitY, float hitZ, int slot) {
+    public boolean onSlotActivated(@NotNull EntityPlayer player, int side, float hitX, float hitY, float hitZ,
+        int slot) {
         ItemStack held = player.getHeldItem();
         if (held == null || held.getItem() == RegistrationHandler.configurationTool
             || held.getItem() == RegistrationHandler.adaptiveConfigurationTool
@@ -80,7 +81,7 @@ public class AdaptiveDrawerTile extends WoodDrawerTile implements AdaptiveDispla
     }
 
     @Override
-    public void onSlotClicked(EntityPlayer player, int slot) {
+    public void onSlotClicked(@NotNull EntityPlayer player, int slot) {
         if (worldObj == null || worldObj.isRemote) return;
         AdaptiveMatrixTile matrix = adaptiveMatrix();
         if (matrix == null || !matrix.isPowered()) return;
@@ -99,7 +100,7 @@ public class AdaptiveDrawerTile extends WoodDrawerTile implements AdaptiveDispla
     }
 
     @Override
-    public ItemStack createPickBlockStack(ItemStack base) {
+    public @NotNull ItemStack createPickBlockStack(@NotNull ItemStack base) {
         return base;
     }
 

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 import javax.annotation.Nonnull;
@@ -19,6 +20,8 @@ import net.minecraft.util.ChatComponentTranslation;
 import net.minecraft.util.StatCollector;
 import net.minecraftforge.common.util.ForgeDirection;
 import net.minecraftforge.fluids.IFluidHandler;
+
+import org.jetbrains.annotations.NotNull;
 
 import com.gtnewhorizon.gtnhlib.util.numberformatting.NumberFormatUtil;
 import com.hfstudio.functionalstorage.api.storage.BigItemStack;
@@ -128,6 +131,11 @@ public class AdaptiveMatrixTile extends DrawerControllerTile implements IEnergyR
     @Override
     protected boolean ownsPhysicalControllerLink() {
         return false;
+    }
+
+    @Override
+    protected boolean isWithinLinkingRange(int x, int y, int z) {
+        return AdaptiveLinking.isWithinRange(x, y, z, this);
     }
 
     @Override
@@ -362,8 +370,7 @@ public class AdaptiveMatrixTile extends DrawerControllerTile implements IEnergyR
             for (int index = 0; index < 4; index++) {
                 if (drawer == owner && index == cell || !provider.isDisplayCellReserved(index)) continue;
                 StorageSnapshot<?, ?> reserved = provider.getDisplayReservation(index);
-                if (reserved != null && template.getKey()
-                    .equals(reserved.getKey())) return false;
+                if (reserved != null && Objects.equals(template.getKey(), reserved.getKey())) return false;
             }
         }
         return true;
@@ -381,7 +388,7 @@ public class AdaptiveMatrixTile extends DrawerControllerTile implements IEnergyR
         if (handler == null) {
             return false;
         }
-        long requested = Math.min(Math.max(1L, amount), template.getMaxStackSize());
+        long requested = Math.min(amount, template.getMaxStackSize());
         TransferResult<BigItemStack, ItemStorageKey> result = handler
             .extractRouted(new BigItemStack(template, requested), StorageAction.EXECUTE);
         ItemStack extracted = result.getProcessed()
@@ -405,6 +412,7 @@ public class AdaptiveMatrixTile extends DrawerControllerTile implements IEnergyR
         cachedLinkingRange = -1;
         topologyCheckedAt = Long.MIN_VALUE;
         super.invalidateNetwork();
+        requestModelStateUpdates();
     }
 
     @Override
@@ -494,7 +502,7 @@ public class AdaptiveMatrixTile extends DrawerControllerTile implements IEnergyR
     }
 
     @Override
-    public boolean onSlotActivated(EntityPlayer player, int side, float x, float y, float z, int slot) {
+    public boolean onSlotActivated(@NotNull EntityPlayer player, int side, float x, float y, float z, int slot) {
         if (worldObj != null && !worldObj.isRemote && player.getHeldItem() == null && player.isSneaking()) {
             return super.onSlotActivated(player, side, x, y, z, slot);
         }
@@ -522,7 +530,7 @@ public class AdaptiveMatrixTile extends DrawerControllerTile implements IEnergyR
     }
 
     @Override
-    protected int getClientModelKey() {
+    protected int calculateClientModelKey() {
         return isPowered() ? 1 : 0;
     }
 
@@ -785,11 +793,20 @@ public class AdaptiveMatrixTile extends DrawerControllerTile implements IEnergyR
     private void invalidatePresentation() {
         presentationPlan = null;
         presentationData = null;
+        requestModelStateUpdates();
         markDirty();
         requestUpdatePacket();
     }
 
     private void markEnergyDirty() {
         if (worldObj != null) worldObj.markTileEntityChunkModified(xCoord, yCoord, zCoord, this);
+    }
+
+    private void requestModelStateUpdates() {
+        if (worldObj == null || worldObj.isRemote) return;
+        worldObj.markBlockForUpdate(xCoord, yCoord, zCoord);
+        for (ControllableDrawerTile drawer : connectedDrawers()) {
+            worldObj.markBlockForUpdate(drawer.xCoord, drawer.yCoord, drawer.zCoord);
+        }
     }
 }

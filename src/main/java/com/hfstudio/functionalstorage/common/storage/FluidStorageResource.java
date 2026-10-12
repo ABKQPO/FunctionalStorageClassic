@@ -7,6 +7,8 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraftforge.fluids.FluidRegistry;
 import net.minecraftforge.fluids.FluidStack;
 
+import org.jetbrains.annotations.NotNull;
+
 import com.hfstudio.functionalstorage.api.storage.BigFluidStack;
 import com.hfstudio.functionalstorage.api.storage.FluidStorageKey;
 import com.hfstudio.functionalstorage.api.storage.StorageResource;
@@ -21,7 +23,7 @@ public class FluidStorageResource implements StorageResource<BigFluidStack, Flui
     public static final FluidStorageResource INSTANCE = new FluidStorageResource();
 
     @Override
-    public String getId() {
+    public @NotNull String getId() {
         return "fluid";
     }
 

@@ -22,7 +22,7 @@ import cpw.mods.fml.common.Optional;
 public record AdaptiveDisplayEntry(@Nonnull StorageSnapshot<?, ?> content, long capacity) {
 
     public AdaptiveDisplayEntry {
-        content = Objects.requireNonNull(content, "content");
+        Objects.requireNonNull(content, "content");
         capacity = Math.max(0L, capacity);
     }
 

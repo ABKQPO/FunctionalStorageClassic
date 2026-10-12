@@ -31,14 +31,13 @@ import com.gtnewhorizon.gtnhlib.client.model.state.StateModelMap;
 import com.gtnewhorizon.gtnhlib.client.model.unbaked.MonopartDough;
 import com.gtnewhorizon.gtnhlib.client.model.unbaked.UnbakedModel;
 import com.hfstudio.functionalstorage.FunctionalStorage;
+import com.hfstudio.functionalstorage.common.block.AdaptiveCraftingGridBlock;
 import com.hfstudio.functionalstorage.common.block.AdaptiveDrawerBlock;
-import com.hfstudio.functionalstorage.common.block.DrawerFaceLayout;
-import com.hfstudio.functionalstorage.common.tile.AdaptiveCraftingGridTile;
-import com.hfstudio.functionalstorage.common.tile.AdaptiveDrawerTile;
-import com.hfstudio.functionalstorage.common.tile.AdaptiveEssentiaDrawerTile;
-import com.hfstudio.functionalstorage.common.tile.AdaptiveFluidDrawerTile;
-import com.hfstudio.functionalstorage.common.tile.AdaptiveGridTile;
-import com.hfstudio.functionalstorage.common.tile.controller.AdaptiveMatrixTile;
+import com.hfstudio.functionalstorage.common.block.AdaptiveEssentiaDrawerBlock;
+import com.hfstudio.functionalstorage.common.block.AdaptiveFluidDrawerBlock;
+import com.hfstudio.functionalstorage.common.block.AdaptiveGridBlock;
+import com.hfstudio.functionalstorage.common.block.controller.AdaptiveMatrixBlock;
+import com.hfstudio.functionalstorage.common.model.DrawerModelStateCache;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
@@ -83,9 +82,9 @@ public class DrawerModelProvider implements IBlockModelProvider, IResourceManage
 
     private BakedModel adaptiveModel(BakedModelQuadContext.World context, BlockState state) {
         Block block = state.getBlock();
-        Object tile = context.getWorld()
-            .getTileEntity(context.getX(), context.getY(), context.getZ());
-        String modelName = adaptiveModelName(block, tile);
+        Integer cachedKey = DrawerModelStateCache
+            .get(context.getWorld(), context.getX(), context.getY(), context.getZ());
+        String modelName = adaptiveModelName(block, cachedKey == null ? 0 : cachedKey);
         if (modelName == null) return null;
         JSONVariant rotation = adaptiveRotations.getIfPresent(state);
         if (rotation == null) {
@@ -116,37 +115,40 @@ public class DrawerModelProvider implements IBlockModelProvider, IResourceManage
         return baked;
     }
 
-    private static String adaptiveModelName(Block block, Object tile) {
-        if (tile instanceof AdaptiveDrawerTile drawer && block instanceof AdaptiveDrawerBlock adaptive) {
-            DrawerFaceLayout layout = drawer.getAdaptiveDisplayLayout();
-            if (layout == null) layout = drawer.getDrawerLayout()
-                .getFaceLayout();
+    private static String adaptiveModelName(Block block, int modelKey) {
+        boolean powered = (modelKey & 1) != 0;
+        int slotCount = adaptiveSlotCount(modelKey);
+        if (block instanceof AdaptiveDrawerBlock adaptive) {
             return "adaptive_" + adaptive.getWoodName()
                 + "_drawer"
-                + modelSuffix(layout)
-                + (drawer.isAdaptiveDisplayPowered() ? "" : "_offline");
+                + modelSuffix(slotCount)
+                + (powered ? "" : "_offline");
         }
-        if (tile instanceof AdaptiveFluidDrawerTile fluid) {
-            return "adaptive_fluid_" + fluid.getAdaptiveDisplayLayout()
-                .getSlotCount() + (fluid.isAdaptiveDisplayPowered() ? "_online" : "_offline");
+        if (block instanceof AdaptiveFluidDrawerBlock) {
+            return "adaptive_fluid_" + slotCount + (powered ? "_online" : "_offline");
         }
-        if (tile instanceof AdaptiveEssentiaDrawerTile essentia) {
-            return "adaptive_essentia_" + essentia.getAdaptiveDisplayLayout()
-                .getSlotCount() + (essentia.isAdaptiveDisplayPowered() ? "_online" : "_offline");
+        if (block instanceof AdaptiveEssentiaDrawerBlock) {
+            return "adaptive_essentia_" + slotCount + (powered ? "_online" : "_offline");
         }
-        if (tile instanceof AdaptiveMatrixTile matrix) {
-            return "adaptive_controller_" + (matrix.isPowered() ? "online" : "offline");
+        if (block instanceof AdaptiveMatrixBlock) {
+            return "adaptive_controller_" + (powered ? "online" : "offline");
         }
-        if (tile instanceof AdaptiveGridTile grid) {
-            AdaptiveMatrixTile matrix = grid.getMatrix();
-            String base = tile instanceof AdaptiveCraftingGridTile ? "adaptive_crafting_grid_" : "adaptive_grid_";
-            return base + (matrix != null && matrix.isPowered() ? "online" : "offline");
+        if (block instanceof AdaptiveCraftingGridBlock) {
+            return "adaptive_crafting_grid_" + (powered ? "online" : "offline");
+        }
+        if (block instanceof AdaptiveGridBlock) {
+            return "adaptive_grid_" + (powered ? "online" : "offline");
         }
         return null;
     }
 
-    private static String modelSuffix(DrawerFaceLayout layout) {
-        return switch (layout.getSlotCount()) {
+    private static int adaptiveSlotCount(int modelKey) {
+        int slotCount = modelKey >> 1;
+        return slotCount == 2 ? 2 : slotCount >= 4 ? 4 : 1;
+    }
+
+    private static String modelSuffix(int slotCount) {
+        return switch (slotCount) {
             case 1 -> "";
             case 2 -> "_2x1";
             default -> "_2x2";

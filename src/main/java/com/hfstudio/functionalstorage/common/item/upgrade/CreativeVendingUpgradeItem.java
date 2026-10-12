@@ -2,6 +2,8 @@ package com.hfstudio.functionalstorage.common.item.upgrade;
 
 import net.minecraft.item.ItemStack;
 
+import org.jetbrains.annotations.NotNull;
+
 import com.hfstudio.functionalstorage.api.upgrade.IStorageUpgrade;
 import com.hfstudio.functionalstorage.api.upgrade.StorageFeature;
 import com.hfstudio.functionalstorage.api.upgrade.UpgradeState;
@@ -18,7 +20,7 @@ public class CreativeVendingUpgradeItem extends UpgradeItem implements IStorageU
     }
 
     @Override
-    public void applyUpgrade(ItemStack stack, UpgradeState.Builder builder) {
+    public void applyUpgrade(@NotNull ItemStack stack, UpgradeState.@NotNull Builder builder) {
         builder.addFeature(StorageFeature.CREATIVE);
     }
 
@@ -28,7 +30,7 @@ public class CreativeVendingUpgradeItem extends UpgradeItem implements IStorageU
     }
 
     @Override
-    public boolean conflictsWith(ItemStack stack, ItemStack other) {
+    public boolean conflictsWith(@NotNull ItemStack stack, @NotNull ItemStack other) {
         return other.getItem() instanceof CreativeVendingUpgradeItem;
     }
 }

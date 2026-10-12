@@ -8,6 +8,8 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraftforge.fluids.IFluidHandler;
 
+import org.jetbrains.annotations.NotNull;
+
 import com.hfstudio.functionalstorage.api.storage.IBigAspectHandler;
 import com.hfstudio.functionalstorage.api.storage.IBigFluidHandler;
 import com.hfstudio.functionalstorage.api.storage.IBigItemHandler;
@@ -71,7 +73,7 @@ public class AdaptiveDepositTile extends ControllerExtensionTile {
     }
 
     @Override
-    public boolean openGui(EntityPlayer player) {
+    public boolean openGui(@NotNull EntityPlayer player) {
         return false;
     }
 
@@ -90,10 +92,10 @@ public class AdaptiveDepositTile extends ControllerExtensionTile {
     }
 
     @Override
-    protected void writeStorageData(NBTTagCompound tag) {}
+    protected void writeStorageData(@NotNull NBTTagCompound tag) {}
 
     @Override
-    protected void readStorageData(NBTTagCompound tag) {}
+    protected void readStorageData(@NotNull NBTTagCompound tag) {}
 
     private AdaptiveMatrixTile matrix() {
         int[] position = getAdaptiveMatrixPosition();

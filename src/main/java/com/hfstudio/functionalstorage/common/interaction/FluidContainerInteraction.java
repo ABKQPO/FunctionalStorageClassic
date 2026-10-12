@@ -470,22 +470,7 @@ public class FluidContainerInteraction {
         if (!matchingOnly || slot >= 0) {
             return insert(handler, slot, request, action);
         }
-        long requested = request.getAmount();
-        long processedTotal = 0L;
-        FluidStack template = request.getTemplate();
-        int count = handler.getStorageCount();
-        for (int index = 0; index < count && processedTotal < requested; index++) {
-            if (!handler.supportsFill(index) || !handler.supportsFluid(index, request)
-                || !handler.getSnapshot(index)
-                    .isSameType(template)) {
-                continue;
-            }
-            long remaining = requested - processedTotal;
-            long processed = handler.insert(index, request.withAmount(remaining), action)
-                .getProcessedAmount();
-            processedTotal += Math.min(remaining, Math.max(0L, processed));
-        }
-        return new TransferResult<>(requested, request.withAmount(processedTotal), action);
+        return handler.fillMatchingRouted(request, action);
     }
 
     private static TransferResult<BigFluidStack, FluidStorageKey> extract(IBigFluidHandler handler, int slot,

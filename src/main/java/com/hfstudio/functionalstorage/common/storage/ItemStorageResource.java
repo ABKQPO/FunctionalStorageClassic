@@ -6,6 +6,8 @@ import javax.annotation.Nullable;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 
+import org.jetbrains.annotations.NotNull;
+
 import com.hfstudio.functionalstorage.api.storage.BigItemStack;
 import com.hfstudio.functionalstorage.api.storage.ItemStorageKey;
 import com.hfstudio.functionalstorage.api.storage.StorageResource;
@@ -22,7 +24,7 @@ public class ItemStorageResource implements StorageResource<BigItemStack, ItemSt
     public static final ItemStorageResource INSTANCE = new ItemStorageResource();
 
     @Override
-    public String getId() {
+    public @NotNull String getId() {
         return "item";
     }
 

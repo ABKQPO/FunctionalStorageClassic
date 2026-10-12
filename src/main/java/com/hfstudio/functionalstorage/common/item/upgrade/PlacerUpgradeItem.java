@@ -9,6 +9,8 @@ import net.minecraft.world.WorldServer;
 import net.minecraftforge.common.ForgeHooks;
 import net.minecraftforge.common.util.ForgeDirection;
 
+import org.jetbrains.annotations.NotNull;
+
 import com.hfstudio.functionalstorage.api.storage.BigItemStack;
 import com.hfstudio.functionalstorage.api.storage.IBigItemHandler;
 import com.hfstudio.functionalstorage.api.storage.StorageAction;
@@ -23,7 +25,7 @@ public class PlacerUpgradeItem extends AutomationUpgradeItem {
     }
 
     @Override
-    public void work(ControllableDrawerTile tile, ItemStack stack, int slot) {
+    public void work(@NotNull ControllableDrawerTile tile, @NotNull ItemStack stack, int slot) {
         if (!(tile.getWorldObj() instanceof WorldServer world) || tile.getItemHandler() == null) return;
         ForgeDirection facing = UpgradeTargeting.targetDirection(tile, stack);
         int x = tile.xCoord + facing.offsetX;

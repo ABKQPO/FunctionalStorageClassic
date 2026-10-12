@@ -48,6 +48,7 @@ import com.hfstudio.functionalstorage.common.item.ConfigurationToolItem.Configur
 import com.hfstudio.functionalstorage.common.item.upgrade.AutomationUpgradeItem;
 import com.hfstudio.functionalstorage.common.item.upgrade.RedstoneUpgradeItem;
 import com.hfstudio.functionalstorage.common.item.upgrade.UpgradeSettings;
+import com.hfstudio.functionalstorage.common.model.DrawerModelStateCache;
 import com.hfstudio.functionalstorage.common.options.DrawerOptions;
 import com.hfstudio.functionalstorage.common.storage.DrawerLayout;
 import com.hfstudio.functionalstorage.common.storage.FramedDrawerStyle;
@@ -70,6 +71,7 @@ public abstract class ControllableDrawerTile extends TileEntity implements Capab
     private static final String KEY_CONTROLLER = "ControllerPos";
     private static final String KEY_ADAPTIVE_MATRIX = "AdaptiveMatrixPos";
     private static final String KEY_TILE_DATA = "TileData";
+    private static final String KEY_MODEL_KEY = "ClientModelKey";
     private static final String KEY_SLOT = "Slot";
 
     private static final int STORAGE_UPGRADE_SLOTS = 4;
@@ -92,6 +94,7 @@ public abstract class ControllableDrawerTile extends TileEntity implements Capab
     private int adaptiveMatrixX = Integer.MIN_VALUE;
     private int adaptiveMatrixY = Integer.MIN_VALUE;
     private int adaptiveMatrixZ = Integer.MIN_VALUE;
+    private int synchronizedModelKey;
 
     private StorageSubscription storageSubscription = StorageSubscription.CLOSED;
     private IStorageHandler<?, ?> subscribedStorage;
@@ -610,6 +613,12 @@ public abstract class ControllableDrawerTile extends TileEntity implements Capab
         return tag;
     }
 
+    protected void writeModelState(@Nonnull NBTTagCompound tag) {
+        if (worldObj != null && !worldObj.isRemote) {
+            tag.setInteger(KEY_MODEL_KEY, calculateClientModelKey());
+        }
+    }
+
     public void readTileData(@Nonnull NBTTagCompound tag) {
         readStacks(tag.getTagList(KEY_STORAGE_UPGRADES, 10), storageUpgrades);
         readStacks(tag.getTagList(KEY_UTILITY_UPGRADES, 10), utilityUpgrades);
@@ -642,6 +651,10 @@ public abstract class ControllableDrawerTile extends TileEntity implements Capab
             }
         }
         readStorageData(tag);
+        if (tag.hasKey(KEY_MODEL_KEY)) {
+            synchronizedModelKey = tag.getInteger(KEY_MODEL_KEY);
+            if (worldObj != null && worldObj.isRemote) refreshClientModel();
+        }
         upgradeCacheDirty = true;
         invalidateStorageLimit();
     }
@@ -677,6 +690,7 @@ public abstract class ControllableDrawerTile extends TileEntity implements Capab
                 tickAutomation((AutomationUpgradeItem) stack.getItem(), stack, slot);
             }
         }
+        refreshServerModel();
         flushPendingUpdatePacket();
     }
 
@@ -770,6 +784,10 @@ public abstract class ControllableDrawerTile extends TileEntity implements Capab
     }
 
     protected int getClientModelKey() {
+        return worldObj != null && worldObj.isRemote ? synchronizedModelKey : calculateClientModelKey();
+    }
+
+    protected int calculateClientModelKey() {
         return 0;
     }
 
@@ -778,8 +796,17 @@ public abstract class ControllableDrawerTile extends TileEntity implements Capab
         if (key == lastClientModelKey) {
             return;
         }
+        DrawerModelStateCache.publish(worldObj, xCoord, yCoord, zCoord, key);
         lastClientModelKey = key;
         worldObj.markBlockRangeForRenderUpdate(xCoord, yCoord, zCoord, xCoord, yCoord, zCoord);
+    }
+
+    private void refreshServerModel() {
+        int key = calculateClientModelKey();
+        if (key != lastClientModelKey) {
+            lastClientModelKey = key;
+            requestUpdatePacket();
+        }
     }
 
     private void flushPendingUpdatePacket() {
@@ -803,6 +830,7 @@ public abstract class ControllableDrawerTile extends TileEntity implements Capab
     public void validate() {
         super.validate();
         layoutValidated = false;
+        lastClientModelKey = Integer.MIN_VALUE;
         rebuildStorageSubscription();
     }
 
@@ -828,6 +856,7 @@ public abstract class ControllableDrawerTile extends TileEntity implements Capab
 
     @Override
     public void onChunkUnload() {
+        DrawerModelStateCache.remove(worldObj, xCoord, yCoord, zCoord);
         releaseStorageBridges();
         closeStorageSubscription();
         super.onChunkUnload();
@@ -835,6 +864,7 @@ public abstract class ControllableDrawerTile extends TileEntity implements Capab
 
     @Override
     public void invalidate() {
+        DrawerModelStateCache.remove(worldObj, xCoord, yCoord, zCoord);
         releaseStorageBridges();
         closeStorageSubscription();
         super.invalidate();
@@ -870,6 +900,7 @@ public abstract class ControllableDrawerTile extends TileEntity implements Capab
     public Packet getDescriptionPacket() {
         NBTTagCompound tag = new NBTTagCompound();
         writeTileData(tag);
+        writeModelState(tag);
         return new S35PacketUpdateTileEntity(xCoord, yCoord, zCoord, 1, tag);
     }
 

@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import javax.annotation.Nonnull;
+
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 
@@ -158,7 +160,7 @@ public class SingleCapacityStorageTest {
         return new BigItemHandler(slots) {
 
             @Override
-            protected boolean acceptsResource(BigItemStack resource) {
+            protected boolean acceptsResource(@Nonnull BigItemStack resource) {
                 ItemStack item = resource.getTemplate();
                 return item != null && item.getMaxStackSize() == 1;
             }

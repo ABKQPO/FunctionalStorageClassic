@@ -12,6 +12,8 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.StatCollector;
 import net.minecraftforge.fluids.FluidStack;
 
+import org.jetbrains.annotations.NotNull;
+
 import com.hfstudio.functionalstorage.api.storage.BigFluidStack;
 import com.hfstudio.functionalstorage.api.storage.BigItemStack;
 import com.hfstudio.functionalstorage.api.storage.IBigFluidHandler;
@@ -56,7 +58,7 @@ public class ResourceGenerationUpgradeItem extends AutomationUpgradeItem {
     }
 
     @Override
-    public void work(ControllableDrawerTile tile, ItemStack stack, int slot) {
+    public void work(@NotNull ControllableDrawerTile tile, @NotNull ItemStack stack, int slot) {
         if (tile.getWorldObj() == null || tile.getWorldObj().isRemote) return;
         if (tile.getItemHandler() != null) {
             ItemStack item = resolveGeneratedItem(stack);

@@ -5,6 +5,8 @@ import javax.annotation.Nullable;
 
 import net.minecraft.nbt.NBTTagCompound;
 
+import org.jetbrains.annotations.NotNull;
+
 import com.hfstudio.functionalstorage.api.storage.AspectStorageKey;
 import com.hfstudio.functionalstorage.api.storage.BigAspectStack;
 import com.hfstudio.functionalstorage.api.storage.StorageResource;
@@ -21,7 +23,7 @@ public class AspectStorageResource implements StorageResource<BigAspectStack, As
     public static final AspectStorageResource INSTANCE = new AspectStorageResource();
 
     @Override
-    public String getId() {
+    public @NotNull String getId() {
         return "aspect";
     }
 

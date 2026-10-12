@@ -6,6 +6,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.jetbrains.annotations.NotNull;
+
 import com.hfstudio.functionalstorage.api.storage.AspectSummary;
 import com.hfstudio.functionalstorage.api.storage.BigAspectStack;
 import com.hfstudio.functionalstorage.api.storage.IBigAspectHandler;
@@ -164,7 +166,7 @@ public class DrawerMEEssentiaInventoryHandler implements IStorageBusMonitor<AEEs
 
     @Override
     @Optional.Method(modid = "thaumicenergistics")
-    public IAEStackType<?> getStackType() {
+    public @NotNull IAEStackType<?> getStackType() {
         return AEEssentiaStackType.ESSENTIA_STACK_TYPE;
     }
 

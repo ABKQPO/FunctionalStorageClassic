@@ -5,6 +5,8 @@ import javax.annotation.Nonnull;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 
+import org.jetbrains.annotations.NotNull;
+
 import com.hfstudio.functionalstorage.api.storage.BigItemStack;
 import com.hfstudio.functionalstorage.api.storage.IBigItemHandler;
 import com.hfstudio.functionalstorage.common.inventory.adapter.DrawerInventoryAccess;
@@ -27,7 +29,7 @@ public class ArmoryCabinetTile extends ControllableDrawerTile implements DrawerI
             }
 
             @Override
-            protected boolean acceptsResource(BigItemStack resource) {
+            protected boolean acceptsResource(@NotNull BigItemStack resource) {
                 ItemStack item = resource.getTemplate();
                 return item != null && item.getMaxStackSize() == 1;
             }

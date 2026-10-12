@@ -40,6 +40,10 @@ public class GuiAdaptiveGrid extends GuiStorage {
     private static final int CONTROL_HEIGHT = 14;
     private static final int CONTROL_WIDTH = 40;
     private static final int CONTROL_PITCH = CONTROL_WIDTH + 2;
+    private static final int SEARCH_OVERLAY_LEFT_EXPANSION = 2;
+    private static final int SEARCH_OVERLAY_TOP_EXPANSION = 1;
+    private static final int SEARCH_OVERLAY_WIDTH_EXPANSION = 4;
+    private static final int SEARCH_OVERLAY_HEIGHT_EXPANSION = 1;
 
     private GuiButton adaptiveModeButton;
     private GuiButton adaptiveSortButton;
@@ -53,6 +57,17 @@ public class GuiAdaptiveGrid extends GuiStorage {
     private int[] matchedResources = new int[0];
     private Predicate<ItemStack> itemSearch;
 
+    private record SearchBoxBounds(int left, int top, int width, int height) {
+
+        private SearchBoxBounds overlay() {
+            return new SearchBoxBounds(
+                left - SEARCH_OVERLAY_LEFT_EXPANSION,
+                top - SEARCH_OVERLAY_TOP_EXPANSION,
+                width + SEARCH_OVERLAY_WIDTH_EXPANSION,
+                height + SEARCH_OVERLAY_HEIGHT_EXPANSION);
+        }
+    }
+
     public GuiAdaptiveGrid(EntityPlayer player, AdaptiveGridTile tile) {
         this(tile, new ContainerDrawer(tile, player));
     }
@@ -63,6 +78,14 @@ public class GuiAdaptiveGrid extends GuiStorage {
         ySize = layout.height();
     }
 
+    private SearchBoxBounds searchBoxBounds() {
+        return new SearchBoxBounds(
+            guiLeft + DrawerGuiLayout.TERMINAL_SEARCH_X,
+            guiTop + DrawerGuiLayout.TERMINAL_SEARCH_Y,
+            DrawerGuiLayout.TERMINAL_SEARCH_WIDTH,
+            DrawerGuiLayout.TERMINAL_SEARCH_HEIGHT);
+    }
+
     protected boolean isCraftingGrid() {
         return false;
     }
@@ -70,12 +93,13 @@ public class GuiAdaptiveGrid extends GuiStorage {
     @Override
     public void initGui() {
         super.initGui();
+        SearchBoxBounds searchBox = searchBoxBounds();
         search = new GuiTextField(
             fontRendererObj,
-            guiLeft + DrawerGuiLayout.TERMINAL_SEARCH_X,
-            guiTop + DrawerGuiLayout.TERMINAL_SEARCH_Y,
-            DrawerGuiLayout.TERMINAL_SEARCH_WIDTH,
-            DrawerGuiLayout.TERMINAL_SEARCH_HEIGHT);
+            searchBox.left(),
+            searchBox.top(),
+            searchBox.width(),
+            searchBox.height());
         search.setMaxStringLength(50);
         search.setEnableBackgroundDrawing(false);
         if (!isCraftingGrid()) {
@@ -167,13 +191,12 @@ public class GuiAdaptiveGrid extends GuiStorage {
                 guiTop + DrawerGuiLayout.TERMINAL_GRID_Y - 1 + row * 18);
         }
         if (search.isFocused()) {
-            int searchLeft = guiLeft + DrawerGuiLayout.TERMINAL_SEARCH_X;
-            int searchTop = guiTop + DrawerGuiLayout.TERMINAL_SEARCH_Y;
+            SearchBoxBounds overlay = searchBoxBounds().overlay();
             drawRect(
-                searchLeft,
-                searchTop,
-                searchLeft + DrawerGuiLayout.TERMINAL_SEARCH_WIDTH,
-                searchTop + DrawerGuiLayout.TERMINAL_SEARCH_HEIGHT,
+                overlay.left(),
+                overlay.top(),
+                overlay.left() + overlay.width(),
+                overlay.top() + overlay.height(),
                 0x55333333);
         }
         search.drawTextBox();

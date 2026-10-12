@@ -2,6 +2,7 @@ package com.hfstudio.functionalstorage.common.presentation;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -14,6 +15,8 @@ import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.fluids.FluidRegistry;
 import net.minecraftforge.oredict.OreDictionary;
+
+import org.jetbrains.annotations.NotNull;
 
 import com.hfstudio.functionalstorage.api.storage.AspectStorageKey;
 import com.hfstudio.functionalstorage.api.storage.BigItemStack;
@@ -214,30 +217,32 @@ public class AdaptivePresentationRegistry {
     public static class CountSort implements AdaptiveSortStrategy {
 
         @Override
-        public String getId() {
+        public @NotNull String getId() {
             return SORT_COUNT;
         }
 
         @Override
-        public void sort(List<AdaptiveDisplayEntry> entries) {
+        public void sort(@NotNull List<AdaptiveDisplayEntry> entries) {
+            Map<AdaptiveDisplayEntry, String> resourceIds = new IdentityHashMap<>(entries.size());
+            for (AdaptiveDisplayEntry entry : entries) resourceIds.put(entry, resourceId(entry.content()));
             entries.sort(
                 Comparator.comparingLong(
                     (AdaptiveDisplayEntry entry) -> entry.content()
                         .getAmount())
                     .reversed()
-                    .thenComparing(entry -> resourceId(entry.content())));
+                    .thenComparing(resourceIds::get));
         }
     }
 
     public static class ModSort implements AdaptiveSortStrategy {
 
         @Override
-        public String getId() {
+        public @NotNull String getId() {
             return SORT_MOD;
         }
 
         @Override
-        public void sort(List<AdaptiveDisplayEntry> entries) {
+        public void sort(@NotNull List<AdaptiveDisplayEntry> entries) {
             entries.sort(
                 Comparator.comparing((AdaptiveDisplayEntry entry) -> modId(entry.content()))
                     .thenComparing(entry -> resourceId(entry.content())));
@@ -247,12 +252,12 @@ public class AdaptivePresentationRegistry {
     public static class ItemIdSort implements AdaptiveSortStrategy {
 
         @Override
-        public String getId() {
+        public @NotNull String getId() {
             return SORT_ITEM_ID;
         }
 
         @Override
-        public void sort(List<AdaptiveDisplayEntry> entries) {
+        public void sort(@NotNull List<AdaptiveDisplayEntry> entries) {
             entries.sort(Comparator.comparing(entry -> resourceId(entry.content())));
         }
     }
@@ -260,12 +265,12 @@ public class AdaptivePresentationRegistry {
     public static class TagSort implements AdaptiveSortStrategy {
 
         @Override
-        public String getId() {
+        public @NotNull String getId() {
             return SORT_TAG;
         }
 
         @Override
-        public void sort(List<AdaptiveDisplayEntry> entries) {
+        public void sort(@NotNull List<AdaptiveDisplayEntry> entries) {
             entries.sort(
                 Comparator.comparing((AdaptiveDisplayEntry entry) -> primaryOreName(entry.content()))
                     .thenComparing(entry -> resourceId(entry.content())));
@@ -275,12 +280,12 @@ public class AdaptivePresentationRegistry {
     public static class CategorySort implements AdaptiveSortStrategy {
 
         @Override
-        public String getId() {
+        public @NotNull String getId() {
             return SORT_CATEGORY;
         }
 
         @Override
-        public void sort(List<AdaptiveDisplayEntry> entries) {
+        public void sort(@NotNull List<AdaptiveDisplayEntry> entries) {
             entries.sort(
                 Comparator.comparing((AdaptiveDisplayEntry entry) -> category(entry.content()))
                     .thenComparing(entry -> resourceId(entry.content())));
@@ -290,12 +295,13 @@ public class AdaptivePresentationRegistry {
     public static class BalancedLayout implements AdaptiveLayoutStrategy {
 
         @Override
-        public String getId() {
+        public @NotNull String getId() {
             return LAYOUT_BALANCED;
         }
 
         @Override
-        public List<Integer> allocate(int entryCount, List<Integer> capacities, List<Integer> requested) {
+        public @NotNull List<Integer> allocate(int entryCount, @NotNull List<Integer> capacities,
+            @NotNull List<Integer> requested) {
             return spread(entryCount, capacities, requested, false);
         }
     }
@@ -303,12 +309,13 @@ public class AdaptivePresentationRegistry {
     public static class ProportionalLayout implements AdaptiveLayoutStrategy {
 
         @Override
-        public String getId() {
+        public @NotNull String getId() {
             return LAYOUT_PROPORTIONAL;
         }
 
         @Override
-        public List<Integer> allocate(int entryCount, List<Integer> capacities, List<Integer> requested) {
+        public @NotNull List<Integer> allocate(int entryCount, @NotNull List<Integer> capacities,
+            @NotNull List<Integer> requested) {
             return spread(entryCount, capacities, requested, true);
         }
     }
@@ -316,12 +323,13 @@ public class AdaptivePresentationRegistry {
     public static class ManualLayout implements AdaptiveLayoutStrategy {
 
         @Override
-        public String getId() {
+        public @NotNull String getId() {
             return LAYOUT_MANUAL;
         }
 
         @Override
-        public List<Integer> allocate(int entryCount, List<Integer> capacities, List<Integer> requested) {
+        public @NotNull List<Integer> allocate(int entryCount, @NotNull List<Integer> capacities,
+            @NotNull List<Integer> requested) {
             List<Integer> result = new ArrayList<>(capacities.size());
             for (int index = 0; index < capacities.size(); index++) {
                 int capacity = Math.max(0, capacities.get(index));
@@ -381,12 +389,12 @@ public class AdaptivePresentationRegistry {
         }
 
         @Override
-        public String getId() {
+        public @NotNull String getId() {
             return id;
         }
 
         @Override
-        public void sort(List<ControllableDrawerTile> drawers) {
+        public void sort(@NotNull List<ControllableDrawerTile> drawers) {
             drawers.sort(primary);
         }
     }

@@ -4,6 +4,8 @@ import java.util.function.Predicate;
 
 import net.minecraft.item.ItemStack;
 
+import org.jetbrains.annotations.NotNull;
+
 import com.hfstudio.functionalstorage.api.storage.BigItemStack;
 import com.hfstudio.functionalstorage.api.storage.IBigItemHandler;
 import com.hfstudio.functionalstorage.api.storage.ItemStorageKey;
@@ -35,7 +37,7 @@ public class FilteredItemStorage implements IBigItemHandler {
     }
 
     @Override
-    public BigItemStack getSnapshot(int index) {
+    public @NotNull BigItemStack getSnapshot(int index) {
         if (!selected(index)) return BigItemStack.empty();
         BigItemStack snapshot = storage.getSnapshot(index);
         return !snapshot.hasTemplate() || filter.test(snapshot.getTemplate()) ? snapshot : BigItemStack.empty();
@@ -47,14 +49,16 @@ public class FilteredItemStorage implements IBigItemHandler {
     }
 
     @Override
-    public TransferResult<BigItemStack, ItemStorageKey> insert(int index, BigItemStack request, StorageAction action) {
+    public @NotNull TransferResult<BigItemStack, ItemStorageKey> insert(int index, @NotNull BigItemStack request,
+        @NotNull StorageAction action) {
         return selected(index) && request.hasTemplate() && filter.test(request.getTemplate())
             ? storage.insert(index, request, action)
             : new TransferResult<>(request.getAmount(), BigItemStack.empty(), action);
     }
 
     @Override
-    public TransferResult<BigItemStack, ItemStorageKey> extract(int index, long amount, StorageAction action) {
+    public @NotNull TransferResult<BigItemStack, ItemStorageKey> extract(int index, long amount,
+        @NotNull StorageAction action) {
         return selected(index) && getSnapshot(index).hasTemplate() ? storage.extract(index, amount, action)
             : new TransferResult<>(Math.max(0, amount), BigItemStack.empty(), action);
     }
@@ -70,7 +74,7 @@ public class FilteredItemStorage implements IBigItemHandler {
     }
 
     @Override
-    public Object getStorageIdentity() {
+    public @NotNull Object getStorageIdentity() {
         return storage.getStorageIdentity();
     }
 

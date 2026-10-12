@@ -3,6 +3,8 @@ package com.hfstudio.functionalstorage.common.block;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
 
+import org.jetbrains.annotations.NotNull;
+
 import com.hfstudio.functionalstorage.common.tile.AdaptiveCraftingGridTile;
 
 public class AdaptiveCraftingGridBlock extends AdaptiveGridBlock {
@@ -12,7 +14,7 @@ public class AdaptiveCraftingGridBlock extends AdaptiveGridBlock {
     }
 
     @Override
-    public Class<? extends TileEntity> getTileEntityClass() {
+    public @NotNull Class<? extends TileEntity> getTileEntityClass() {
         return AdaptiveCraftingGridTile.class;
     }
 

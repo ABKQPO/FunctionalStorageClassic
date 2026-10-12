@@ -75,7 +75,7 @@ public class BigItemStack implements StorageSnapshot<BigItemStack, ItemStorageKe
     }
 
     // Only existing snapshots may share the private, never-exposed template.
-    private BigItemStack(ItemStack template, ItemStorageKey key, long amount) {
+    private BigItemStack(ItemStack template, @Nullable ItemStorageKey key, long amount) {
         this.template = template;
         this.key = key;
         this.amount = amount;

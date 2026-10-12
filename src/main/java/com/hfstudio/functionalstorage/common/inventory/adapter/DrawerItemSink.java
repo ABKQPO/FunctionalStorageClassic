@@ -54,7 +54,7 @@ public class DrawerItemSink implements ItemSink {
     public int store(ImmutableItemStack stack) {
         int requested = stack.getStackSize();
         if (requested <= 0 || stack.getItem() == null) {
-            return Math.max(0, requested);
+            return 0;
         }
         IBigItemHandler handler = handlerSupplier.get();
         if (handler == null || slotStackLimit == 0) {

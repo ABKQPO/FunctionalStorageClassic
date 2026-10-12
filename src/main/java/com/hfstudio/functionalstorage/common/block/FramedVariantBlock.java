@@ -7,6 +7,8 @@ import javax.annotation.Nonnull;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
 
+import org.jetbrains.annotations.NotNull;
+
 import com.gtnewhorizon.gtnhlib.client.model.BakedModelQuadContext;
 import com.gtnewhorizon.gtnhlib.client.model.baked.BakedModel;
 import com.hfstudio.functionalstorage.FunctionalStorage;
@@ -30,7 +32,7 @@ public class FramedVariantBlock extends DrawerBlock implements FramedBlock {
     }
 
     @Override
-    public Class<? extends TileEntity> getTileEntityClass() {
+    public @NotNull Class<? extends TileEntity> getTileEntityClass() {
         return delegate.getTileEntityClass();
     }
 
@@ -45,7 +47,7 @@ public class FramedVariantBlock extends DrawerBlock implements FramedBlock {
     }
 
     @Override
-    public List<String> getVariantNames() {
+    public @NotNull List<String> getVariantNames() {
         return List.of(id);
     }
 

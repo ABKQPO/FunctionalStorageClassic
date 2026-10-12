@@ -1051,9 +1051,7 @@ public class DrawerRenderer extends TileEntitySpecialRenderer implements IResour
             boolean upperRow = layout == DrawerFaceLayout.X_4 ? slot < 2 : slot % 2 == 0;
             if (upperRow) {
                 modelTop = divider + dividerHalf;
-                modelBottom = CAVITY_TOP / 16F;
             } else {
-                modelTop = CAVITY_BOTTOM / 16F;
                 modelBottom = divider - dividerHalf;
             }
             if (layout == DrawerFaceLayout.X_4) {

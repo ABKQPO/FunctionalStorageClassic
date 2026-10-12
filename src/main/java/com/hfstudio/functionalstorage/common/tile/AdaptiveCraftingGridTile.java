@@ -6,20 +6,21 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 
+import org.jetbrains.annotations.NotNull;
+
 import com.hfstudio.functionalstorage.config.FunctionalStorageConfig;
+
+import lombok.Getter;
 
 public class AdaptiveCraftingGridTile extends AdaptiveGridTile {
 
     private final CraftingInventory crafting = new CraftingInventory(this);
+    @Getter
     private long craftingRevision;
     private boolean loadingCrafting;
 
     public CraftingInventory getCraftingInventory() {
         return crafting;
-    }
-
-    public long getCraftingRevision() {
-        return craftingRevision;
     }
 
     @Override
@@ -31,7 +32,7 @@ public class AdaptiveCraftingGridTile extends AdaptiveGridTile {
     }
 
     @Override
-    protected void writeStorageData(NBTTagCompound tag) {
+    protected void writeStorageData(@NotNull NBTTagCompound tag) {
         super.writeStorageData(tag);
         NBTTagList entries = new NBTTagList();
         for (int index = 0; index < crafting.getSizeInventory(); index++) {
@@ -47,7 +48,7 @@ public class AdaptiveCraftingGridTile extends AdaptiveGridTile {
     }
 
     @Override
-    protected void readStorageData(NBTTagCompound tag) {
+    protected void readStorageData(@NotNull NBTTagCompound tag) {
         super.readStorageData(tag);
         loadingCrafting = true;
         try {

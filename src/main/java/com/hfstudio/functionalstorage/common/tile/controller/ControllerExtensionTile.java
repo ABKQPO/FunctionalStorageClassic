@@ -7,6 +7,8 @@ import java.util.Set;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.nbt.NBTTagCompound;
 
+import org.jetbrains.annotations.NotNull;
+
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 
 public class ControllerExtensionTile extends StorageNetworkTile {
@@ -56,10 +58,10 @@ public class ControllerExtensionTile extends StorageNetworkTile {
     }
 
     @Override
-    protected void writeStorageData(NBTTagCompound tag) {}
+    protected void writeStorageData(@NotNull NBTTagCompound tag) {}
 
     @Override
-    protected void readStorageData(NBTTagCompound tag) {
+    protected void readStorageData(@NotNull NBTTagCompound tag) {
         invalidateNetwork();
     }
 
@@ -74,7 +76,7 @@ public class ControllerExtensionTile extends StorageNetworkTile {
     }
 
     @Override
-    public boolean openGui(EntityPlayer player) {
+    public boolean openGui(@NotNull EntityPlayer player) {
         return false;
     }
 }

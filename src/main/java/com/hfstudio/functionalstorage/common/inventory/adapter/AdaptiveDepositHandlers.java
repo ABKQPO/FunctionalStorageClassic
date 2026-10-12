@@ -60,6 +60,55 @@ public class AdaptiveDepositHandlers {
         }
 
         @Override
+        public boolean isLocked() {
+            H handler = target.get();
+            return handler != null && handler.isLocked();
+        }
+
+        @Override
+        public boolean isLocked(int index) {
+            H handler = target.get();
+            return handler != null && handler.isLocked(index);
+        }
+
+        @Override
+        public boolean hasLockedSlots() {
+            H handler = target.get();
+            return handler != null && handler.hasLockedSlots();
+        }
+
+        @Override
+        public boolean allowsEquivalentResources() {
+            H handler = target.get();
+            return handler != null && handler.allowsEquivalentResources();
+        }
+
+        @Override
+        public boolean voidsOverflow() {
+            H handler = target.get();
+            return handler != null && handler.voidsOverflow();
+        }
+
+        @Override
+        public boolean isCreative() {
+            H handler = target.get();
+            return handler != null && handler.isCreative();
+        }
+
+        @Override
+        public double getMultiplier() {
+            H handler = target.get();
+            return handler == null ? 1.0D : handler.getMultiplier();
+        }
+
+        @Override
+        @Nonnull
+        public Object getStorageIdentity() {
+            H handler = target.get();
+            return handler == null ? this : handler.getStorageIdentity();
+        }
+
+        @Override
         @Nonnull
         public TransferResult<S, K> insert(int index, @Nonnull S request, @Nonnull StorageAction action) {
             H handler = index == 0 && !request.isEmpty() ? target.get() : null;
@@ -92,6 +141,15 @@ public class AdaptiveDepositHandlers {
             StorageAction action) {
             return handler.insertRouted(request, action);
         }
+
+        @Override
+        @Nonnull
+        public TransferResult<BigItemStack, ItemStorageKey> insertMatchingRouted(@Nonnull BigItemStack request,
+            @Nonnull StorageAction action) {
+            IBigItemHandler handler = target.get();
+            return handler == null ? new TransferResult<>(request.getAmount(), BigItemStack.empty(), action)
+                : handler.insertMatchingRouted(request, action);
+        }
     }
 
     public static class Fluids extends Port<BigFluidStack, FluidStorageKey, IBigFluidHandler>
@@ -111,6 +169,15 @@ public class AdaptiveDepositHandlers {
             StorageAction action) {
             return handler.fillRouted(request, action);
         }
+
+        @Override
+        @Nonnull
+        public TransferResult<BigFluidStack, FluidStorageKey> fillMatchingRouted(@Nonnull BigFluidStack request,
+            @Nonnull StorageAction action) {
+            IBigFluidHandler handler = target.get();
+            return handler == null ? new TransferResult<>(request.getAmount(), BigFluidStack.empty(), action)
+                : handler.fillMatchingRouted(request, action);
+        }
     }
 
     public static class Aspects extends Port<BigAspectStack, AspectStorageKey, IBigAspectHandler>
@@ -124,6 +191,15 @@ public class AdaptiveDepositHandlers {
         protected TransferResult<BigAspectStack, AspectStorageKey> route(IBigAspectHandler handler,
             BigAspectStack request, StorageAction action) {
             return handler.insertRouted(request, action);
+        }
+
+        @Override
+        @Nonnull
+        public TransferResult<BigAspectStack, AspectStorageKey> insertMatchingRouted(@Nonnull BigAspectStack request,
+            @Nonnull StorageAction action) {
+            IBigAspectHandler handler = target.get();
+            return handler == null ? new TransferResult<>(request.getAmount(), BigAspectStack.empty(), action)
+                : handler.insertMatchingRouted(request, action);
         }
     }
 }

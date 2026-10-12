@@ -675,25 +675,25 @@ public class FunctionalStorageConfig {
         public int linkingRange = 24;
 
         @Config.Comment("RF buffer capacity of an adaptive matrix")
-        @Config.RangeInt(min = 1, max = 2147483647)
+        @Config.RangeInt(min = 1)
         @Config.DefaultInt(1000000)
         @Config.Order(4)
         public int energyCapacity = 1000000;
 
         @Config.Comment("Maximum RF received by an adaptive matrix in one operation")
-        @Config.RangeInt(min = 1, max = 2147483647)
+        @Config.RangeInt(min = 1)
         @Config.DefaultInt(1000000)
         @Config.Order(5)
         public int maxEnergyReceive = 1000000;
 
         @Config.Comment("Base RF consumed by an adaptive matrix per tick")
-        @Config.RangeInt(min = 0, max = 2147483647)
+        @Config.RangeInt(min = 0)
         @Config.DefaultInt(20)
         @Config.Order(6)
         public int baseEnergyCost = 20;
 
         @Config.Comment("Additional RF consumed per loaded item drawer per tick")
-        @Config.RangeInt(min = 0, max = 2147483647)
+        @Config.RangeInt(min = 0)
         @Config.DefaultInt(5)
         @Config.Order(7)
         public int itemDrawerEnergyCost = 5;

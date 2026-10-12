@@ -9,6 +9,8 @@ import java.util.function.Consumer;
 
 import javax.annotation.Nonnull;
 
+import org.jetbrains.annotations.NotNull;
+
 import com.hfstudio.functionalstorage.api.storage.AspectStorageKey;
 import com.hfstudio.functionalstorage.api.storage.AspectSummary;
 import com.hfstudio.functionalstorage.api.storage.BigAspectStack;
@@ -121,7 +123,7 @@ public class AggregatedStorage<S extends StorageSnapshot<S, K>, K extends Storag
     }
 
     @Override
-    public StorageSubscription subscribe(Consumer<? super StorageChange<S, K>> listener) {
+    public @NotNull StorageSubscription subscribe(@NotNull Consumer<? super StorageChange<S, K>> listener) {
         return changes.subscribe(listener);
     }
 
@@ -131,7 +133,7 @@ public class AggregatedStorage<S extends StorageSnapshot<S, K>, K extends Storag
     }
 
     @Override
-    public S getSnapshot(int index) {
+    public @NotNull S getSnapshot(int index) {
         int child = childIndex(index);
         return child < 0 ? empty
             : children.get(child)
@@ -147,7 +149,7 @@ public class AggregatedStorage<S extends StorageSnapshot<S, K>, K extends Storag
     }
 
     @Override
-    public TransferResult<S, K> insert(int index, S request, StorageAction action) {
+    public @NotNull TransferResult<S, K> insert(int index, @NotNull S request, @NotNull StorageAction action) {
         int child = childIndex(index);
         return child < 0 ? new TransferResult<>(request.getAmount(), empty, action)
             : children.get(child)
@@ -155,7 +157,7 @@ public class AggregatedStorage<S extends StorageSnapshot<S, K>, K extends Storag
     }
 
     @Override
-    public TransferResult<S, K> extract(int index, long amount, StorageAction action) {
+    public @NotNull TransferResult<S, K> extract(int index, long amount, @NotNull StorageAction action) {
         int child = childIndex(index);
         return child < 0 ? new TransferResult<>(Math.max(0, amount), empty, action)
             : children.get(child)

@@ -1,6 +1,7 @@
 package com.hfstudio.functionalstorage.common.presentation;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -20,21 +21,20 @@ import com.hfstudio.functionalstorage.common.block.DrawerFaceLayout;
 import com.hfstudio.functionalstorage.common.storage.DrawerLayout;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 
+import lombok.Getter;
+
 public class AdaptivePresentationPlan {
 
     private static final AdaptivePresentationPlan EMPTY = new AdaptivePresentationPlan(Map.of(), 0);
 
     private final Map<Long, List<AdaptiveDisplayEntry>> entriesByDrawer;
+    @Getter
     private final int unassignedResourceCount;
 
     private AdaptivePresentationPlan(Map<Long, List<AdaptiveDisplayEntry>> entriesByDrawer,
         int unassignedResourceCount) {
         this.entriesByDrawer = entriesByDrawer;
         this.unassignedResourceCount = unassignedResourceCount;
-    }
-
-    public int getUnassignedResourceCount() {
-        return unassignedResourceCount;
     }
 
     @Nonnull
@@ -62,24 +62,31 @@ public class AdaptivePresentationPlan {
         for (List<ControllableDrawerTile> group : groups.values()) {
             unassigned += assign(group, sortId, layoutId, assignments);
         }
-        return new AdaptivePresentationPlan(Map.copyOf(assignments), unassigned);
+        return new AdaptivePresentationPlan(Collections.unmodifiableMap(assignments), unassigned);
     }
 
     private static int assign(List<ControllableDrawerTile> ordered, String sortId, String layoutId,
         Map<Long, List<AdaptiveDisplayEntry>> assignments) {
-        List<Integer> capacities = new ArrayList<>(ordered.size());
-        List<Integer> reservations = new ArrayList<>(ordered.size());
-        List<Integer> requested = new ArrayList<>(ordered.size());
+        int drawerCount = ordered.size();
+        List<Integer> capacities = new ArrayList<>(drawerCount);
+        List<Integer> reservations = new ArrayList<>(drawerCount);
+        List<Integer> requested = new ArrayList<>(drawerCount);
+        byte[] reservedCells = new byte[drawerCount];
+        StorageSnapshot<?, ?>[] reservationTemplates = new StorageSnapshot[drawerCount * 4];
         Map<StorageKey, AdaptiveDisplayEntry> merged = new LinkedHashMap<>();
-        for (ControllableDrawerTile drawer : ordered) {
+        for (int index = 0; index < drawerCount; index++) {
+            ControllableDrawerTile drawer = ordered.get(index);
             int capacity = 4;
             AdaptiveDisplayProvider provider = (AdaptiveDisplayProvider) drawer;
             int reserved = 0;
             int minimumCells = 0;
             for (int cell = 0; cell < capacity; cell++) {
-                if (provider.isDisplayCellReserved(cell)) {
+                boolean reservedCell = provider.isDisplayCellReserved(cell);
+                if (reservedCell) reservedCells[index] |= 1 << cell;
+                if (reservedCell) {
                     reserved++;
                     minimumCells = cell + 1;
+                    reservationTemplates[index * 4 + cell] = provider.getDisplayReservation(cell);
                 }
             }
             reservations.add(reserved);
@@ -109,11 +116,12 @@ public class AdaptivePresentationPlan {
         AdaptivePresentationRegistry.sort(sortId)
             .sort(entries);
         Set<StorageKey> reservedKeys = new HashSet<>();
-        for (ControllableDrawerTile drawer : ordered) {
-            if (!(drawer instanceof AdaptiveDisplayProvider provider)) continue;
+        for (int index = 0; index < drawerCount; index++) {
+            ControllableDrawerTile drawer = ordered.get(index);
+            if (!(drawer instanceof AdaptiveDisplayProvider)) continue;
             for (int cell = 0; cell < 4; cell++) {
-                StorageSnapshot<?, ?> template = provider.getDisplayReservation(cell);
-                if (provider.isDisplayCellReserved(cell) && template != null && template.hasTemplate())
+                StorageSnapshot<?, ?> template = reservationTemplates[index * 4 + cell];
+                if ((reservedCells[index] & 1 << cell) != 0 && template != null && template.hasTemplate())
                     reservedKeys.add(template.getKey());
             }
         }
@@ -125,24 +133,24 @@ public class AdaptivePresentationPlan {
             .allocate(entries.size(), capacities, requested);
         Set<StorageKey> assigned = new HashSet<>();
         int entryIndex = 0;
+        AdaptiveDisplayEntry empty = new AdaptiveDisplayEntry(
+            ((AdaptiveDisplayProvider) ordered.get(0)).getDisplayResource()
+                .empty(),
+            0L);
         for (int index = 0; index < ordered.size(); index++) {
             ControllableDrawerTile drawer = ordered.get(index);
             int freeCells = Math.min(Math.max(0, cells.get(index)), capacities.get(index));
             int cellCount = freeCells + reservations.get(index);
             AdaptiveDisplayProvider provider = (AdaptiveDisplayProvider) drawer;
             for (int cell = 0; cell < 4; cell++) {
-                if (provider.isDisplayCellReserved(cell)) cellCount = Math.max(cellCount, cell + 1);
+                if ((reservedCells[index] & 1 << cell) != 0) cellCount = Math.max(cellCount, cell + 1);
             }
             if (cellCount == 3) cellCount = 4;
-            AdaptiveDisplayEntry empty = new AdaptiveDisplayEntry(
-                provider.getDisplayResource()
-                    .empty(),
-                0L);
             List<AdaptiveDisplayEntry> face = new ArrayList<>(cellCount);
             for (int cell = 0; cell < cellCount; cell++) {
                 AdaptiveDisplayEntry entry;
-                if (provider.isDisplayCellReserved(cell)) {
-                    StorageSnapshot<?, ?> template = provider.getDisplayReservation(cell);
+                if ((reservedCells[index] & 1 << cell) != 0) {
+                    StorageSnapshot<?, ?> template = reservationTemplates[index * 4 + cell];
                     StorageKey key = template == null ? null : template.getKey();
                     entry = key == null ? empty
                         : merged.getOrDefault(key, new AdaptiveDisplayEntry(template.withAmount(0L), 0L));
@@ -157,7 +165,7 @@ public class AdaptivePresentationPlan {
                             .getKey());
                 face.add(entry);
             }
-            assignments.put(positionOf(drawer), List.copyOf(face));
+            assignments.put(positionOf(drawer), Collections.unmodifiableList(face));
         }
         int unassigned = 0;
         for (StorageKey key : merged.keySet()) if (!assigned.contains(key)) unassigned++;
@@ -209,9 +217,11 @@ public class AdaptivePresentationPlan {
             for (int cell = 0; cell < Math.min(4, entries.tagCount()); cell++) {
                 face.add(AdaptiveDisplayEntry.fromNBT(entries.getCompoundTagAt(cell)));
             }
-            assignments.put(drawer.getLong("Position"), List.copyOf(face));
+            assignments.put(drawer.getLong("Position"), Collections.unmodifiableList(face));
         }
-        return new AdaptivePresentationPlan(Map.copyOf(assignments), Math.max(0, tag.getInteger("Unassigned")));
+        return new AdaptivePresentationPlan(
+            Collections.unmodifiableMap(assignments),
+            Math.max(0, tag.getInteger("Unassigned")));
     }
 
     private static long positionOf(ControllableDrawerTile drawer) {

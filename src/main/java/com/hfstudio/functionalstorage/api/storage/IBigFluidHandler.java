@@ -119,6 +119,46 @@ public interface IBigFluidHandler extends IStorageHandler<BigFluidStack, FluidSt
     }
 
     /**
+     * Routes filling only through slots that already retain the requested fluid.
+     * Empty slots are deliberately excluded so matching-only deposit actions cannot
+     * silently configure a new fluid slot.
+     *
+     * @param request requested fluid and amount
+     * @param action  execute or simulate
+     * @return the routed result
+     */
+    @Nonnull
+    default TransferResult<BigFluidStack, FluidStorageKey> fillMatchingRouted(@Nonnull BigFluidStack request,
+        @Nonnull StorageAction action) {
+        Objects.requireNonNull(action, "action");
+        long requested = request.isEmpty() ? 0L : request.getAmount();
+        if (requested == 0L) {
+            return new TransferResult<>(0L, BigFluidStack.empty(), action);
+        }
+        long processedTotal = 0L;
+        int count = Math.max(0, getStorageCount());
+        boolean prioritizeLocked = hasLockedSlots();
+        int lockPasses = prioritizeLocked ? 2 : 1;
+        for (int lockPass = 0; lockPass < lockPasses && processedTotal < requested; lockPass++) {
+            boolean locked = prioritizeLocked && lockPass == 0;
+            for (int index = 0; index < count && processedTotal < requested; index++) {
+                if (!supportsFill(index) || !supportsFluid(index, request)
+                    || prioritizeLocked && isLocked(index) != locked) {
+                    continue;
+                }
+                BigFluidStack current = getSnapshot(index);
+                if (!current.hasTemplate() || !current.isSameType(request)) {
+                    continue;
+                }
+                long remaining = requested - processedTotal;
+                long processed = insert(index, request.withAmount(remaining), action).getProcessedAmount();
+                processedTotal += Math.min(remaining, Math.max(0L, processed));
+            }
+        }
+        return new TransferResult<>(requested, request.withAmount(processedTotal), action);
+    }
+
+    /**
      * Routes typed extraction through matching generic indices.
      *
      * @param request requested fluid and amount

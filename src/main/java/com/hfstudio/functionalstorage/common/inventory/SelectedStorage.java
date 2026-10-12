@@ -2,6 +2,8 @@ package com.hfstudio.functionalstorage.common.inventory;
 
 import java.util.function.Consumer;
 
+import org.jetbrains.annotations.NotNull;
+
 import com.hfstudio.functionalstorage.api.storage.AspectStorageKey;
 import com.hfstudio.functionalstorage.api.storage.BigAspectStack;
 import com.hfstudio.functionalstorage.api.storage.BigFluidStack;
@@ -41,7 +43,7 @@ public class SelectedStorage<S extends StorageSnapshot<S, K>, K extends StorageK
     }
 
     @Override
-    public S getSnapshot(int index) {
+    public @NotNull S getSnapshot(int index) {
         return selected(index) ? storage.getSnapshot(index) : empty;
     }
 
@@ -51,13 +53,13 @@ public class SelectedStorage<S extends StorageSnapshot<S, K>, K extends StorageK
     }
 
     @Override
-    public TransferResult<S, K> insert(int index, S request, StorageAction action) {
+    public @NotNull TransferResult<S, K> insert(int index, @NotNull S request, @NotNull StorageAction action) {
         return selected(index) ? storage.insert(index, request, action)
             : new TransferResult<>(request.getAmount(), empty, action);
     }
 
     @Override
-    public TransferResult<S, K> extract(int index, long amount, StorageAction action) {
+    public @NotNull TransferResult<S, K> extract(int index, long amount, @NotNull StorageAction action) {
         return selected(index) ? storage.extract(index, amount, action)
             : new TransferResult<>(Math.max(0, amount), empty, action);
     }
@@ -94,12 +96,12 @@ public class SelectedStorage<S extends StorageSnapshot<S, K>, K extends StorageK
     }
 
     @Override
-    public Object getStorageIdentity() {
+    public @NotNull Object getStorageIdentity() {
         return storage.getStorageIdentity();
     }
 
     @Override
-    public StorageSubscription subscribe(Consumer<? super StorageChange<S, K>> listener) {
+    public @NotNull StorageSubscription subscribe(@NotNull Consumer<? super StorageChange<S, K>> listener) {
         return storage.subscribe(listener);
     }
 
@@ -123,7 +125,7 @@ public class SelectedStorage<S extends StorageSnapshot<S, K>, K extends StorageK
         }
 
         @Override
-        public boolean supportsFluid(int index, BigFluidStack fluid) {
+        public boolean supportsFluid(int index, @NotNull BigFluidStack fluid) {
             return selected(index) && storage.supportsFluid(index, fluid);
         }
     }

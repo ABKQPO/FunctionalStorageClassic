@@ -142,7 +142,7 @@ public class AdaptiveGridTile extends ControllerExtensionTile {
     }
 
     @Override
-    protected int getClientModelKey() {
+    protected int calculateClientModelKey() {
         AdaptiveMatrixTile matrix = matrix();
         return matrix != null && matrix.isPowered() ? 1 : 0;
     }

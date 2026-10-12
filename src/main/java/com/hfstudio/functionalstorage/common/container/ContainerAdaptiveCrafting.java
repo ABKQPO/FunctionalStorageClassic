@@ -36,6 +36,7 @@ public class ContainerAdaptiveCrafting extends ContainerDrawer {
     private long observedCraftingRevision = Long.MIN_VALUE;
     private int mutationDepth;
     private int refillTarget = 1;
+    private boolean resultSyncDirty = true;
 
     public ContainerAdaptiveCrafting(AdaptiveCraftingGridTile tile, EntityPlayer player) {
         super(tile, player, true);
@@ -72,6 +73,7 @@ public class ContainerAdaptiveCrafting extends ContainerDrawer {
             || mutationDepth > 0
             || observedCraftingRevision == craftingTile.getCraftingRevision()) return;
         observedCraftingRevision = craftingTile.getCraftingRevision();
+        resultSyncDirty = true;
         ItemStack first = null;
         ItemStack second = null;
         int occupied = 0;
@@ -121,27 +123,52 @@ public class ContainerAdaptiveCrafting extends ContainerDrawer {
     @Override
     public void detectAndSendChanges() {
         refreshCraftingResult();
-        if (crafting != null && !craftingTile.getWorldObj().isRemote
-            && !ItemStack.areItemStacksEqual(inventoryItemStacks.get(resultSlot), result.getStackInSlot(0))) {
-            for (Object listener : crafters) {
-                if (listener instanceof EntityPlayerMP player && player.playerNetServerHandler != null) {
-                    player.playerNetServerHandler
-                        .sendPacket(new S2FPacketSetSlot(windowId, resultSlot, result.getStackInSlot(0)));
-                }
+        super.detectAndSendChanges();
+        if (craftingTile.getWorldObj().isRemote || !resultSyncDirty || crafters.isEmpty()) return;
+        resultSyncDirty = false;
+        // Vanilla suppresses incremental packets for SlotCrafting subclasses.
+        for (Object listener : crafters) {
+            if (listener instanceof EntityPlayerMP player && player.playerNetServerHandler != null) {
+                player.playerNetServerHandler.sendPacket(new S2FPacketSetSlot(windowId, resultSlot, result.getStackInSlot(0)));
             }
         }
-        super.detectAndSendChanges();
     }
 
     @Override
     public ItemStack slotClick(int index, int button, int mode, EntityPlayer player) {
+        if (index == resultSlot) {
+            if (craftingTile.getWorldObj().isRemote || !canInteractWith(player)) return null;
+            if ((mode == 0 || mode == 1) && (button == 0 || button == 1)) {
+                if (mode == 1) craftIntoInventory(player);
+                else clickCraftingResult(player, button);
+            }
+            resultSyncDirty = true;
+            player.inventory.markDirty();
+            detectAndSendChanges();
+            if (player instanceof EntityPlayerMP serverPlayer) serverPlayer.updateHeldItem();
+            return null;
+        }
         refreshCraftingResult();
         mutationDepth++;
+        ItemStack clicked;
         try {
-            return super.slotClick(index, button, mode, player);
+            clicked = super.slotClick(index, button, mode, player);
         } finally {
             finishMutation();
         }
+        if (!craftingTile.getWorldObj().isRemote) detectAndSendChanges();
+        return clicked;
+    }
+
+    private ItemStack clickCraftingResult(EntityPlayer player, int button) {
+        refreshCraftingResult();
+        ItemStack output = result.getStackInSlot(0);
+        if (output == null || output.stackSize <= 0) return null;
+        ItemStack cursor = player.inventory.getItemStack();
+        if (cursor != null && !sameType(cursor, output)) return null;
+        int space = output.getMaxStackSize() - (cursor == null ? 0 : cursor.stackSize);
+        int attempts = button == 1 ? space / output.stackSize : Math.min(1, space / output.stackSize);
+        return craftResults(player, false, attempts);
     }
 
     @Override
@@ -168,6 +195,14 @@ public class ContainerAdaptiveCrafting extends ContainerDrawer {
     }
 
     private ItemStack craftIntoInventory(EntityPlayer player) {
+        refreshCraftingResult();
+        ItemStack output = result.getStackInSlot(0);
+        if (output == null || output.stackSize <= 0) return null;
+        return craftResults(player, true, Math.max(1, output.getMaxStackSize() / output.stackSize));
+    }
+
+    private ItemStack craftResults(EntityPlayer player, boolean intoInventory, int attempts) {
+        if (attempts <= 0) return null;
         int outerDepth = mutationDepth;
         mutationDepth = 0;
         try {
@@ -175,17 +210,22 @@ public class ContainerAdaptiveCrafting extends ContainerDrawer {
             ItemStack expected = result.getStackInSlot(0);
             if (expected == null || expected.stackSize <= 0) return null;
             expected = expected.copy();
-            int attempts = Math.max(1, expected.getMaxStackSize() / expected.stackSize);
             boolean crafted = false;
             for (int attempt = 0; attempt < attempts; attempt++) {
                 refreshCraftingResult();
                 ItemStack output = result.getStackInSlot(0);
-                if (output == null || !ItemStack.areItemStacksEqual(expected, output) || !fitsOutput(output)) break;
+                if (output == null || !ItemStack.areItemStacksEqual(expected, output)
+                    || intoInventory && !fitsOutput(output)) break;
                 refillTarget = attempts - attempt;
                 Slot slot = inventorySlots.get(resultSlot);
                 ItemStack taken = slot.decrStackSize(output.stackSize);
                 ItemStack eventStack = taken.copy();
-                mergeItemStack(taken, playerStart, playerInventoryEnd(), true);
+                if (intoInventory) mergeItemStack(taken, playerStart, playerInventoryEnd(), true);
+                else {
+                    ItemStack cursor = player.inventory.getItemStack();
+                    if (cursor == null) player.inventory.setItemStack(taken);
+                    else cursor.stackSize += taken.stackSize;
+                }
                 slot.onPickupFromSlot(player, eventStack);
                 crafted = true;
             }
@@ -255,8 +295,10 @@ public class ContainerAdaptiveCrafting extends ContainerDrawer {
     }
 
     public void applyRecipe(EntityPlayer player, ItemStack[] templates, boolean maxTransfer) {
-        if (!canInteractWith(player) || getTile().getWorldObj().isRemote || templates.length != 9 || !isOnline())
+        if (!canInteractWith(player) || getTile().getWorldObj().isRemote || templates.length != 9) return;
+        if (getTile().getItemHandler() == null) {
             return;
+        }
         mutationDepth++;
         try {
             for (int index = 0; index < 9; index++) {
@@ -336,6 +378,7 @@ public class ContainerAdaptiveCrafting extends ContainerDrawer {
 
         @Override
         public void onPickupFromSlot(EntityPlayer player, ItemStack stack) {
+            if (craftingTile.getWorldObj().isRemote) return;
             ItemStack[] templates = new ItemStack[9];
             for (int index = 0; index < templates.length; index++) {
                 ItemStack ingredient = crafting.getStackInSlot(index);

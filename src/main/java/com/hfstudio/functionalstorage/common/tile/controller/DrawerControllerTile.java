@@ -17,6 +17,8 @@ import net.minecraft.network.NetworkManager;
 import net.minecraft.network.Packet;
 import net.minecraft.network.play.server.S35PacketUpdateTileEntity;
 
+import org.jetbrains.annotations.NotNull;
+
 import com.hfstudio.functionalstorage.api.storage.ConnectedDrawerScope;
 import com.hfstudio.functionalstorage.api.upgrade.UpgradeAttribute;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
@@ -56,6 +58,7 @@ public class DrawerControllerTile extends StorageNetworkTile {
     public Packet getDescriptionPacket() {
         NBTTagCompound tag = new NBTTagCompound();
         writeToNBT(tag);
+        writeModelState(tag);
         return new S35PacketUpdateTileEntity(xCoord, yCoord, zCoord, 0, tag);
     }
 
@@ -89,9 +92,7 @@ public class DrawerControllerTile extends StorageNetworkTile {
             invalidateNetwork();
             return true;
         }
-        int range = getLinkingRange();
-        if (Math.abs(x - xCoord) > range || Math.abs(y - yCoord) > range
-            || Math.abs(z - zCoord) > range
+        if (!isWithinLinkingRange(x, y, z)
             || (!drawers.contains(position) && drawers.size() >= FunctionalStorageConfig.GENERAL.controllerLinkLimit)) {
             return false;
         }
@@ -224,7 +225,7 @@ public class DrawerControllerTile extends StorageNetworkTile {
     }
 
     @Override
-    protected void writeStorageData(NBTTagCompound tag) {
+    protected void writeStorageData(@NotNull NBTTagCompound tag) {
         NBTTagList list = new NBTTagList();
         for (long position : drawers) {
             NBTTagCompound entry = new NBTTagCompound();
@@ -235,7 +236,7 @@ public class DrawerControllerTile extends StorageNetworkTile {
     }
 
     @Override
-    protected void readStorageData(NBTTagCompound tag) {
+    protected void readStorageData(@NotNull NBTTagCompound tag) {
         drawers.clear();
         NBTTagList list = tag.getTagList("Drawers", 10);
         for (int index = 0; index < list.tagCount(); index++) drawers.add(
@@ -246,6 +247,12 @@ public class DrawerControllerTile extends StorageNetworkTile {
 
     protected boolean ownsPhysicalControllerLink() {
         return true;
+    }
+
+    protected boolean isWithinLinkingRange(int x, int y, int z) {
+        int range = getLinkingRange();
+        return Math.abs((long) x - xCoord) <= range && Math.abs((long) y - yCoord) <= range
+            && Math.abs((long) z - zCoord) <= range;
     }
 
     protected boolean isLinkedMember(ControllableDrawerTile drawer) {
