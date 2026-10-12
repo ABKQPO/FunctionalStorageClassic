@@ -129,7 +129,8 @@ public class ContainerAdaptiveCrafting extends ContainerDrawer {
         // Vanilla suppresses incremental packets for SlotCrafting subclasses.
         for (Object listener : crafters) {
             if (listener instanceof EntityPlayerMP player && player.playerNetServerHandler != null) {
-                player.playerNetServerHandler.sendPacket(new S2FPacketSetSlot(windowId, resultSlot, result.getStackInSlot(0)));
+                player.playerNetServerHandler
+                    .sendPacket(new S2FPacketSetSlot(windowId, resultSlot, result.getStackInSlot(0)));
             }
         }
     }

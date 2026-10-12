@@ -1,5 +1,8 @@
 package com.hfstudio.functionalstorage.util;
 
+import static com.gtnewhorizon.gtnhlib.util.ItemUtil.getItemSink;
+import static com.gtnewhorizon.gtnhlib.util.ItemUtil.getItemSource;
+
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -11,6 +14,12 @@ import net.minecraftforge.common.util.ForgeDirection;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.IFluidHandler;
 
+import com.gtnewhorizon.gtnhlib.capability.item.ItemSink;
+import com.gtnewhorizon.gtnhlib.capability.item.ItemSource;
+import com.gtnewhorizon.gtnhlib.item.ImmutableItemStack;
+import com.gtnewhorizon.gtnhlib.item.InsertionItemStack;
+import com.gtnewhorizon.gtnhlib.item.InventoryItemSink;
+import com.gtnewhorizon.gtnhlib.item.InventoryIterator;
 import com.hfstudio.functionalstorage.api.storage.BigFluidStack;
 import com.hfstudio.functionalstorage.api.storage.BigItemStack;
 import com.hfstudio.functionalstorage.api.storage.IBigFluidHandler;
@@ -18,65 +27,64 @@ import com.hfstudio.functionalstorage.api.storage.IBigItemHandler;
 import com.hfstudio.functionalstorage.api.storage.ItemStorageView;
 import com.hfstudio.functionalstorage.api.storage.StorageAction;
 
-/** Transfers through native IInventory and IFluidHandler contracts for cross-mod compatibility. */
 public class TransferUtil {
 
-    private TransferUtil() {}
-
     public static boolean pullItems(@Nonnull IBigItemHandler drawer, @Nullable TileEntity source,
-        @Nonnull ForgeDirection sourceSide, long limit) {
-        IInventory inventory = asInventory(source);
-        if (inventory == null || limit <= 0) {
+                                    @Nonnull ForgeDirection sourceSide, long limit) {
+        if (source == null || sourceSide == ForgeDirection.UNKNOWN || limit <= 0) {
             return false;
         }
-        int[] slots = accessibleSlots(inventory, sourceSide);
+        ItemSource itemSource = getItemSource(source, sourceSide);
+        if (itemSource == null) {
+            return false;
+        }
+        itemSource.resetSource();
+        InventoryIterator slots = itemSource.sourceIterator();
+        if (slots == null) {
+            return false;
+        }
         boolean moved = false;
-        for (int slot : slots) {
-            if (limit <= 0) {
-                break;
-            }
-            ItemStack available = inventory.getStackInSlot(slot);
-            if (available == null || available.getItem() == null) {
+        while (limit > 0 && slots.hasNext()) {
+            ImmutableItemStack available = slots.next();
+            if (available == null || available.isEmpty()) {
                 continue;
             }
-            int request = (int) Math.min(limit, available.stackSize);
-            ItemStack extracted = inventory.decrStackSize(slot, request);
-            if (extracted == null || extracted.getItem() == null) {
-                continue;
-            }
-            // Pulled items merge into the slot already holding that item; a full
-            // matching slot ends the pass instead of opening an empty neighbour.
-            BigItemStack probe = new BigItemStack(extracted, extracted.stackSize);
+            BigItemStack probe = new BigItemStack(available.toStackFast(), Math.min(limit, available.getStackSize()));
             int target = drawer.pickInsertionIndex(probe);
             if (target < 0) {
-                inventory.setInventorySlotContents(slot, extracted);
-                break;
+                continue;
             }
-            long stored = drawer.insert(target, probe, StorageAction.EXECUTE)
-                .getProcessedAmount();
+            long accepted = drawer.insert(target, probe, StorageAction.SIMULATE)
+                    .getProcessedAmount();
+            if (accepted <= 0) {
+                continue;
+            }
+            ItemStack extracted = slots.extract(nativeAmount(accepted), false);
+            if (extracted == null || extracted.getItem() == null || extracted.stackSize <= 0) {
+                continue;
+            }
+            long stored = drawer.insert(target, new BigItemStack(extracted, extracted.stackSize), StorageAction.EXECUTE)
+                    .getProcessedAmount();
             if (stored < extracted.stackSize) {
-                ItemStack leftover = extracted.copy();
-                leftover.stackSize = extracted.stackSize - (int) stored;
-                inventory.setInventorySlotContents(slot, leftover);
-                if (stored > 0) {
-                    moved = true;
-                }
-                limit -= stored;
-                break;
+                // A forced iterator insertion merges with the source remainder, including output-only slots.
+                slots.insert(new InsertionItemStack(extracted, extracted.stackSize - (int) stored), true);
             }
-            moved = true;
+            moved |= stored > 0;
             limit -= stored;
         }
         return moved;
     }
 
     public static boolean pushItems(@Nonnull IBigItemHandler drawer, @Nullable TileEntity target,
-        @Nonnull ForgeDirection targetSide, long limit) {
-        IInventory inventory = asInventory(target);
-        if (inventory == null || limit <= 0) {
+                                    @Nonnull ForgeDirection targetSide, long limit) {
+        if (target == null || targetSide == ForgeDirection.UNKNOWN || limit <= 0) {
             return false;
         }
-        int[] slots = accessibleSlots(inventory, targetSide);
+        ItemSink sink = getItemSink(target, targetSide);
+        if (sink == null) {
+            return false;
+        }
+        sink.resetSink();
         long remaining = limit;
         boolean moved = false;
         for (ItemStorageView view : ItemStorageView.storages(drawer)) {
@@ -84,23 +92,19 @@ public class TransferUtil {
                 break;
             }
             ItemStack template = view.getSnapshot()
-                .getTemplate();
+                    .getTemplate();
             if (template == null) {
                 continue;
             }
-            int request = (int) Math.min(
-                remaining,
-                Math.min(
-                    Integer.MAX_VALUE,
-                    view.getSnapshot()
-                        .getAmount()));
+            int request = nativeAmount(drawer.extractRouted(
+                    new BigItemStack(template, Math.min(remaining, view.getSnapshot().getAmount())),
+                    StorageAction.SIMULATE).getProcessedAmount());
             if (request <= 0) {
                 continue;
             }
             ItemStack probe = template.copy();
             probe.stackSize = request;
-            ItemStack leftover = insertIntoInventory(inventory, slots, probe);
-            int inserted = request - (leftover == null ? 0 : leftover.stackSize);
+            int inserted = request - sink.store(new InsertionItemStack(probe));
             if (inserted <= 0) {
                 continue;
             }
@@ -112,7 +116,7 @@ public class TransferUtil {
     }
 
     public static boolean pullFluid(@Nonnull IBigFluidHandler drawer, @Nullable TileEntity source,
-        @Nonnull ForgeDirection sourceSide, long limit) {
+                                    @Nonnull ForgeDirection sourceSide, long limit) {
         IFluidHandler handler = asFluidHandler(source);
         if (handler == null || limit <= 0) {
             return false;
@@ -134,7 +138,7 @@ public class TransferUtil {
     }
 
     public static boolean pushFluid(@Nonnull IBigFluidHandler drawer, @Nullable TileEntity target,
-        @Nonnull ForgeDirection targetSide, long limit) {
+                                    @Nonnull ForgeDirection targetSide, long limit) {
         IFluidHandler handler = asFluidHandler(target);
         if (handler == null || limit <= 0) {
             return false;
@@ -152,8 +156,8 @@ public class TransferUtil {
                 continue;
             }
             FluidStack taken = drawer.drainRouted(new BigFluidStack(template, accepted), StorageAction.EXECUTE)
-                .getProcessed()
-                .toFluidStack();
+                    .getProcessed()
+                    .toFluidStack();
             if (taken == null || taken.amount <= 0) {
                 continue;
             }
@@ -167,52 +171,26 @@ public class TransferUtil {
         return (int) Math.min(Integer.MAX_VALUE, Math.max(0L, amount));
     }
 
-    /**
-     * Inserts a stack into the first inventory slot that accepts it.
-     *
-     * @param inventory destination inventory
-     * @param slots     candidate slot indices
-     * @param stack     stack to insert
-     * @return the leftover stack, or {@code null} when everything fit
-     */
     @Nullable
     public static ItemStack insertIntoInventory(@Nonnull IInventory inventory, int[] slots, @Nonnull ItemStack stack) {
-        ItemStack remaining = stack.copy();
-        for (int slot : slots) {
-            if (remaining.stackSize <= 0) {
-                return null;
-            }
-            if (!inventory.isItemValidForSlot(slot, remaining)) {
-                continue;
-            }
-            ItemStack existing = inventory.getStackInSlot(slot);
-            if (existing == null || existing.getItem() == null) {
-                int limit = Math.min(inventory.getInventoryStackLimit(), remaining.getMaxStackSize());
-                int moved = Math.min(limit, remaining.stackSize);
-                if (moved <= 0) {
-                    continue;
-                }
-                ItemStack placed = remaining.copy();
-                placed.stackSize = moved;
-                inventory.setInventorySlotContents(slot, placed);
-                remaining.stackSize -= moved;
-            } else if (ItemUtil.areItemStacksEqual(existing, remaining)) {
-                int limit = Math.min(inventory.getInventoryStackLimit(), remaining.getMaxStackSize());
-                int space = limit - existing.stackSize;
-                if (space <= 0) {
-                    continue;
-                }
-                int moved = Math.min(space, remaining.stackSize);
-                // Mutate a copy: the exposed stack is the inventory's own state, and
-                // editing it in place before handing it back would make the inventory
-                // compare the stack against itself and miss the change entirely.
-                ItemStack updated = existing.copy();
-                updated.stackSize += moved;
-                inventory.setInventorySlotContents(slot, updated);
-                remaining.stackSize -= moved;
-            }
+        return insertIntoInventory(inventory, slots, stack, ForgeDirection.UNKNOWN);
+    }
+
+    @Nullable
+    public static ItemStack insertIntoInventory(@Nonnull IInventory inventory, int[] slots, @Nonnull ItemStack stack,
+                                                @Nonnull ForgeDirection side) {
+        if (stack.stackSize <= 0) {
+            return null;
         }
-        return remaining.stackSize <= 0 ? null : remaining;
+        InventoryItemSink sink = new InventoryItemSink(inventory, side);
+        sink.setAllowedSinkSlots(slots);
+        int rejected = sink.store(new InsertionItemStack(stack));
+        if (rejected <= 0) {
+            return null;
+        }
+        ItemStack remaining = stack.copy();
+        remaining.stackSize = rejected;
+        return remaining;
     }
 
     @Nullable
@@ -229,9 +207,7 @@ public class TransferUtil {
     public static int[] accessibleSlots(@Nonnull IInventory inventory, @Nonnull ForgeDirection side) {
         if (inventory instanceof ISidedInventory) {
             int[] slots = ((ISidedInventory) inventory).getAccessibleSlotsFromSide(side.ordinal());
-            if (slots != null) {
-                return slots;
-            }
+            return slots == null ? new int[0] : slots;
         }
         int size = inventory.getSizeInventory();
         int[] slots = new int[size];
