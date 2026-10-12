@@ -26,10 +26,13 @@ import com.hfstudio.functionalstorage.api.storage.ConnectedDrawerScope;
 import com.hfstudio.functionalstorage.api.storage.IBigAspectHandler;
 import com.hfstudio.functionalstorage.api.storage.IBigFluidHandler;
 import com.hfstudio.functionalstorage.api.storage.IBigItemHandler;
+import com.hfstudio.functionalstorage.api.storage.IStorageHandler;
 import com.hfstudio.functionalstorage.api.storage.ItemStorageKey;
 import com.hfstudio.functionalstorage.api.storage.StorageAction;
+import com.hfstudio.functionalstorage.api.storage.StorageSnapshot;
 import com.hfstudio.functionalstorage.api.storage.StorageSubscription;
 import com.hfstudio.functionalstorage.api.storage.TransferResult;
+import com.hfstudio.functionalstorage.api.upgrade.UpgradeAttribute;
 import com.hfstudio.functionalstorage.common.block.DrawerFaceLayout;
 import com.hfstudio.functionalstorage.common.integration.AdaptiveLinking;
 import com.hfstudio.functionalstorage.common.integration.Mods;
@@ -66,6 +69,7 @@ public class AdaptiveMatrixTile extends DrawerControllerTile implements IEnergyR
     public static final String TERMINAL_ITEMS = "items";
     public static final String TERMINAL_FLUIDS = "fluids";
     public static final String TERMINAL_ASPECTS = "aspects";
+    public static final String TERMINAL_ALL = "all";
 
     private int energy;
     private boolean powered;
@@ -76,7 +80,7 @@ public class AdaptiveMatrixTile extends DrawerControllerTile implements IEnergyR
     private AdaptivePresentationPlan presentationPlan;
     private AdaptivePresentationPlan synchronizedPresentation = AdaptivePresentationPlan.empty();
     private NBTTagCompound presentationData;
-    private StorageSubscription presentationSubscription = StorageSubscription.CLOSED;
+    private final List<StorageSubscription> presentationSubscriptions = new ArrayList<>(3);
     private boolean automaticLinkChecked;
     private final Set<Long> linkedControllers = new LinkedHashSet<>();
     private long controllerTopologySignature = Long.MIN_VALUE;
@@ -115,7 +119,9 @@ public class AdaptiveMatrixTile extends DrawerControllerTile implements IEnergyR
     @Override
     public int getLinkingRange() {
         if (cachedLinkingRange >= 0) return cachedLinkingRange;
-        cachedLinkingRange = Math.max(1, FunctionalStorageConfig.ADAPTIVE.linkingRange);
+        cachedLinkingRange = Math.max(
+            1,
+            (int) calculateModifier(UpgradeAttribute.CONTROLLER_RANGE, FunctionalStorageConfig.ADAPTIVE.linkingRange));
         return cachedLinkingRange;
     }
 
@@ -126,6 +132,7 @@ public class AdaptiveMatrixTile extends DrawerControllerTile implements IEnergyR
 
     @Override
     public boolean linkDrawer(int x, int y, int z, boolean remove) {
+        if (!remove && !AdaptiveLinking.isWithinRange(x, y, z, this)) return false;
         if (linkFunctionalController(x, y, z, remove)) {
             return true;
         }
@@ -149,10 +156,8 @@ public class AdaptiveMatrixTile extends DrawerControllerTile implements IEnergyR
                 controller.clearAdaptiveMatrixPosition();
             }
         } else {
-            int range = getLinkingRange();
             int[] owner = controller.getAdaptiveMatrixPosition();
-            if (Math.abs(x - xCoord) > range || Math.abs(y - yCoord) > range
-                || Math.abs(z - zCoord) > range
+            if (!AdaptiveLinking.isWithinRange(x, y, z, this)
                 || owner != null && !controller.isLinkedToAdaptiveMatrix(xCoord, yCoord, zCoord)
                 || (!linkedControllers.contains(position)
                     && linkedControllers.size() >= FunctionalStorageConfig.GENERAL.controllerLinkLimit)
@@ -169,7 +174,10 @@ public class AdaptiveMatrixTile extends DrawerControllerTile implements IEnergyR
 
     @Override
     protected List<ControllableDrawerTile> connectedDrawers() {
-        List<ControllableDrawerTile> result = new ArrayList<>(super.connectedDrawers());
+        List<ControllableDrawerTile> result = new ArrayList<>();
+        for (ControllableDrawerTile drawer : super.connectedDrawers()) {
+            if (AdaptiveLinking.isWithinRange(drawer, this)) result.add(drawer);
+        }
         if (worldObj == null) {
             return result;
         }
@@ -184,6 +192,7 @@ public class AdaptiveMatrixTile extends DrawerControllerTile implements IEnergyR
             if (!worldObj.blockExists(x, y, z)) {
                 continue;
             }
+            if (!AdaptiveLinking.isWithinRange(x, y, z, this)) continue;
             TileEntity tile = worldObj.getTileEntity(x, y, z);
             if (!(tile instanceof DrawerControllerTile controller) || controller instanceof AdaptiveMatrixTile) {
                 continue;
@@ -193,12 +202,47 @@ public class AdaptiveMatrixTile extends DrawerControllerTile implements IEnergyR
             }
             for (ControllableDrawerTile drawer : controller.connectedDrawers()) {
                 long drawerPosition = pack(drawer.xCoord, drawer.yCoord, drawer.zCoord);
-                if (positions.add(drawerPosition)) {
+                if (AdaptiveLinking.isWithinRange(drawer, this) && positions.add(drawerPosition)) {
                     result.add(drawer);
                 }
             }
         }
         return result;
+    }
+
+    public boolean isLinkedNetworkMember(@Nonnull ControllableDrawerTile member) {
+        if (worldObj == null || member.isInvalid() || !AdaptiveLinking.isWithinRange(member, this)) {
+            return false;
+        }
+        long memberPosition = pack(member.xCoord, member.yCoord, member.zCoord);
+        if (member.isLinkedToAdaptiveMatrix(xCoord, yCoord, zCoord)
+            && (drawers.contains(memberPosition) || linkedControllers.contains(memberPosition))) {
+            return true;
+        }
+        int[] ownerPosition = member.getControllerPosition();
+        if (ownerPosition == null || !member.isLinkedTo(ownerPosition[0], ownerPosition[1], ownerPosition[2])) {
+            return false;
+        }
+        if (!worldObj.blockExists(ownerPosition[0], ownerPosition[1], ownerPosition[2]) || !(worldObj
+            .getTileEntity(ownerPosition[0], ownerPosition[1], ownerPosition[2]) instanceof DrawerControllerTile owner)
+            || owner.isInvalid()
+            || !owner.getDrawers()
+                .contains(memberPosition)) {
+            return false;
+        }
+        for (long position : linkedControllers) {
+            int x = ConnectedDrawerScope.unpackX(position);
+            int y = ConnectedDrawerScope.unpackY(position);
+            int z = ConnectedDrawerScope.unpackZ(position);
+            if (!AdaptiveLinking.isWithinRange(x, y, z, this) || !worldObj.blockExists(x, y, z)) continue;
+            if (worldObj.getTileEntity(x, y, z) instanceof DrawerControllerTile linked && !linked.isInvalid()
+                && linked.isLinkedToAdaptiveMatrix(xCoord, yCoord, zCoord)
+                && linked.getDrawers()
+                    .contains(memberPosition)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Nonnull
@@ -236,7 +280,8 @@ public class AdaptiveMatrixTile extends DrawerControllerTile implements IEnergyR
     public void cycleTerminalMode() {
         String next = switch (terminalMode) {
             case TERMINAL_ITEMS -> TERMINAL_FLUIDS;
-            case TERMINAL_FLUIDS -> supportsEssentia() ? TERMINAL_ASPECTS : TERMINAL_ITEMS;
+            case TERMINAL_FLUIDS -> supportsEssentia() ? TERMINAL_ASPECTS : TERMINAL_ALL;
+            case TERMINAL_ASPECTS -> TERMINAL_ALL;
             default -> TERMINAL_ITEMS;
         };
         setTerminalMode(next);
@@ -261,6 +306,10 @@ public class AdaptiveMatrixTile extends DrawerControllerTile implements IEnergyR
 
     public boolean isTerminalAspects() {
         return TERMINAL_ASPECTS.equals(terminalMode);
+    }
+
+    public boolean isTerminalAll() {
+        return TERMINAL_ALL.equals(terminalMode);
     }
 
     public void setPresentationSort(@Nonnull String id) {
@@ -296,9 +345,9 @@ public class AdaptiveMatrixTile extends DrawerControllerTile implements IEnergyR
         return presentationPlan;
     }
 
-    @Nullable
+    @Nonnull
     public List<AdaptiveDisplayEntry> getDisplayEntries(long drawerPosition) {
-        return isPowered() ? getPresentationPlan().entries(drawerPosition) : null;
+        return isPowered() ? getPresentationPlan().entries(drawerPosition) : List.of();
     }
 
     @Nonnull
@@ -306,13 +355,15 @@ public class AdaptiveMatrixTile extends DrawerControllerTile implements IEnergyR
         return getPresentationPlan().layout(drawerPosition);
     }
 
-    public boolean canReserveDisplayItem(ControllableDrawerTile owner, int cell, ItemStack template) {
+    public boolean canReserveDisplayResource(ControllableDrawerTile owner, int cell, StorageSnapshot<?, ?> template) {
+        if (!template.hasTemplate()) return true;
         for (ControllableDrawerTile drawer : connectedDrawers()) {
             if (!(drawer instanceof AdaptiveDisplayProvider provider)) continue;
             for (int index = 0; index < 4; index++) {
                 if (drawer == owner && index == cell || !provider.isDisplayCellReserved(index)) continue;
-                ItemStack reserved = provider.getDisplayReservation(index);
-                if (reserved != null && new ItemStorageKey(reserved).equals(new ItemStorageKey(template))) return false;
+                StorageSnapshot<?, ?> reserved = provider.getDisplayReservation(index);
+                if (reserved != null && template.getKey()
+                    .equals(reserved.getKey())) return false;
             }
         }
         return true;
@@ -357,6 +408,12 @@ public class AdaptiveMatrixTile extends DrawerControllerTile implements IEnergyR
     }
 
     @Override
+    protected void reconcileStorageConfiguration() {
+        cachedLinkingRange = -1;
+        invalidateNetwork();
+    }
+
+    @Override
     public void onChunkUnload() {
         closePresentationSubscription();
         super.onChunkUnload();
@@ -370,7 +427,7 @@ public class AdaptiveMatrixTile extends DrawerControllerTile implements IEnergyR
 
     @Override
     public void onBlockBroken() {
-        if (worldObj != null) {
+        if (worldObj != null && !worldObj.isRemote) {
             for (long position : linkedControllers) {
                 int x = ConnectedDrawerScope.unpackX(position);
                 int y = ConnectedDrawerScope.unpackY(position);
@@ -438,6 +495,9 @@ public class AdaptiveMatrixTile extends DrawerControllerTile implements IEnergyR
 
     @Override
     public boolean onSlotActivated(EntityPlayer player, int side, float x, float y, float z, int slot) {
+        if (worldObj != null && !worldObj.isRemote && player.getHeldItem() == null && player.isSneaking()) {
+            return super.onSlotActivated(player, side, x, y, z, slot);
+        }
         if (worldObj != null && !worldObj.isRemote && player.getHeldItem() == null) {
             ToolFeedback.send(
                 player,
@@ -458,7 +518,7 @@ public class AdaptiveMatrixTile extends DrawerControllerTile implements IEnergyR
 
     @Override
     public boolean openGui(@Nonnull EntityPlayer player) {
-        return false;
+        return super.openGui(player);
     }
 
     @Override
@@ -595,6 +655,7 @@ public class AdaptiveMatrixTile extends DrawerControllerTile implements IEnergyR
     private String resolveTerminalMode(@Nonnull String mode) {
         if (TERMINAL_FLUIDS.equals(mode)) return TERMINAL_FLUIDS;
         if (TERMINAL_ASPECTS.equals(mode) && supportsEssentia()) return TERMINAL_ASPECTS;
+        if (TERMINAL_ALL.equals(mode)) return TERMINAL_ALL;
         return TERMINAL_ITEMS;
     }
 
@@ -603,19 +664,30 @@ public class AdaptiveMatrixTile extends DrawerControllerTile implements IEnergyR
     }
 
     private void ensurePresentationSubscription() {
-        if (!presentationSubscription.isClosed()) return;
-        IBigItemHandler handler = super.getItemHandler();
+        IBigItemHandler items = super.getItemHandler();
+        if (!presentationSubscriptions.isEmpty()) return;
+        subscribePresentation(items);
+        subscribePresentation(super.getFluidHandler());
+        if (supportsEssentia()) subscribeAspectPresentation();
+    }
+
+    @Optional.Method(modid = "Thaumcraft")
+    private void subscribeAspectPresentation() {
+        subscribePresentation(super.getAspectHandler());
+    }
+
+    private void subscribePresentation(IStorageHandler<?, ?> handler) {
         if (handler == null) return;
-        presentationSubscription = handler.subscribe(change -> {
+        presentationSubscriptions.add(handler.subscribe(change -> {
             presentationPlan = null;
             presentationData = null;
             requestUpdatePacket();
-        });
+        }));
     }
 
     private void closePresentationSubscription() {
-        presentationSubscription.close();
-        presentationSubscription = StorageSubscription.CLOSED;
+        for (StorageSubscription subscription : presentationSubscriptions) subscription.close();
+        presentationSubscriptions.clear();
     }
 
     private void refreshControllerTopology() {
@@ -625,6 +697,7 @@ public class AdaptiveMatrixTile extends DrawerControllerTile implements IEnergyR
         long now = worldObj.getTotalWorldTime();
         if (now == topologyCheckedAt) return;
         topologyCheckedAt = now;
+        boolean linksChanged = pruneInvalidLinks();
         long signature = getDrawers().hashCode();
         for (long position : getDrawers()) signature = 31L * signature + loadedTileIdentity(position);
         for (long position : linkedControllers) {
@@ -653,10 +726,51 @@ public class AdaptiveMatrixTile extends DrawerControllerTile implements IEnergyR
         for (ControllableDrawerTile drawer : connectedDrawers()) {
             if (drawer instanceof WoodDrawerTile) loadedDrawerCount++;
         }
-        if (changed) {
+        if (changed || linksChanged) {
             invalidateNetwork();
         }
         topologyCheckedAt = now;
+    }
+
+    private boolean pruneInvalidLinks() {
+        boolean changed = false;
+        for (long position : new ArrayList<>(drawers)) {
+            int x = ConnectedDrawerScope.unpackX(position);
+            int y = ConnectedDrawerScope.unpackY(position);
+            int z = ConnectedDrawerScope.unpackZ(position);
+            TileEntity tile = worldObj.blockExists(x, y, z) ? worldObj.getTileEntity(x, y, z) : null;
+            if (tile instanceof ControllableDrawerTile drawer && !drawer.isInvalid()
+                && drawer.isLinkedToAdaptiveMatrix(xCoord, yCoord, zCoord)
+                && AdaptiveLinking.isWithinRange(drawer, this)) {
+                continue;
+            }
+            changed |= drawers.remove(position);
+            if (tile instanceof ControllableDrawerTile drawer
+                && drawer.isLinkedToAdaptiveMatrix(xCoord, yCoord, zCoord)) {
+                drawer.clearAdaptiveMatrixPosition();
+            }
+        }
+        for (long position : new ArrayList<>(linkedControllers)) {
+            int x = ConnectedDrawerScope.unpackX(position);
+            int y = ConnectedDrawerScope.unpackY(position);
+            int z = ConnectedDrawerScope.unpackZ(position);
+            TileEntity tile = worldObj.blockExists(x, y, z) ? worldObj.getTileEntity(x, y, z) : null;
+            if (tile instanceof DrawerControllerTile controller && !(controller instanceof AdaptiveMatrixTile)
+                && !controller.isInvalid()
+                && controller.isLinkedToAdaptiveMatrix(xCoord, yCoord, zCoord)
+                && AdaptiveLinking.isWithinRange(x, y, z, this)) {
+                continue;
+            }
+            changed |= linkedControllers.remove(position);
+            if (tile instanceof DrawerControllerTile controller
+                && controller.isLinkedToAdaptiveMatrix(xCoord, yCoord, zCoord)) {
+                controller.clearAdaptiveMatrixPosition();
+            }
+        }
+        if (changed) {
+            markDirty();
+        }
+        return changed;
     }
 
     private int loadedTileIdentity(long position) {

@@ -267,6 +267,9 @@ public class DrawerRenderer extends TileEntitySpecialRenderer implements IResour
         if (!isWithinRenderRange(tile)) {
             return;
         }
+        if (drawer instanceof AdaptiveDisplayProvider adaptive && !adaptive.isAdaptiveDisplayPowered()) {
+            return;
+        }
 
         DrawerOptions options = drawer.getDrawerOptions();
         // Locking is drawer state rather than a display option, so a locked drawer
@@ -299,7 +302,8 @@ public class DrawerRenderer extends TileEntitySpecialRenderer implements IResour
             simpleIcons.clear();
             textLabelCount = 0;
 
-            DrawerFaceLayout layout = block.getFaceLayout();
+            AdaptiveDisplayProvider provider = drawer instanceof AdaptiveDisplayProvider adaptive ? adaptive : null;
+            DrawerFaceLayout layout = provider == null ? block.getFaceLayout() : provider.getAdaptiveDisplayLayout();
             if (layout.getSlotCount() > itemSnapshots.length) {
                 itemSnapshots = Arrays.copyOf(itemSnapshots, layout.getSlotCount());
                 textLabels = Arrays.copyOf(textLabels, layout.getSlotCount());
@@ -309,21 +313,14 @@ public class DrawerRenderer extends TileEntitySpecialRenderer implements IResour
                 IBigItemHandler itemHandler = drawer.getItemHandler();
                 IBigFluidHandler fluidHandler = drawer.getFluidHandler();
                 IBigAspectHandler aspectHandler = drawer.getAspectHandler();
-                AdaptiveDisplayProvider provider = drawer instanceof AdaptiveDisplayProvider adaptive ? adaptive : null;
                 List<AdaptiveDisplayEntry> adaptiveEntries = provider == null ? null
                     : provider.getAdaptiveDisplayEntries();
-                if (adaptiveEntries != null) {
-                    DrawerFaceLayout adaptiveLayout = provider.getAdaptiveDisplayLayout();
-                    if (adaptiveLayout != null) {
-                        layout = adaptiveLayout;
-                    }
-                    renderAdaptiveItemSlots(adaptiveEntries, layout, options);
-                } else if (itemHandler != null) {
-                    renderItemSlots(itemHandler, layout, options);
+                if (itemHandler != null) {
+                    renderItemSlots(itemHandler, adaptiveEntries, layout, options);
                 } else if (fluidHandler != null) {
-                    renderFluidSlots(drawer, fluidHandler, layout, options);
+                    renderFluidSlots(drawer, fluidHandler, adaptiveEntries, layout, options);
                 } else if (aspectHandler != null) {
-                    renderAspectSlots(aspectHandler, layout, options);
+                    renderAspectSlots(aspectHandler, adaptiveEntries, layout, options);
                 }
             }
             if (options.isShowUpgrades()) {
@@ -356,15 +353,17 @@ public class DrawerRenderer extends TileEntitySpecialRenderer implements IResour
         clearBlockModelLists();
     }
 
-    private void renderItemSlots(@Nonnull IBigItemHandler handler, @Nonnull DrawerFaceLayout layout,
-        @Nonnull DrawerOptions options) {
-        int slotCount = Math.min(layout.getSlotCount(), handler.getStorageCount());
+    private void renderItemSlots(@Nonnull IBigItemHandler handler, List<AdaptiveDisplayEntry> entries,
+        @Nonnull DrawerFaceLayout layout, @Nonnull DrawerOptions options) {
+        int slotCount = Math.min(layout.getSlotCount(), entries == null ? handler.getStorageCount() : entries.size());
         boolean showCount = options.isShowItemCount();
         boolean showIndicator = options.getAdvancedValue(ConfigurationToolItem.ConfigurationAction.INDICATOR) != 0;
         boolean renderLabels = showCount || showIndicator;
         float scale = iconScale(layout);
         for (int slot = 0; slot < slotCount; slot++) {
-            BigItemStack snapshot = handler.getSnapshot(slot);
+            BigItemStack snapshot = entries == null ? handler.getSnapshot(slot)
+                : entries.get(slot)
+                    .content() instanceof BigItemStack item ? item : BigItemStack.empty();
             if (renderLabels) {
                 itemSnapshots[slot] = snapshot;
             }
@@ -394,63 +393,37 @@ public class DrawerRenderer extends TileEntitySpecialRenderer implements IResour
                     centerX,
                     centerY,
                     scale,
-                    ratio(snapshot.getAmount(), handler.getCapacity(slot)),
+                    ratio(
+                        snapshot.getAmount(),
+                        entries == null ? handler.getCapacity(slot)
+                            : entries.get(slot)
+                                .capacity()),
                     options);
             }
         }
     }
 
-    private void renderAdaptiveItemSlots(@Nonnull List<AdaptiveDisplayEntry> entries, @Nonnull DrawerFaceLayout layout,
-        @Nonnull DrawerOptions options) {
-        int slotCount = Math.min(layout.getSlotCount(), entries.size());
-        boolean showCount = options.isShowItemCount();
-        boolean showIndicator = options.getAdvancedValue(ConfigurationToolItem.ConfigurationAction.INDICATOR) != 0;
-        boolean renderLabels = showCount || showIndicator;
-        float scale = iconScale(layout);
-        for (int slot = 0; slot < slotCount; slot++) {
-            BigItemStack snapshot = entries.get(slot)
-                .content();
-            if (renderLabels) {
-                itemSnapshots[slot] = snapshot;
-            }
-            if (snapshot.hasTemplate() && options.isShowItemRender()) {
-                renderStack(snapshot.getTemplate(), layout.getSlotX(slot), layout.getSlotY(slot), scale);
-            }
-        }
-        simpleIcons.flush();
-        if (!renderLabels) {
-            return;
-        }
-        for (int slot = 0; slot < slotCount; slot++) {
-            AdaptiveDisplayEntry entry = entries.get(slot);
-            BigItemStack snapshot = entry.content();
-            if (!snapshot.hasTemplate()) {
-                continue;
-            }
-            float centerX = layout.getSlotX(slot);
-            float centerY = layout.getSlotY(slot);
-            if (showCount) {
-                renderText(StorageAmountFormatter.formatDisplay(snapshot.getAmount(), false), centerX, centerY, scale);
-            }
-            if (showIndicator) {
-                renderIndicator(centerX, centerY, scale, ratio(snapshot.getAmount(), entry.capacity()), options);
-            }
-        }
-    }
-
     private void renderFluidSlots(@Nonnull ControllableDrawerTile drawer, @Nonnull IBigFluidHandler handler,
-        @Nonnull DrawerFaceLayout layout, @Nonnull DrawerOptions options) {
-        int slotCount = Math.min(layout.getSlotCount(), handler.getStorageCount());
+        List<AdaptiveDisplayEntry> entries, @Nonnull DrawerFaceLayout layout, @Nonnull DrawerOptions options) {
+        int slotCount = Math.min(layout.getSlotCount(), entries == null ? handler.getStorageCount() : entries.size());
         FluidRenderState state = fluidRenderStates.computeIfAbsent(drawer, ignored -> new FluidRenderState());
         state.beginFrame(slotCount);
         for (int slot = 0; slot < slotCount; slot++) {
-            BigFluidStack snapshot = handler.getSnapshot(slot);
+            BigFluidStack snapshot = entries == null ? handler.getSnapshot(slot)
+                : entries.get(slot)
+                    .content() instanceof BigFluidStack fluid ? fluid : BigFluidStack.empty();
+            long capacity = entries == null ? handler.getCapacity(slot)
+                : entries.get(slot)
+                    .capacity();
             boolean hasTemplate = snapshot.hasTemplate();
+            if (entries != null && !hasTemplate) {
+                state.clearTemplate(slot);
+                continue;
+            }
             if (hasTemplate) {
                 state.setTemplate(slot, snapshot.getTemplate());
             }
-            float fill = state
-                .interpolate(slot, hasTemplate ? ratio(snapshot.getAmount(), handler.getCapacity(slot)) : 0F);
+            float fill = state.interpolate(slot, hasTemplate ? ratio(snapshot.getAmount(), capacity) : 0F);
             FluidStack fluid = state.getTemplate(slot);
             if (fluid == null) continue;
             if (!hasTemplate && fill == 0F) {
@@ -471,21 +444,19 @@ public class DrawerRenderer extends TileEntitySpecialRenderer implements IResour
                     iconScale(layout));
             }
             if (hasTemplate && options.getAdvancedValue(ConfigurationToolItem.ConfigurationAction.INDICATOR) != 0) {
-                renderIndicator(
-                    centerX,
-                    centerY,
-                    iconScale(layout),
-                    ratio(snapshot.getAmount(), handler.getCapacity(slot)),
-                    options);
+                renderIndicator(centerX, centerY, iconScale(layout), ratio(snapshot.getAmount(), capacity), options);
             }
         }
     }
 
     @Optional.Method(modid = "Thaumcraft")
-    private void renderAspectSlots(@Nonnull IBigAspectHandler handler, @Nonnull DrawerFaceLayout layout,
-        @Nonnull DrawerOptions options) {
-        for (int slot = 0; slot < Math.min(layout.getSlotCount(), handler.getStorageCount()); slot++) {
-            BigAspectStack snapshot = handler.getSnapshot(slot);
+    private void renderAspectSlots(@Nonnull IBigAspectHandler handler, List<AdaptiveDisplayEntry> entries,
+        @Nonnull DrawerFaceLayout layout, @Nonnull DrawerOptions options) {
+        int slotCount = Math.min(layout.getSlotCount(), entries == null ? handler.getStorageCount() : entries.size());
+        for (int slot = 0; slot < slotCount; slot++) {
+            BigAspectStack snapshot = entries == null ? handler.getSnapshot(slot)
+                : entries.get(slot)
+                    .content() instanceof BigAspectStack aspect ? aspect : BigAspectStack.empty();
             Aspect aspect = snapshot.getAspect();
             if (aspect == null) {
                 continue;
@@ -507,7 +478,11 @@ public class DrawerRenderer extends TileEntitySpecialRenderer implements IResour
                     centerX,
                     centerY,
                     iconScale(layout),
-                    ratio(snapshot.getAmount(), handler.getCapacity(slot)),
+                    ratio(
+                        snapshot.getAmount(),
+                        entries == null ? handler.getCapacity(slot)
+                            : entries.get(slot)
+                                .capacity()),
                     options);
             }
         }
@@ -1092,7 +1067,7 @@ public class DrawerRenderer extends TileEntitySpecialRenderer implements IResour
         return new float[] { 1F - modelRight, 1F - modelLeft, 1F - modelBottom, 1F - modelTop };
     }
 
-    private static class FluidRenderState {
+    public static class FluidRenderState {
 
         private long lastFrameNanos;
         private float interpolationFactor = 1F;
@@ -1131,6 +1106,7 @@ public class DrawerRenderer extends TileEntitySpecialRenderer implements IResour
         }
 
         private void setTemplate(int slot, FluidStack template) {
+            if (templates[slot] == null || !templates[slot].isFluidEqual(template)) initialized[slot] = false;
             templates[slot] = template;
         }
 
@@ -1140,6 +1116,7 @@ public class DrawerRenderer extends TileEntitySpecialRenderer implements IResour
 
         private void clearTemplate(int slot) {
             templates[slot] = null;
+            initialized[slot] = false;
         }
     }
 
@@ -1337,7 +1314,7 @@ public class DrawerRenderer extends TileEntitySpecialRenderer implements IResour
         }
         FontRenderer font = Minecraft.getMinecraft().fontRenderer;
         GL11.glDisable(GL11.GL_LIGHTING);
-        GL11.glDisable(GL11.GL_DEPTH_TEST);
+        GL11.glEnable(GL11.GL_DEPTH_TEST);
         GL11.glDepthMask(false);
         GL11.glPushMatrix();
         try {

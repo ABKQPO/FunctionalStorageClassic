@@ -11,9 +11,13 @@ import net.minecraft.world.World;
 import net.minecraftforge.fluids.FluidStack;
 
 import com.gtnewhorizon.gtnhlib.util.numberformatting.NumberFormatUtil;
+import com.hfstudio.functionalstorage.api.storage.AspectStorageKey;
 import com.hfstudio.functionalstorage.api.storage.BigAspectStack;
 import com.hfstudio.functionalstorage.api.storage.BigFluidStack;
 import com.hfstudio.functionalstorage.api.storage.BigItemStack;
+import com.hfstudio.functionalstorage.api.storage.FluidStorageKey;
+import com.hfstudio.functionalstorage.api.storage.ItemStorageKey;
+import com.hfstudio.functionalstorage.api.storage.StorageResourceView;
 import com.hfstudio.functionalstorage.common.block.base.DrawerBlock;
 import com.hfstudio.functionalstorage.common.integration.Mods;
 import com.hfstudio.functionalstorage.common.tile.EssentiaDrawerTile;
@@ -145,7 +149,7 @@ public class DrawerWailaProvider implements IWailaDataProvider {
             tag.setInteger("AdaptiveEnergy", matrix.getEnergyStored());
             tag.setInteger("AdaptiveMaxEnergy", matrix.getMaxEnergyStored());
             tag.setInteger("AdaptiveCost", matrix.getEnergyCostPerTick());
-            return tag;
+            writeMatrixContents(matrix, tag);
         }
 
         int upgrades = 0;
@@ -161,14 +165,73 @@ public class DrawerWailaProvider implements IWailaDataProvider {
         }
         tag.setInteger("Upgrades", upgrades);
 
-        if (tile instanceof FluidDrawerTile) {
-            writeFluidTanks((FluidDrawerTile) tile, tag);
-        } else if (Mods.Thaumcraft.isModLoaded() && tile instanceof EssentiaDrawerTile) {
-            writeAspectSlots((EssentiaDrawerTile) tile, tag);
-        } else {
-            writeItemSlots(drawer, tag);
+        if (!(tile instanceof AdaptiveMatrixTile)) {
+            if (tile instanceof FluidDrawerTile) {
+                writeFluidTanks((FluidDrawerTile) tile, tag);
+            } else if (Mods.Thaumcraft.isModLoaded() && tile instanceof EssentiaDrawerTile) {
+                writeAspectSlots((EssentiaDrawerTile) tile, tag);
+            } else {
+                writeItemSlots(drawer, tag);
+            }
         }
         return tag;
+    }
+
+    private void writeMatrixContents(AdaptiveMatrixTile matrix, NBTTagCompound tag) {
+        int index = 0;
+        if (matrix.getItemHandler() != null) {
+            for (StorageResourceView<BigItemStack, ItemStorageKey> view : StorageResourceView
+                .aggregate(matrix.getItemHandler())) {
+                NBTTagCompound item = new NBTTagCompound();
+                view.getSnapshot()
+                    .getTemplate()
+                    .writeToNBT(item);
+                tag.setTag("Item" + index, item);
+                tag.setLong(
+                    "Amount" + index,
+                    view.getSnapshot()
+                        .getAmount());
+                tag.setLong("Capacity" + index, view.getCapacity());
+                index++;
+            }
+        }
+        if (matrix.getFluidHandler() != null) {
+            for (StorageResourceView<BigFluidStack, FluidStorageKey> view : StorageResourceView
+                .aggregate(matrix.getFluidHandler())) {
+                NBTTagCompound fluid = new NBTTagCompound();
+                view.getSnapshot()
+                    .getTemplate()
+                    .writeToNBT(fluid);
+                tag.setTag("Fluid" + index, fluid);
+                tag.setLong(
+                    "Amount" + index,
+                    view.getSnapshot()
+                        .getAmount());
+                tag.setLong("Capacity" + index, view.getCapacity());
+                index++;
+            }
+        }
+        if (matrix.getAspectHandler() != null) writeMatrixAspects(matrix, tag, index);
+        else tag.setInteger("Slots", index);
+    }
+
+    @Optional.Method(modid = "Thaumcraft")
+    private void writeMatrixAspects(AdaptiveMatrixTile matrix, NBTTagCompound tag, int index) {
+        for (StorageResourceView<BigAspectStack, AspectStorageKey> view : StorageResourceView
+            .aggregate(matrix.getAspectHandler())) {
+            tag.setString(
+                "Aspect" + index,
+                view.getSnapshot()
+                    .getAspect()
+                    .getTag());
+            tag.setLong(
+                "Amount" + index,
+                view.getSnapshot()
+                    .getAmount());
+            tag.setLong("Capacity" + index, view.getCapacity());
+            index++;
+        }
+        tag.setInteger("Slots", index);
     }
 
     private void writeItemSlots(ControllableDrawerTile drawer, NBTTagCompound tag) {

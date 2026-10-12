@@ -5,7 +5,6 @@ import javax.annotation.Nullable;
 
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.IInventory;
-import net.minecraft.tileentity.TileEntity;
 import net.minecraftforge.fluids.IFluidHandler;
 
 import com.hfstudio.functionalstorage.FunctionalStorage;
@@ -31,6 +30,18 @@ public class AdaptiveGridTile extends ControllerExtensionTile {
             tryAutoLink();
         }
         super.updateEntity();
+    }
+
+    @Override
+    public void onBlockBroken() {
+        if (worldObj != null && !worldObj.isRemote) {
+            int[] position = getAdaptiveMatrixPosition();
+            if (position != null && worldObj.blockExists(position[0], position[1], position[2])
+                && worldObj.getTileEntity(position[0], position[1], position[2]) instanceof AdaptiveMatrixTile matrix) {
+                matrix.linkDrawer(xCoord, yCoord, zCoord, true);
+            }
+        }
+        super.onBlockBroken();
     }
 
     @Override
@@ -147,12 +158,7 @@ public class AdaptiveGridTile extends ControllerExtensionTile {
     }
 
     private AdaptiveMatrixTile matrix() {
-        int[] position = getAdaptiveMatrixPosition();
-        if (worldObj == null || position == null || !worldObj.blockExists(position[0], position[1], position[2])) {
-            return null;
-        }
-        TileEntity tile = worldObj.getTileEntity(position[0], position[1], position[2]);
-        return tile instanceof AdaptiveMatrixTile matrix ? matrix : null;
+        return AdaptiveLinking.resolveMatrix(this);
     }
 
     @Nullable

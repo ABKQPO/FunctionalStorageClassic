@@ -6,7 +6,7 @@ import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
 
-import com.hfstudio.functionalstorage.client.gui.GuiDrawer;
+import com.hfstudio.functionalstorage.client.gui.GuiStorage;
 
 import codechicken.nei.guihook.GuiContainerManager;
 import codechicken.nei.guihook.IContainerTooltipHandler;
@@ -26,7 +26,7 @@ public class NEIStorageTooltips implements IContainerTooltipHandler {
     @Override
     @Optional.Method(modid = "NotEnoughItems")
     public List<String> handleTooltip(GuiContainer gui, int mousex, int mousey, List<String> currenttip) {
-        if (!(gui instanceof GuiDrawer drawer) || !currenttip.isEmpty() || !GuiContainerManager.shouldShowTooltip(gui))
+        if (!(gui instanceof GuiStorage drawer) || !currenttip.isEmpty() || !GuiContainerManager.shouldShowTooltip(gui))
             return currenttip;
         Slot hovered = GuiContainerManager.getSlotMouseOver(gui);
         // Non-item storage must not depend on an item tooltip renderer being invoked.
@@ -40,7 +40,7 @@ public class NEIStorageTooltips implements IContainerTooltipHandler {
     @Optional.Method(modid = "NotEnoughItems")
     public List<String> handleItemTooltip(GuiContainer gui, ItemStack itemstack, int mousex, int mousey,
         List<String> currenttip) {
-        if (itemstack != null && gui instanceof GuiDrawer drawer) {
+        if (itemstack != null && gui instanceof GuiStorage drawer) {
             currenttip.addAll(drawer.storageTooltipLines(mousex, mousey));
         }
         return currenttip;

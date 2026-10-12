@@ -1,6 +1,7 @@
 package com.hfstudio.functionalstorage.common.container;
 
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.inventory.InventoryCraftResult;
 import net.minecraft.inventory.InventoryCrafting;
@@ -9,6 +10,7 @@ import net.minecraft.inventory.SlotCrafting;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.CraftingManager;
 import net.minecraft.item.crafting.IRecipe;
+import net.minecraft.network.play.server.S2FPacketSetSlot;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -119,6 +121,15 @@ public class ContainerAdaptiveCrafting extends ContainerDrawer {
     @Override
     public void detectAndSendChanges() {
         refreshCraftingResult();
+        if (crafting != null && !craftingTile.getWorldObj().isRemote
+            && !ItemStack.areItemStacksEqual(inventoryItemStacks.get(resultSlot), result.getStackInSlot(0))) {
+            for (Object listener : crafters) {
+                if (listener instanceof EntityPlayerMP player && player.playerNetServerHandler != null) {
+                    player.playerNetServerHandler
+                        .sendPacket(new S2FPacketSetSlot(windowId, resultSlot, result.getStackInSlot(0)));
+                }
+            }
+        }
         super.detectAndSendChanges();
     }
 
@@ -254,20 +265,34 @@ public class ContainerAdaptiveCrafting extends ContainerDrawer {
                 if (current != null && (template == null || !sameType(current, template))) {
                     crafting.setInventorySlotContents(index, null);
                     returnStack(player, current);
-                    current = null;
                 }
-                if (template == null || template.getItem() == null) continue;
-                int target = maxTransfer ? Math.min(crafting.getInventoryStackLimit(), template.getMaxStackSize()) : 1;
-                ItemStack additional = takeIngredient(
-                    player,
-                    template,
-                    target - (current == null ? 0 : current.stackSize),
-                    true);
-                if (additional == null) continue;
-                if (current == null) crafting.setInventorySlotContents(index, additional);
-                else {
-                    current.stackSize += additional.stackSize;
-                    crafting.markDirty();
+            }
+            boolean[] assigned = new boolean[9];
+            int[] positions = new int[9];
+            for (int index = 0; index < 9; index++) {
+                ItemStack template = templates[index];
+                if (assigned[index] || template == null || template.getItem() == null) continue;
+                int count = 0;
+                int available = 0;
+                for (int slot = index; slot < 9; slot++) {
+                    if (templates[slot] == null || !sameType(template, templates[slot])) continue;
+                    assigned[slot] = true;
+                    positions[count++] = slot;
+                    ItemStack current = crafting.getStackInSlot(slot);
+                    if (current != null) available += current.stackSize;
+                }
+                int limit = Math.min(crafting.getInventoryStackLimit(), template.getMaxStackSize());
+                int target = maxTransfer ? limit : 1;
+                ItemStack additional = takeIngredient(player, template, target * count - available, true);
+                if (additional != null) available += additional.stackSize;
+                // Distribute the shared pool across recipe coordinates, including scarce partial recipes.
+                for (int position = 0; position < count; position++) {
+                    int amount = Math
+                        .min(limit, available / (count - position) + (available % (count - position) == 0 ? 0 : 1));
+                    ItemStack stack = amount == 0 ? null : template.copy();
+                    if (stack != null) stack.stackSize = amount;
+                    crafting.setInventorySlotContents(positions[position], stack);
+                    available -= amount;
                 }
             }
         } finally {

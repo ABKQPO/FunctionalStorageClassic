@@ -16,7 +16,11 @@ import com.hfstudio.functionalstorage.api.storage.BigItemStack;
 import com.hfstudio.functionalstorage.client.gui.DrawerContentCollector;
 import com.hfstudio.functionalstorage.client.gui.DrawerTooltipData.AspectIcon;
 import com.hfstudio.functionalstorage.client.gui.GuiAdaptiveCrafting;
+import com.hfstudio.functionalstorage.client.gui.GuiAdaptiveGrid;
+import com.hfstudio.functionalstorage.client.gui.GuiAdaptiveMatrix;
+import com.hfstudio.functionalstorage.client.gui.GuiController;
 import com.hfstudio.functionalstorage.client.gui.GuiDrawer;
+import com.hfstudio.functionalstorage.client.gui.GuiStorage;
 import com.hfstudio.functionalstorage.client.gui.StorageContentEntry;
 import com.hfstudio.functionalstorage.common.container.ContainerAdaptiveCrafting;
 import com.hfstudio.functionalstorage.common.container.ContainerDrawer;
@@ -44,9 +48,22 @@ public class StorageOverlayHandler implements IOverlayHandler {
     public static void register() {
         StorageOverlayHandler handler = new StorageOverlayHandler();
         for (String ident : knownOverlayIdents()) {
-            API.registerGuiOverlayHandler(GuiDrawer.class, handler, ident);
-            API.registerGuiOverlayHandler(GuiAdaptiveCrafting.class, handler, ident);
+            for (Class<? extends GuiContainer> screen : List.of(
+                GuiDrawer.class,
+                GuiController.class,
+                GuiAdaptiveMatrix.class,
+                GuiAdaptiveGrid.class,
+                GuiAdaptiveCrafting.class)) {
+                API.registerGuiOverlayHandler(screen, handler, ident);
+            }
         }
+    }
+
+    @Override
+    @Optional.Method(modid = "NotEnoughItems")
+    public boolean canFillCraftingGrid(GuiContainer gui, IRecipeHandler recipe, int recipeIndex) {
+        return gui.inventorySlots instanceof ContainerAdaptiveCrafting
+            && "crafting".equals(recipe.getOverlayIdentifier());
     }
 
     @Optional.Method(modid = "NotEnoughItems")
@@ -79,19 +96,21 @@ public class StorageOverlayHandler implements IOverlayHandler {
             || !"crafting".equals(recipe.getOverlayIdentifier())) return;
         ItemStack[] templates = new ItemStack[9];
         for (PositionedStack ingredient : recipe.getIngredientStacks(recipeIndex)) {
-            int column = (ingredient.relx - 25) / 18;
-            int row = (ingredient.rely - 6) / 18;
+            int column = Math.floorDiv(ingredient.relx - 25, 18);
+            int row = Math.floorDiv(ingredient.rely - 6, 18);
             if (column < 0 || column >= 3 || row < 0 || row >= 3) return;
             ItemStack selected = null;
             for (ItemStack candidate : ingredient.items) {
-                if (candidate != null && available(menu, firstGui.mc.thePlayer, candidate)) {
-                    selected = candidate.copy();
-                    selected.stackSize = 1;
+                if (candidate == null || candidate.getItem() == null) continue;
+                if (selected == null) selected = candidate;
+                if (available(menu, firstGui.mc.thePlayer, candidate)) {
+                    selected = candidate;
                     break;
                 }
             }
             if (selected == null) return;
-            templates[row * 3 + column] = selected;
+            templates[row * 3 + column] = selected.copy();
+            templates[row * 3 + column].stackSize = 1;
         }
         FunctionalStorage.network.sendToServer(new GhostFilterMessage(menu.windowId, templates, maxTransfer));
     }
@@ -130,7 +149,7 @@ public class StorageOverlayHandler implements IOverlayHandler {
     }
 
     private static List<StorageContentEntry> ownedContents(GuiContainer gui) {
-        if (!(gui instanceof GuiDrawer drawer)) {
+        if (!(gui instanceof GuiStorage drawer)) {
             return List.of();
         }
         ControllableDrawerTile tile = drawer.getTile();

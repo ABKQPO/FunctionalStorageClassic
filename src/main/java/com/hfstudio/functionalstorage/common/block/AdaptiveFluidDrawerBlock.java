@@ -15,12 +15,11 @@ import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 
 public class AdaptiveFluidDrawerBlock extends FluidDrawerBlock {
 
-    private final String id;
+    private static final String ID = "adaptive_fluid_1";
 
-    public AdaptiveFluidDrawerBlock(@Nonnull DrawerLayout layout) {
-        super(layout);
-        this.id = "adaptive_fluid_" + layout.getSlotCount();
-        setBlockName(FunctionalStorage.MOD_ID + "." + id);
+    public AdaptiveFluidDrawerBlock() {
+        super(DrawerLayout.X_4);
+        setBlockName(FunctionalStorage.MOD_ID + "." + ID);
     }
 
     @Nonnull
@@ -31,12 +30,12 @@ public class AdaptiveFluidDrawerBlock extends FluidDrawerBlock {
 
     @Override
     public TileEntity createNewTileEntity(World world, int metadata) {
-        return new AdaptiveFluidDrawerTile(getDrawerLayout());
+        return new AdaptiveFluidDrawerTile();
     }
 
     @Nonnull
     @Override
     public List<String> getVariantNames() {
-        return Collections.singletonList(id);
+        return Collections.singletonList(ID);
     }
 }

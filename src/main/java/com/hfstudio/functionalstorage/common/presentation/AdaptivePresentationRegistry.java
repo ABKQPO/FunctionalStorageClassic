@@ -12,9 +12,17 @@ import javax.annotation.Nonnull;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
+import net.minecraftforge.fluids.FluidRegistry;
 import net.minecraftforge.oredict.OreDictionary;
 
+import com.hfstudio.functionalstorage.api.storage.AspectStorageKey;
+import com.hfstudio.functionalstorage.api.storage.BigItemStack;
+import com.hfstudio.functionalstorage.api.storage.FluidStorageKey;
+import com.hfstudio.functionalstorage.api.storage.StorageSnapshot;
+import com.hfstudio.functionalstorage.common.integration.Mods;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
+
+import cpw.mods.fml.common.Optional;
 
 public class AdaptivePresentationRegistry {
 
@@ -140,22 +148,40 @@ public class AdaptivePresentationRegistry {
         return ids.get(index < 0 ? 0 : (index + 1) % ids.size());
     }
 
-    private static String itemId(ItemStack stack) {
+    private static String resourceId(StorageSnapshot<?, ?> snapshot) {
+        if (snapshot.getKey() instanceof FluidStorageKey fluid) {
+            String name = FluidRegistry.getDefaultFluidName(fluid.getFluid());
+            return name == null ? fluid.getFluid()
+                .getName() : name;
+        }
+        if (!(snapshot instanceof BigItemStack)) {
+            return Mods.Thaumcraft.isModLoaded() ? aspectId(snapshot) : "";
+        }
+        ItemStack stack = itemTemplate(snapshot);
         Item item = stack == null ? null : stack.getItem();
         String name = item == null ? "" : Item.itemRegistry.getNameForObject(item);
         return name == null ? "" : name.toLowerCase(Locale.ENGLISH) + ':' + stack.getItemDamage();
     }
 
-    private static String modId(ItemStack stack) {
-        Item item = stack == null ? null : stack.getItem();
-        String name = item == null ? "" : Item.itemRegistry.getNameForObject(item);
+    @Optional.Method(modid = "Thaumcraft")
+    private static String aspectId(StorageSnapshot<?, ?> snapshot) {
+        return snapshot.getKey() instanceof AspectStorageKey aspect ? "thaumcraft:" + aspect.getTag() : "";
+    }
+
+    private static ItemStack itemTemplate(StorageSnapshot<?, ?> snapshot) {
+        return snapshot instanceof BigItemStack item ? item.getTemplate() : null;
+    }
+
+    private static String modId(StorageSnapshot<?, ?> snapshot) {
+        String name = resourceId(snapshot);
         int separator = name == null ? -1 : name.indexOf(':');
         return separator < 0 ? ""
             : name.substring(0, separator)
                 .toLowerCase(Locale.ENGLISH);
     }
 
-    private static String primaryOreName(ItemStack stack) {
+    private static String primaryOreName(StorageSnapshot<?, ?> snapshot) {
+        ItemStack stack = itemTemplate(snapshot);
         if (stack == null || stack.getItem() == null) {
             return "~untagged";
         }
@@ -169,7 +195,10 @@ public class AdaptivePresentationRegistry {
         return result;
     }
 
-    private static String category(ItemStack stack) {
+    private static String category(StorageSnapshot<?, ?> snapshot) {
+        if (snapshot.getKey() instanceof FluidStorageKey) return "fluid";
+        if (!(snapshot instanceof BigItemStack)) return "aspect";
+        ItemStack stack = itemTemplate(snapshot);
         if (stack == null || stack.getItem() == null) {
             return "~empty";
         }
@@ -196,10 +225,7 @@ public class AdaptivePresentationRegistry {
                     (AdaptiveDisplayEntry entry) -> entry.content()
                         .getAmount())
                     .reversed()
-                    .thenComparing(
-                        entry -> itemId(
-                            entry.content()
-                                .getTemplate())));
+                    .thenComparing(entry -> resourceId(entry.content())));
         }
     }
 
@@ -213,14 +239,8 @@ public class AdaptivePresentationRegistry {
         @Override
         public void sort(List<AdaptiveDisplayEntry> entries) {
             entries.sort(
-                Comparator.comparing(
-                    (AdaptiveDisplayEntry entry) -> modId(
-                        entry.content()
-                            .getTemplate()))
-                    .thenComparing(
-                        entry -> itemId(
-                            entry.content()
-                                .getTemplate())));
+                Comparator.comparing((AdaptiveDisplayEntry entry) -> modId(entry.content()))
+                    .thenComparing(entry -> resourceId(entry.content())));
         }
     }
 
@@ -233,11 +253,7 @@ public class AdaptivePresentationRegistry {
 
         @Override
         public void sort(List<AdaptiveDisplayEntry> entries) {
-            entries.sort(
-                Comparator.comparing(
-                    entry -> itemId(
-                        entry.content()
-                            .getTemplate())));
+            entries.sort(Comparator.comparing(entry -> resourceId(entry.content())));
         }
     }
 
@@ -251,14 +267,8 @@ public class AdaptivePresentationRegistry {
         @Override
         public void sort(List<AdaptiveDisplayEntry> entries) {
             entries.sort(
-                Comparator.comparing(
-                    (AdaptiveDisplayEntry entry) -> primaryOreName(
-                        entry.content()
-                            .getTemplate()))
-                    .thenComparing(
-                        entry -> itemId(
-                            entry.content()
-                                .getTemplate())));
+                Comparator.comparing((AdaptiveDisplayEntry entry) -> primaryOreName(entry.content()))
+                    .thenComparing(entry -> resourceId(entry.content())));
         }
     }
 
@@ -272,14 +282,8 @@ public class AdaptivePresentationRegistry {
         @Override
         public void sort(List<AdaptiveDisplayEntry> entries) {
             entries.sort(
-                Comparator.comparing(
-                    (AdaptiveDisplayEntry entry) -> category(
-                        entry.content()
-                            .getTemplate()))
-                    .thenComparing(
-                        entry -> itemId(
-                            entry.content()
-                                .getTemplate())));
+                Comparator.comparing((AdaptiveDisplayEntry entry) -> category(entry.content()))
+                    .thenComparing(entry -> resourceId(entry.content())));
         }
     }
 

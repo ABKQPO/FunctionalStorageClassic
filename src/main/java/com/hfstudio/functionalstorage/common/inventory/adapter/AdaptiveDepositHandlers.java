@@ -54,6 +54,12 @@ public class AdaptiveDepositHandlers {
         }
 
         @Override
+        public boolean hasMatchingResource(@Nonnull S request) {
+            H handler = target.get();
+            return handler != null && handler.hasMatchingResource(request);
+        }
+
+        @Override
         @Nonnull
         public TransferResult<S, K> insert(int index, @Nonnull S request, @Nonnull StorageAction action) {
             H handler = index == 0 && !request.isEmpty() ? target.get() : null;

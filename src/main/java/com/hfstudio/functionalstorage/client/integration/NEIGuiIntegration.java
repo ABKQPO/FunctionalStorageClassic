@@ -6,7 +6,7 @@ import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.item.ItemStack;
 
 import com.hfstudio.functionalstorage.FunctionalStorage;
-import com.hfstudio.functionalstorage.client.gui.GuiDrawer;
+import com.hfstudio.functionalstorage.client.gui.GuiStorage;
 import com.hfstudio.functionalstorage.client.gui.GuiUpgrade;
 import com.hfstudio.functionalstorage.common.network.GhostFilterMessage;
 
@@ -73,7 +73,7 @@ public class NEIGuiIntegration implements INEIGuiHandler {
     private static boolean markFilter(GuiContainer gui, int x, int y, ItemStack stack, int button) {
         if (stack == null || stack.getItem() == null || (button != 0 && button != 1)) return false;
         int slot = gui instanceof GuiUpgrade upgrade ? upgrade.getFilterSlotAt(x, y)
-            : gui instanceof GuiDrawer drawer ? drawer.getFilterSlotAt(x, y) : -1;
+            : gui instanceof GuiStorage drawer ? drawer.getFilterSlotAt(x, y) : -1;
         if (slot < 0) return false;
         FunctionalStorage.network.sendToServer(new GhostFilterMessage(gui.inventorySlots.windowId, slot, stack));
         stack.stackSize = 0;

@@ -253,7 +253,7 @@ public class ContainerDrawer extends Container
 
     @Override
     public IBigItemHandler getTransferStorage() {
-        return isItemTerminal() ? tile.getItemHandler() : null;
+        return isItemTerminal() || isAllTerminal() ? tile.getItemHandler() : null;
     }
 
     @Override
@@ -278,12 +278,12 @@ public class ContainerDrawer extends Container
 
     @Override
     public IBigFluidHandler getTransferFluidStorage() {
-        return isFluidTerminal() ? tile.getFluidHandler() : null;
+        return isFluidTerminal() || isAllTerminal() ? tile.getFluidHandler() : null;
     }
 
     @Override
     public IBigAspectHandler getTransferAspectStorage() {
-        return isAspectTerminal() ? tile.getAspectHandler() : null;
+        return isAspectTerminal() || isAllTerminal() ? tile.getAspectHandler() : null;
     }
 
     @Override
@@ -294,6 +294,12 @@ public class ContainerDrawer extends Container
     @Override
     public int getTransferSlot(int menuSlot) {
         return menuSlot >= 0 && menuSlot < storageSlotCount ? menuSlot : -1;
+    }
+
+    @Override
+    public String getTransferResourceKind(int menuSlot) {
+        if (!isTransferViewVirtual()) return StorageTransferMenu.super.getTransferResourceKind(menuSlot);
+        return getViewResourceKind(transferResourceIndex(menuSlot));
     }
 
     public int getScrollRow() {
@@ -329,6 +335,32 @@ public class ContainerDrawer extends Container
             .getSnapshot() : BigAspectStack.empty();
     }
 
+    public String getViewResourceKind(int index) {
+        refreshTransferViews();
+        return resourceKind(index);
+    }
+
+    public BigItemStack getViewItemSnapshot(int index) {
+        refreshTransferViews();
+        int localIndex = resourceIndex(index, AdaptiveMatrixTile.TERMINAL_ITEMS);
+        return localIndex >= 0 ? itemViews.get(localIndex)
+            .getSnapshot() : BigItemStack.empty();
+    }
+
+    public BigFluidStack getViewFluidSnapshot(int index) {
+        refreshTransferViews();
+        int localIndex = resourceIndex(index, AdaptiveMatrixTile.TERMINAL_FLUIDS);
+        return localIndex >= 0 ? fluidViews.get(localIndex)
+            .getSnapshot() : BigFluidStack.empty();
+    }
+
+    public BigAspectStack getViewAspectSnapshot(int index) {
+        refreshTransferViews();
+        int localIndex = resourceIndex(index, AdaptiveMatrixTile.TERMINAL_ASPECTS);
+        return localIndex >= 0 ? aspectViews.get(localIndex)
+            .getSnapshot() : BigAspectStack.empty();
+    }
+
     public void setScrollRow(int row) {
         refreshSearch();
         scrollRow = Math.max(0, Math.min(maxScrollRow, row));
@@ -343,12 +375,16 @@ public class ContainerDrawer extends Container
     }
 
     @Override
+    public boolean isTransferViewMixed() {
+        return isAllTerminal();
+    }
+
+    @Override
     public BigItemStack getTransferItemSnapshot(int menuSlot) {
         refreshTransferViews();
         if (isTransferViewVirtual()) {
             int index = transferResourceIndex(menuSlot);
-            return index >= 0 && index < itemViews.size() ? itemViews.get(index)
-                .getSnapshot() : BigItemStack.empty();
+            return getViewItemSnapshot(index);
         }
         return StorageTransferMenu.super.getTransferItemSnapshot(menuSlot);
     }
@@ -358,8 +394,7 @@ public class ContainerDrawer extends Container
         refreshTransferViews();
         if (isTransferViewVirtual()) {
             int index = transferResourceIndex(menuSlot);
-            return index >= 0 && index < fluidViews.size() ? fluidViews.get(index)
-                .getSnapshot() : BigFluidStack.empty();
+            return getViewFluidSnapshot(index);
         }
         return StorageTransferMenu.super.getTransferFluidSnapshot(menuSlot);
     }
@@ -369,8 +404,7 @@ public class ContainerDrawer extends Container
         refreshTransferViews();
         if (isTransferViewVirtual()) {
             int index = transferResourceIndex(menuSlot);
-            return index >= 0 && index < aspectViews.size() ? aspectViews.get(index)
-                .getSnapshot() : BigAspectStack.empty();
+            return getViewAspectSnapshot(index);
         }
         return StorageTransferMenu.super.getTransferAspectSnapshot(menuSlot);
     }
@@ -380,16 +414,19 @@ public class ContainerDrawer extends Container
         refreshTransferViews();
         if (isTransferViewVirtual()) {
             int index = transferResourceIndex(menuSlot);
-            if (isItemTerminal() && index >= 0 && index < itemViews.size()) {
-                return itemViews.get(index)
+            int itemIndex = resourceIndex(index, AdaptiveMatrixTile.TERMINAL_ITEMS);
+            if (itemIndex >= 0) {
+                return itemViews.get(itemIndex)
                     .getCapacity();
             }
-            if (isFluidTerminal() && index >= 0 && index < fluidViews.size()) {
-                return fluidViews.get(index)
+            int fluidIndex = resourceIndex(index, AdaptiveMatrixTile.TERMINAL_FLUIDS);
+            if (fluidIndex >= 0) {
+                return fluidViews.get(fluidIndex)
                     .getCapacity();
             }
-            if (isAspectTerminal() && index >= 0 && index < aspectViews.size()) {
-                return aspectViews.get(index)
+            int aspectIndex = resourceIndex(index, AdaptiveMatrixTile.TERMINAL_ASPECTS);
+            if (aspectIndex >= 0) {
+                return aspectViews.get(aspectIndex)
                     .getCapacity();
             }
             return 0L;
@@ -526,7 +563,7 @@ public class ContainerDrawer extends Container
 
     private void refreshDisplay() {
         if (tile.getWorldObj().isRemote) return;
-        if (!isItemTerminal()) {
+        if (!isItemTerminal() && !isAllTerminal()) {
             for (int index = 0; index < storageSlotCount; index++) {
                 if (display.getStackInSlot(index) != null) display.setInventorySlotContents(index, null);
             }
@@ -855,7 +892,38 @@ public class ContainerDrawer extends Container
         if (isItemTerminal()) return itemViews.size();
         if (isFluidTerminal()) return fluidViews.size();
         if (isAspectTerminal()) return aspectViews.size();
+        if (isAllTerminal()) return itemViews.size() + fluidViews.size() + aspectViews.size();
         return 0;
+    }
+
+    private String resourceKind(int index) {
+        if (index < 0 || index >= transferResourceCount()) return "";
+        if (isAllTerminal()) {
+            if (index < itemViews.size()) return AdaptiveMatrixTile.TERMINAL_ITEMS;
+            index -= itemViews.size();
+            if (index < fluidViews.size()) return AdaptiveMatrixTile.TERMINAL_FLUIDS;
+            return AdaptiveMatrixTile.TERMINAL_ASPECTS;
+        }
+        if (isItemTerminal()) return AdaptiveMatrixTile.TERMINAL_ITEMS;
+        if (isFluidTerminal()) return AdaptiveMatrixTile.TERMINAL_FLUIDS;
+        return AdaptiveMatrixTile.TERMINAL_ASPECTS;
+    }
+
+    private int resourceIndex(int index, String kind) {
+        if (index < 0 || index >= transferResourceCount()) return -1;
+        if (isAllTerminal()) {
+            if (AdaptiveMatrixTile.TERMINAL_ITEMS.equals(kind)) return index < itemViews.size() ? index : -1;
+            index -= itemViews.size();
+            if (AdaptiveMatrixTile.TERMINAL_FLUIDS.equals(kind))
+                return index >= 0 && index < fluidViews.size() ? index : -1;
+            index -= fluidViews.size();
+            return AdaptiveMatrixTile.TERMINAL_ASPECTS.equals(kind) && index >= 0 && index < aspectViews.size() ? index
+                : -1;
+        }
+        if (AdaptiveMatrixTile.TERMINAL_ITEMS.equals(kind) && isItemTerminal()) return index;
+        if (AdaptiveMatrixTile.TERMINAL_FLUIDS.equals(kind) && isFluidTerminal()) return index;
+        if (AdaptiveMatrixTile.TERMINAL_ASPECTS.equals(kind) && isAspectTerminal()) return index;
+        return -1;
     }
 
     private int transferResourceIndex(int menuSlot) {
@@ -890,25 +958,22 @@ public class ContainerDrawer extends Container
     }
 
     private String resourceSearchText(int index) {
-        if (isItemTerminal() && index < itemViews.size()) {
-            ItemStack item = itemViews.get(index)
-                .getSnapshot()
-                .getTemplate();
+        BigItemStack itemSnapshot = getViewItemSnapshot(index);
+        if (itemSnapshot.hasTemplate()) {
+            ItemStack item = itemSnapshot.getTemplate();
             if (item == null) return "";
             return item.getDisplayName() + " " + Item.itemRegistry.getNameForObject(item.getItem());
         }
-        if (isFluidTerminal() && index < fluidViews.size()) {
-            FluidStack fluid = fluidViews.get(index)
-                .getSnapshot()
-                .getTemplate();
+        BigFluidStack fluidSnapshot = getViewFluidSnapshot(index);
+        if (fluidSnapshot.hasTemplate()) {
+            FluidStack fluid = fluidSnapshot.getTemplate();
             return fluid == null ? ""
                 : fluid.getLocalizedName() + " "
                     + fluid.getFluid()
                         .getName();
         }
-        if (isAspectTerminal() && index < aspectViews.size()) {
-            BigAspectStack aspect = aspectViews.get(index)
-                .getSnapshot();
+        BigAspectStack aspect = getViewAspectSnapshot(index);
+        if (aspect.hasTemplate()) {
             return aspect.getAspect() == null ? ""
                 : aspect.getAspect()
                     .getName();
@@ -936,7 +1001,9 @@ public class ContainerDrawer extends Container
         if (mode == 1 && (button == 0 || button == 1)
             && storage
             && player.inventory.getItemStack() != null
-            && (tile.getFluidHandler() != null || tile.getAspectHandler() != null)) {
+            && (AdaptiveMatrixTile.TERMINAL_FLUIDS.equals(getTransferResourceKind(index))
+                || AdaptiveMatrixTile.TERMINAL_ASPECTS.equals(getTransferResourceKind(index))
+                || isAllTerminal() && getTransferResourceKind(index).isEmpty())) {
             clickStorage(player, index, button);
         } else if (mode == 1 && (button == 0 || button == 1)) {
             transferStackInSlot(player, index);
@@ -947,19 +1014,21 @@ public class ContainerDrawer extends Container
             super.slotClick(index, button, mode, player);
         } else if (storage && mode == 0 && (button == 0 || button == 1)) {
             clickStorage(player, index, button);
-        } else if (storage && isItemTerminal() && tile.getItemHandler() != null) {
-            clickItemShortcut(player, index, button, mode);
-        }
+        } else if (storage && AdaptiveMatrixTile.TERMINAL_ITEMS.equals(getTransferResourceKind(index))
+            && tile.getItemHandler() != null) {
+                clickItemShortcut(player, index, button, mode);
+            }
         synchronize(player);
         return null;
     }
 
     private void clickHotbarResource(EntityPlayer player, int index, int hotbarSlot) {
-        if (isItemTerminal()) {
+        String kind = getTransferResourceKind(index);
+        if (AdaptiveMatrixTile.TERMINAL_ITEMS.equals(kind) || kind.isEmpty() && isAllTerminal()) {
             clickItemShortcut(player, index, hotbarSlot, 2);
             return;
         }
-        if (isFluidTerminal() && tile.getFluidHandler() != null) {
+        if (AdaptiveMatrixTile.TERMINAL_FLUIDS.equals(kind) && tile.getFluidHandler() != null) {
             BigFluidStack selected = getTransferFluidSnapshot(index);
             FluidStack template = selected.getTemplate();
             ItemStack held = player.inventory.getStackInSlot(hotbarSlot);
@@ -973,7 +1042,7 @@ public class ContainerDrawer extends Container
             }
             return;
         }
-        if (isAspectTerminal() && tile.getAspectHandler() != null) {
+        if (AdaptiveMatrixTile.TERMINAL_ASPECTS.equals(kind) && tile.getAspectHandler() != null) {
             BigAspectStack selected = getTransferAspectSnapshot(index);
             ItemStack held = player.inventory.getStackInSlot(hotbarSlot);
             if (!selected.hasTemplate() || held == null && selected.getAmount() <= 0L) return;
@@ -1015,7 +1084,14 @@ public class ContainerDrawer extends Container
 
     private void clickStorage(EntityPlayer player, int index, int button) {
         ItemStack cursor = player.inventory.getItemStack();
-        if (isFluidTerminal()) {
+        String kind = getTransferResourceKind(index);
+        if (kind.isEmpty() && isAllTerminal()) {
+            if (FluidContainerInteraction.isFilledFluidContainer(cursor)) kind = AdaptiveMatrixTile.TERMINAL_FLUIDS;
+            else if (EssentiaContainerRegistry.getContainedAspect(cursor) != null)
+                kind = AdaptiveMatrixTile.TERMINAL_ASPECTS;
+            else kind = AdaptiveMatrixTile.TERMINAL_ITEMS;
+        }
+        if (AdaptiveMatrixTile.TERMINAL_FLUIDS.equals(kind)) {
             if (isTransferViewVirtual()) {
                 BigFluidStack selected = getTransferFluidSnapshot(index);
                 FluidContainerInteraction
@@ -1030,7 +1106,7 @@ public class ContainerDrawer extends Container
             }
             return;
         }
-        if (isAspectTerminal()) {
+        if (AdaptiveMatrixTile.TERMINAL_ASPECTS.equals(kind)) {
             if (isTransferViewVirtual()) {
                 BigAspectStack selected = getTransferAspectSnapshot(index);
                 EssentiaContainerRegistry
@@ -1101,7 +1177,7 @@ public class ContainerDrawer extends Container
     }
 
     private void collectToCursor(EntityPlayer player) {
-        if (!isItemTerminal()) return;
+        if (!isItemTerminal() && !isAllTerminal()) return;
         ItemStack cursor = player.inventory.getItemStack();
         IBigItemHandler handler = tile.getItemHandler();
         if (cursor == null || handler == null) return;
@@ -1208,7 +1284,8 @@ public class ContainerDrawer extends Container
             return null;
         int playerStart = storageSlotCount + tile.getStorageUpgradeSlots() + tile.getUtilityUpgradeSlots();
         if (index < storageSlotCount) {
-            if (isItemTerminal() && tile.getItemHandler() != null) {
+            String kind = getTransferResourceKind(index);
+            if (AdaptiveMatrixTile.TERMINAL_ITEMS.equals(kind) && tile.getItemHandler() != null) {
                 ItemStack available = extract(index, 64, StorageAction.SIMULATE);
                 if (available == null) return null;
                 ItemStack original = available.copy();
@@ -1216,7 +1293,7 @@ public class ContainerDrawer extends Container
                 extract(index, original.stackSize - available.stackSize, StorageAction.EXECUTE);
                 return original;
             }
-            if (isFluidTerminal() && tile.getFluidHandler() != null) {
+            if (AdaptiveMatrixTile.TERMINAL_FLUIDS.equals(kind) && tile.getFluidHandler() != null) {
                 if (isTransferViewVirtual()) {
                     FluidContainerInteraction.fillInventory(
                         player,
@@ -1228,7 +1305,7 @@ public class ContainerDrawer extends Container
                 }
                 return null;
             }
-            if (isAspectTerminal() && tile.getAspectHandler() != null) {
+            if (AdaptiveMatrixTile.TERMINAL_ASPECTS.equals(kind) && tile.getAspectHandler() != null) {
                 if (isTransferViewVirtual()) {
                     EssentiaContainerRegistry.fillInventory(
                         player,
@@ -1251,6 +1328,9 @@ public class ContainerDrawer extends Container
         } else {
             if (stack.getItem() instanceof IStorageUpgrade) {
                 moveUpgradesToSlots(stack, storageSlotCount, playerStart);
+            }
+            if (isAllTerminal()) {
+                return transferStackToAllResources(player, slot, original);
             }
             if (stack.stackSize > 0 && isItemTerminal() && tile.getItemHandler() != null) {
                 stack.stackSize -= (int) Math.min(stack.stackSize, insertForGui(stack));
@@ -1282,6 +1362,34 @@ public class ContainerDrawer extends Container
         }
     }
 
+    private ItemStack transferStackToAllResources(EntityPlayer player, Slot slot, ItemStack original) {
+        int inventorySlot = slot.getSlotIndex();
+        ItemStack before = player.inventory.getStackInSlot(inventorySlot);
+        before = before == null ? null : before.copy();
+        if (tile.getFluidHandler() != null) {
+            FluidContainerInteraction.depositInventorySlot(player, tile.getFluidHandler(), inventorySlot, false);
+        }
+        if (tile.getAspectHandler() != null) {
+            EssentiaContainerRegistry.depositInventorySlot(player, tile.getAspectHandler(), inventorySlot);
+        }
+        ItemStack remaining = player.inventory.getStackInSlot(inventorySlot);
+        boolean containerChanged = !ItemStack.areItemStacksEqual(before, remaining);
+        int transferred = containerChanged ? 1 : 0;
+        if (!containerChanged && remaining != null && tile.getItemHandler() != null) {
+            long accepted = tile.getItemHandler()
+                .insertRouted(new BigItemStack(remaining, remaining.stackSize), StorageAction.EXECUTE)
+                .getProcessedAmount();
+            int inserted = (int) Math.min(remaining.stackSize, Math.max(0L, accepted));
+            remaining.stackSize -= inserted;
+            transferred += inserted;
+            if (remaining.stackSize <= 0) player.inventory.setInventorySlotContents(inventorySlot, null);
+        }
+        if (transferred == 0) return null;
+        if (player.inventory.getStackInSlot(inventorySlot) == null) slot.putStack(null);
+        else slot.onSlotChanged();
+        return original;
+    }
+
     private int visibleStorageSlots() {
         return storageSlotCount;
     }
@@ -1289,7 +1397,6 @@ public class ContainerDrawer extends Container
     private boolean isItemTerminal() {
         if (isTransferViewVirtual() && tile.getWorldObj().isRemote)
             return AdaptiveMatrixTile.TERMINAL_ITEMS.equals(viewMode);
-        if (tile instanceof AdaptiveMatrixTile matrix) return matrix.isTerminalItems();
         if (tile instanceof AdaptiveGridTile grid) return grid.isTerminalItems();
         return tile.getItemHandler() != null;
     }
@@ -1297,7 +1404,6 @@ public class ContainerDrawer extends Container
     private boolean isFluidTerminal() {
         if (isTransferViewVirtual() && tile.getWorldObj().isRemote)
             return AdaptiveMatrixTile.TERMINAL_FLUIDS.equals(viewMode);
-        if (tile instanceof AdaptiveMatrixTile matrix) return matrix.isTerminalFluids();
         if (tile instanceof AdaptiveGridTile grid) return grid.isTerminalFluids();
         return tile.getItemHandler() == null && tile.getFluidHandler() != null;
     }
@@ -1305,13 +1411,19 @@ public class ContainerDrawer extends Container
     private boolean isAspectTerminal() {
         if (isTransferViewVirtual() && tile.getWorldObj().isRemote)
             return AdaptiveMatrixTile.TERMINAL_ASPECTS.equals(viewMode);
-        if (tile instanceof AdaptiveMatrixTile matrix) return matrix.isTerminalAspects();
         if (tile instanceof AdaptiveGridTile grid) return grid.isTerminalAspects();
         return tile.getItemHandler() == null && tile.getFluidHandler() == null && tile.getAspectHandler() != null;
     }
 
+    private boolean isAllTerminal() {
+        if (isTransferViewVirtual() && tile.getWorldObj().isRemote) {
+            return AdaptiveMatrixTile.TERMINAL_ALL.equals(viewMode);
+        }
+        return tile instanceof AdaptiveGridTile grid && AdaptiveMatrixTile.TERMINAL_ALL.equals(grid.getTerminalMode());
+    }
+
     private static boolean isAdaptiveTerminal(ControllableDrawerTile tile) {
-        return tile instanceof AdaptiveMatrixTile || tile instanceof AdaptiveGridTile;
+        return tile instanceof AdaptiveGridTile;
     }
 
     @Nullable

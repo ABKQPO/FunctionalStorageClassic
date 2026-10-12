@@ -37,6 +37,8 @@ public class AggregatedStorage<S extends StorageSnapshot<S, K>, K extends Storag
     private List<IStorageHandler<S, K>> children = List.of();
     private int[] ends = new int[0];
     private int count;
+    private boolean lockedStateKnown;
+    private boolean lockedSlotsPresent;
     private final List<IStorageHandler<S, K>> scratch = new ArrayList<>();
     private final Set<Object> identities = Collections.newSetFromMap(new IdentityHashMap<>());
 
@@ -68,6 +70,7 @@ public class AggregatedStorage<S extends StorageSnapshot<S, K>, K extends Storag
         for (StorageSubscription subscription : subscriptions) subscription.close();
         subscriptions.clear();
         children = new ArrayList<>(unique);
+        lockedStateKnown = false;
         ends = new int[unique.size()];
         count = 0;
         for (int index = 0; index < unique.size(); index++) {
@@ -100,6 +103,9 @@ public class AggregatedStorage<S extends StorageSnapshot<S, K>, K extends Storag
         // Runs before the subscriber check: a memo must drop even while nobody is
         // listening, or the first reader after a quiet change would see stale state.
         onChildChanged();
+        if (change.isReset()) {
+            lockedStateKnown = false;
+        }
         if (!changes.hasSubscribers()) return;
         if (change.isReset()) {
             changes.dispatch(StorageChange.reset());
@@ -174,6 +180,21 @@ public class AggregatedStorage<S extends StorageSnapshot<S, K>, K extends Storag
         int child = childIndex(index);
         return child >= 0 && children.get(child)
             .isLocked(localIndex(index, child));
+    }
+
+    @Override
+    public boolean hasLockedSlots() {
+        if (!lockedStateKnown) {
+            lockedSlotsPresent = false;
+            for (IStorageHandler<S, K> child : children) {
+                if (child.hasLockedSlots()) {
+                    lockedSlotsPresent = true;
+                    break;
+                }
+            }
+            lockedStateKnown = true;
+        }
+        return lockedSlotsPresent;
     }
 
     @Override

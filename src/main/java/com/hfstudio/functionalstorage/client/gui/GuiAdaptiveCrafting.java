@@ -5,9 +5,14 @@ import net.minecraft.entity.player.EntityPlayer;
 import com.hfstudio.functionalstorage.common.container.ContainerAdaptiveCrafting;
 import com.hfstudio.functionalstorage.common.tile.AdaptiveCraftingGridTile;
 
-public class GuiAdaptiveCrafting extends GuiDrawer {
+public class GuiAdaptiveCrafting extends GuiAdaptiveGrid {
 
     public GuiAdaptiveCrafting(EntityPlayer player, AdaptiveCraftingGridTile tile) {
-        super(player, tile, new ContainerAdaptiveCrafting(tile, player));
+        super(tile, new ContainerAdaptiveCrafting(tile, player));
+    }
+
+    @Override
+    protected boolean isCraftingGrid() {
+        return true;
     }
 }

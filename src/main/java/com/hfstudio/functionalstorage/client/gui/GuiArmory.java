@@ -5,7 +5,6 @@ import java.util.Locale;
 import java.util.function.Predicate;
 
 import net.minecraft.client.gui.GuiTextField;
-import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.Item;
@@ -20,14 +19,13 @@ import com.hfstudio.functionalstorage.FunctionalStorage;
 import com.hfstudio.functionalstorage.api.storage.BigItemStack;
 import com.hfstudio.functionalstorage.client.integration.NEIGuiIntegration;
 import com.hfstudio.functionalstorage.client.integration.StorageShortcutInput;
-import com.hfstudio.functionalstorage.client.integration.StorageShortcutScreen;
 import com.hfstudio.functionalstorage.common.container.ContainerArmory;
 import com.hfstudio.functionalstorage.common.integration.Mods;
 import com.hfstudio.functionalstorage.common.network.MenuSettingsMessage;
 import com.hfstudio.functionalstorage.common.network.StorageSearchMessage;
 import com.hfstudio.functionalstorage.common.tile.ArmoryCabinetTile;
 
-public class GuiArmory extends GuiContainer implements StorageShortcutScreen {
+public class GuiArmory extends BaseGUI {
 
     private static final ResourceLocation SCROLL = new ResourceLocation(
         "minecraft",
@@ -147,14 +145,6 @@ public class GuiArmory extends GuiContainer implements StorageShortcutScreen {
     @Override
     public boolean isTextInputFocused() {
         return search != null && search.isFocused();
-    }
-
-    @Override
-    public Slot getSlotAt(int mouseX, int mouseY) {
-        for (Slot slot : inventorySlots.inventorySlots) {
-            if (func_146978_c(slot.xDisplayPosition, slot.yDisplayPosition, 16, 16, mouseX, mouseY)) return slot;
-        }
-        return null;
     }
 
     @Override

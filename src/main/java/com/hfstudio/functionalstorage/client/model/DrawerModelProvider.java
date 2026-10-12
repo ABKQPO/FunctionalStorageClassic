@@ -127,11 +127,11 @@ public class DrawerModelProvider implements IBlockModelProvider, IResourceManage
                 + (drawer.isAdaptiveDisplayPowered() ? "" : "_offline");
         }
         if (tile instanceof AdaptiveFluidDrawerTile fluid) {
-            return "adaptive_fluid_" + fluid.getDrawerLayout()
+            return "adaptive_fluid_" + fluid.getAdaptiveDisplayLayout()
                 .getSlotCount() + (fluid.isAdaptiveDisplayPowered() ? "_online" : "_offline");
         }
         if (tile instanceof AdaptiveEssentiaDrawerTile essentia) {
-            return "adaptive_essentia_" + essentia.getDrawerLayout()
+            return "adaptive_essentia_" + essentia.getAdaptiveDisplayLayout()
                 .getSlotCount() + (essentia.isAdaptiveDisplayPowered() ? "_online" : "_offline");
         }
         if (tile instanceof AdaptiveMatrixTile matrix) {

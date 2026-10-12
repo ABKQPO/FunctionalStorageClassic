@@ -6,6 +6,7 @@ import com.hfstudio.functionalstorage.api.storage.BigItemStack;
 import com.hfstudio.functionalstorage.api.storage.IBigAspectHandler;
 import com.hfstudio.functionalstorage.api.storage.IBigFluidHandler;
 import com.hfstudio.functionalstorage.api.storage.IBigItemHandler;
+import com.hfstudio.functionalstorage.common.tile.controller.AdaptiveMatrixTile;
 
 /** Maps the leading storage slots in a menu to physical storage indices on the server. */
 public interface StorageTransferMenu {
@@ -29,7 +30,21 @@ public interface StorageTransferMenu {
     /** Returns -1 for a slot outside the current storage view. */
     int getTransferSlot(int menuSlot);
 
+    default String getTransferResourceKind(int menuSlot) {
+        if (getTransferItemSnapshot(menuSlot).hasTemplate() || getTransferStorage() != null)
+            return AdaptiveMatrixTile.TERMINAL_ITEMS;
+        if (getTransferFluidSnapshot(menuSlot).hasTemplate() || getTransferFluidStorage() != null)
+            return AdaptiveMatrixTile.TERMINAL_FLUIDS;
+        if (getTransferAspectSnapshot(menuSlot).hasTemplate() || getTransferAspectStorage() != null)
+            return AdaptiveMatrixTile.TERMINAL_ASPECTS;
+        return "";
+    }
+
     default boolean isTransferViewVirtual() {
+        return false;
+    }
+
+    default boolean isTransferViewMixed() {
         return false;
     }
 

@@ -238,22 +238,16 @@ public class RegistrationHandler {
             specialDrawers.add(adaptiveDeposit);
             FSItemList.AdaptiveDeposit.set(adaptiveDeposit);
 
-            for (DrawerLayout layout : DrawerLayout.values()) {
-                AdaptiveFluidDrawerBlock block = new AdaptiveFluidDrawerBlock(layout);
-                adaptiveFluidDrawers.add(block);
-                String name = "adaptive_fluid_" + layout.getSlotCount();
-                GameRegistry.registerBlock(block, FluidDrawerBlockItem.class, name);
-                registerFsItemList(name, block);
-            }
+            AdaptiveFluidDrawerBlock adaptiveFluidDrawer = new AdaptiveFluidDrawerBlock();
+            adaptiveFluidDrawers.add(adaptiveFluidDrawer);
+            GameRegistry.registerBlock(adaptiveFluidDrawer, FluidDrawerBlockItem.class, "adaptive_fluid_1");
+            FSItemList.AdaptiveFluidDrawer1.set(adaptiveFluidDrawer);
 
             if (FunctionalStorageConfig.COMPATIBILITY.enableThaumcraftCompatibility && Mods.Thaumcraft.isModLoaded()) {
-                for (DrawerLayout layout : DrawerLayout.values()) {
-                    AdaptiveEssentiaDrawerBlock block = new AdaptiveEssentiaDrawerBlock(layout);
-                    adaptiveEssentiaDrawers.add(block);
-                    String name = "adaptive_essentia_" + layout.getSlotCount();
-                    GameRegistry.registerBlock(block, DrawerBlockItem.class, name);
-                    registerFsItemList(name, block);
-                }
+                AdaptiveEssentiaDrawerBlock adaptiveEssentiaDrawer = new AdaptiveEssentiaDrawerBlock();
+                adaptiveEssentiaDrawers.add(adaptiveEssentiaDrawer);
+                GameRegistry.registerBlock(adaptiveEssentiaDrawer, DrawerBlockItem.class, "adaptive_essentia_1");
+                FSItemList.AdaptiveEssentiaDrawer1.set(adaptiveEssentiaDrawer);
             }
         }
 
@@ -461,33 +455,16 @@ public class RegistrationHandler {
                         .getSlotCount());
         }
         for (AdaptiveFluidDrawerBlock block : adaptiveFluidDrawers) {
-            String tileId = FunctionalStorage.MOD_ID + ".adaptive_fluid_"
-                + block.getDrawerLayout()
-                    .getSlotCount();
-            if (block.getDrawerLayout()
-                .getSlotCount() == 1) {
-                // 0.1.0 shipped a single, layout-less adaptive fluid drawer.
-                GameRegistry.registerTileEntityWithAlternatives(
-                    block.getTileEntityClass(),
-                    tileId,
-                    FunctionalStorage.MOD_ID + ".adaptive_fluid_drawer");
-            } else {
-                GameRegistry.registerTileEntity(block.getTileEntityClass(), tileId);
-            }
+            GameRegistry.registerTileEntityWithAlternatives(
+                block.getTileEntityClass(),
+                FunctionalStorage.MOD_ID + ".adaptive_fluid_1",
+                FunctionalStorage.MOD_ID + ".adaptive_fluid_drawer");
         }
         for (AdaptiveEssentiaDrawerBlock block : adaptiveEssentiaDrawers) {
-            String tileId = FunctionalStorage.MOD_ID + ".adaptive_essentia_"
-                + block.getDrawerLayout()
-                    .getSlotCount();
-            if (block.getDrawerLayout()
-                .getSlotCount() == 1) {
-                GameRegistry.registerTileEntityWithAlternatives(
-                    block.getTileEntityClass(),
-                    tileId,
-                    FunctionalStorage.MOD_ID + ".adaptive_essentia_drawer");
-            } else {
-                GameRegistry.registerTileEntity(block.getTileEntityClass(), tileId);
-            }
+            GameRegistry.registerTileEntityWithAlternatives(
+                block.getTileEntityClass(),
+                FunctionalStorage.MOD_ID + ".adaptive_essentia_1",
+                FunctionalStorage.MOD_ID + ".adaptive_essentia_drawer");
         }
         for (DrawerBlock block : specialDrawers) {
             if (block instanceof FramedVariantBlock) continue;

@@ -93,16 +93,19 @@ public interface IBigFluidHandler extends IStorageHandler<BigFluidStack, FluidSt
         }
         long processedTotal = 0L;
         int count = Math.max(0, getStorageCount());
-        for (int pass = 0; pass < 2 && processedTotal < requested; pass++) {
+        boolean prioritizeLocked = hasLockedSlots();
+        int matchingPasses = prioritizeLocked ? 2 : 1;
+        for (int pass = 0; pass <= matchingPasses && processedTotal < requested; pass++) {
             for (int index = 0; index < count && processedTotal < requested; index++) {
                 if (!supportsFill(index) || !supportsFluid(index, request)) {
                     continue;
                 }
                 BigFluidStack current = getSnapshot(index);
                 boolean hasTemplate = current.hasTemplate();
-                if ((pass == 0 && (!hasTemplate || !current.isSameType(request))) || (pass == 1 && hasTemplate)) {
-                    continue;
-                }
+                if (pass < matchingPasses) {
+                    if (!hasTemplate || !current.isSameType(request)
+                        || prioritizeLocked && isLocked(index) != (pass == 0)) continue;
+                } else if (hasTemplate) continue;
                 long remaining = requested - processedTotal;
                 TransferResult<BigFluidStack, FluidStorageKey> result = insert(
                     index,

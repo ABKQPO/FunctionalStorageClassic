@@ -284,6 +284,7 @@ public abstract class ControllableDrawerTile extends TileEntity implements Capab
         if (this.locked == locked) {
             return;
         }
+        onLockChanging(locked);
         this.locked = locked;
         this.upgradeCacheDirty = true;
         IStorageHandler<?, ?> storage = getActiveStorage();
@@ -295,6 +296,8 @@ public abstract class ControllableDrawerTile extends TileEntity implements Capab
         markDirty();
         requestUpdatePacket();
     }
+
+    protected void onLockChanging(boolean locked) {}
 
     public void toggleLocking() {
         setLocked(!isLocked());
@@ -356,14 +359,23 @@ public abstract class ControllableDrawerTile extends TileEntity implements Capab
     }
 
     public void detachFromController(@Nonnull World world) {
-        if (controllerX == Integer.MIN_VALUE) {
-            return;
+        if (controllerX != Integer.MIN_VALUE) {
+            TileEntity tile = world.getTileEntity(controllerX, controllerY, controllerZ);
+            if (tile instanceof DrawerControllerTile) {
+                ((DrawerControllerTile) tile).removeDrawer(xCoord, yCoord, zCoord);
+            }
+            clearControllerPosition();
         }
-        TileEntity tile = world.getTileEntity(controllerX, controllerY, controllerZ);
-        if (tile instanceof DrawerControllerTile) {
-            ((DrawerControllerTile) tile).removeDrawer(xCoord, yCoord, zCoord);
+
+        int[] adaptivePosition = getAdaptiveMatrixPosition();
+        if (adaptivePosition != null
+            && world.blockExists(adaptivePosition[0], adaptivePosition[1], adaptivePosition[2])) {
+            TileEntity tile = world.getTileEntity(adaptivePosition[0], adaptivePosition[1], adaptivePosition[2]);
+            if (tile instanceof DrawerControllerTile controller) {
+                controller.linkDrawer(xCoord, yCoord, zCoord, true);
+            }
         }
-        clearControllerPosition();
+        clearAdaptiveMatrixPosition();
     }
 
     public int getRedstoneSignal(int side) {
@@ -544,6 +556,11 @@ public abstract class ControllableDrawerTile extends TileEntity implements Capab
         root.setTag(KEY_TILE_DATA, tileData);
         base.setTagCompound(root);
         return base;
+    }
+
+    @Nonnull
+    public ItemStack createPickBlockStack(@Nonnull ItemStack base) {
+        return createDropStack(base);
     }
 
     private boolean isDefaultDropState() {

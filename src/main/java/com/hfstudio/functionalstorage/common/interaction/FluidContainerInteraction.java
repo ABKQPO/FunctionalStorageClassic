@@ -57,6 +57,24 @@ public class FluidContainerInteraction {
         return activateBatch(player, cursor, handler, slot, player.inventory::setItemStack, prepareLockedSlot, null);
     }
 
+    public static boolean activate(EntityPlayer player, IBigFluidHandler handler, BigFluidStack selected) {
+        ItemStack held = player.getHeldItem();
+        if (!isFluidContainer(held)) return false;
+        FluidStack contained = getContainedFluid(held);
+        if (!selected.hasTemplate()) {
+            if (contained == null || contained.amount <= 0) return true;
+            selected = new BigFluidStack(contained, 0L);
+        }
+        return activateBatch(
+            player,
+            held,
+            handler,
+            ROUTED,
+            stack -> player.inventory.setInventorySlotContents(player.inventory.currentItem, stack),
+            null,
+            selected);
+    }
+
     public static boolean activateCursor(EntityPlayer player, IBigFluidHandler handler, BigFluidStack selected,
         BiFunction<Integer, BigFluidStack, Runnable> prepareLockedSlot) {
         ItemStack cursor = player.inventory.getItemStack();
@@ -124,7 +142,7 @@ public class FluidContainerInteraction {
         }
         ItemStack single = held.copy();
         single.stackSize = 1;
-        boolean restrictToSelected = matchingOnly || selected != null;
+        boolean restrictToSelected = matchingOnly || selected != null && handler.hasMatchingResource(selected);
         if (single.getItem() instanceof IFluidContainerItem container) {
             FluidStack contained = container.getFluid(single);
             if (contained != null && contained.amount > 0) {

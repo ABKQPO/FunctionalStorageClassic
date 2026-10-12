@@ -40,17 +40,16 @@ public class MissingMappingsHandler {
             registerItem("adaptive_controller", Item.getItemFromBlock(RegistrationHandler.adaptiveMatrix));
             registerLegacyBlock("adaptive_spruce_drawer", RegistrationHandler.adaptiveDrawer);
             registerItem("adaptive_spruce_drawer", Item.getItemFromBlock(RegistrationHandler.adaptiveDrawer));
-            Block adaptiveFluid = RegistrationHandler.adaptiveFluidDrawers.get(0);
-            registerLegacyBlock("adaptive_fluid_drawer", adaptiveFluid);
-            registerItem("adaptive_fluid_drawer", Item.getItemFromBlock(adaptiveFluid));
+            registerLegacyBlock("adaptive_fluid_drawer", RegistrationHandler.adaptiveFluidDrawers.get(0));
+            registerItem(
+                "adaptive_fluid_drawer",
+                Item.getItemFromBlock(RegistrationHandler.adaptiveFluidDrawers.get(0)));
             if (!RegistrationHandler.adaptiveEssentiaDrawers.isEmpty()) {
-                Block adaptiveEssentia = RegistrationHandler.adaptiveEssentiaDrawers.get(0);
-                registerLegacyBlock("adaptive_essentia_drawer", adaptiveEssentia);
-                registerItem("adaptive_essentia_drawer", Item.getItemFromBlock(adaptiveEssentia));
+                registerLegacyBlock("adaptive_essentia_drawer", RegistrationHandler.adaptiveEssentiaDrawers.get(0));
+                registerItem(
+                    "adaptive_essentia_drawer",
+                    Item.getItemFromBlock(RegistrationHandler.adaptiveEssentiaDrawers.get(0)));
             }
-        } else {
-            registerLegacyBlock("adaptive_fluid_drawer", RegistrationHandler.fluidDrawers.get(0));
-            registerItem("adaptive_fluid_drawer", Item.getItemFromBlock(RegistrationHandler.fluidDrawers.get(0)));
         }
         registerLegacyBlock("adaptive_armory", RegistrationHandler.armoryCabinet);
         registerLegacyBlock("adaptive_extender", RegistrationHandler.controllerExtension);

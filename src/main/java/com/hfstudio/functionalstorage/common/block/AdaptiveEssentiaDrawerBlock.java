@@ -16,12 +16,11 @@ import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 /** Adaptive source-matter drawer using the same cavity geometry as the fluid drawer. */
 public class AdaptiveEssentiaDrawerBlock extends EssentiaDrawerBlock {
 
-    private final String id;
+    private static final String ID = "adaptive_essentia_1";
 
-    public AdaptiveEssentiaDrawerBlock(@Nonnull DrawerLayout layout) {
-        super(layout);
-        this.id = "adaptive_essentia_" + layout.getSlotCount();
-        setBlockName(FunctionalStorage.MOD_ID + "." + id);
+    public AdaptiveEssentiaDrawerBlock() {
+        super(DrawerLayout.X_4);
+        setBlockName(FunctionalStorage.MOD_ID + "." + ID);
     }
 
     @Nonnull
@@ -32,12 +31,12 @@ public class AdaptiveEssentiaDrawerBlock extends EssentiaDrawerBlock {
 
     @Override
     public TileEntity createNewTileEntity(World world, int metadata) {
-        return new AdaptiveEssentiaDrawerTile(getDrawerLayout());
+        return new AdaptiveEssentiaDrawerTile();
     }
 
     @Nonnull
     @Override
     public List<String> getVariantNames() {
-        return Collections.singletonList(id);
+        return Collections.singletonList(ID);
     }
 }

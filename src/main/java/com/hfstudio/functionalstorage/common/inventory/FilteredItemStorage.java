@@ -97,4 +97,11 @@ public class FilteredItemStorage implements IBigItemHandler {
     public boolean isLocked(int index) {
         return selected(index) && storage.isLocked(index);
     }
+
+    @Override
+    public boolean hasLockedSlots() {
+        if (slots == null) return storage.hasLockedSlots();
+        for (int slot : slots) if (selected(slot) && storage.isLocked(slot)) return true;
+        return false;
+    }
 }

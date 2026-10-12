@@ -54,6 +54,13 @@ public interface IStorageHandler<S extends StorageSnapshot<S, K>, K extends Stor
     }
 
     /**
+     * @return whether at least one indexed slot currently retains a lock
+     */
+    default boolean hasLockedSlots() {
+        return isLocked();
+    }
+
+    /**
      * Chooses the single index an insertion should target. A slot already holding the
      * same resource type always wins, so a resource stays where it is and a full slot
      * accepts nothing more rather than spilling into a neighbour. Otherwise the first
@@ -65,16 +72,24 @@ public interface IStorageHandler<S extends StorageSnapshot<S, K>, K extends Stor
     default int pickInsertionIndex(@Nonnull S request) {
         int count = Math.max(0, getStorageCount());
         int firstEmpty = -1;
-        for (int index = 0; index < count; index++) {
-            S current = getSnapshot(index);
-            if (current.hasTemplate()) {
-                if (current.isSameType(request)) {
-                    return index;
+        boolean prioritizeLocked = hasLockedSlots();
+        int lockPasses = prioritizeLocked ? 2 : 1;
+        for (int lockPass = 0; lockPass < lockPasses; lockPass++) {
+            boolean locked = prioritizeLocked && lockPass == 0;
+            for (int index = 0; index < count; index++) {
+                if (prioritizeLocked && isLocked(index) != locked) {
+                    continue;
                 }
-                continue;
-            }
-            if (firstEmpty < 0 && acceptsAny(index, request)) {
-                firstEmpty = index;
+                S current = getSnapshot(index);
+                if (current.hasTemplate()) {
+                    if (current.isSameType(request)) {
+                        return index;
+                    }
+                    continue;
+                }
+                if (firstEmpty < 0 && acceptsAny(index, request)) {
+                    firstEmpty = index;
+                }
             }
         }
         return firstEmpty;
@@ -174,16 +189,25 @@ public interface IStorageHandler<S extends StorageSnapshot<S, K>, K extends Stor
      */
     default int pickInsertionIndex(@Nonnull List<Integer> candidates, @Nonnull S request) {
         int firstEmpty = -1;
-        for (int index : preferMergeOrder(candidates)) {
-            S current = getSnapshot(index);
-            if (current.hasTemplate()) {
-                if (current.isSameType(request)) {
-                    return index;
+        List<Integer> ordered = preferMergeOrder(candidates);
+        boolean prioritizeLocked = hasLockedSlots();
+        int lockPasses = prioritizeLocked ? 2 : 1;
+        for (int lockPass = 0; lockPass < lockPasses; lockPass++) {
+            boolean locked = prioritizeLocked && lockPass == 0;
+            for (int index : ordered) {
+                if (prioritizeLocked && isLocked(index) != locked) {
+                    continue;
                 }
-                continue;
-            }
-            if (firstEmpty < 0 && acceptsAny(index, request)) {
-                firstEmpty = index;
+                S current = getSnapshot(index);
+                if (current.hasTemplate()) {
+                    if (current.isSameType(request)) {
+                        return index;
+                    }
+                    continue;
+                }
+                if (firstEmpty < 0 && acceptsAny(index, request)) {
+                    firstEmpty = index;
+                }
             }
         }
         return firstEmpty;

@@ -18,6 +18,7 @@ import com.hfstudio.functionalstorage.common.container.StorageTransferMenu;
 import com.hfstudio.functionalstorage.common.integration.Mods;
 import com.hfstudio.functionalstorage.common.integration.bogosorter.BogoSorterIntegration;
 import com.hfstudio.functionalstorage.common.integration.thaumcraft.EssentiaContainerRegistry;
+import com.hfstudio.functionalstorage.common.tile.controller.AdaptiveMatrixTile;
 
 import thaumcraft.api.aspects.Aspect;
 
@@ -74,11 +75,38 @@ public class StorageTransfers {
         int storedSlot = menu.getTransferSlot(slotNumber);
         boolean fromPlayer = hovered.inventory == player.inventory && hovered.getSlotIndex() >= 0
             && hovered.getSlotIndex() < 36;
-        if (fluidStorage != null || aspectStorage != null) {
-            if (!fromPlayer && storedSlot < 0) return;
-            moveContainers(hovered, storedSlot, fromPlayer, action, amount);
+        if (menu.isTransferViewMixed()) {
+            if (!fromPlayer) {
+                String kind = menu.getTransferResourceKind(slotNumber);
+                if (AdaptiveMatrixTile.TERMINAL_FLUIDS.equals(kind))
+                    moveContainers(hovered, storedSlot, false, action, amount, true);
+                else if (AdaptiveMatrixTile.TERMINAL_ASPECTS.equals(kind))
+                    moveContainers(hovered, storedSlot, false, action, amount, false);
+                else if (AdaptiveMatrixTile.TERMINAL_ITEMS.equals(kind))
+                    moveItems(slotNumber, hovered, storedSlot, false, action, amount, reverse);
+                return;
+            }
+            ItemStack before = hovered.getStack() == null ? null
+                : hovered.getStack()
+                    .copy();
+            if (fluidStorage != null) moveContainers(hovered, storedSlot, true, action, amount, true);
+            if (aspectStorage != null) moveContainers(hovered, storedSlot, true, action, amount, false);
+            ItemStack after = hovered.getStack();
+            boolean containerChanged = !ItemStack.areItemStacksEqual(before, after);
+            if (!containerChanged) moveItems(slotNumber, hovered, storedSlot, true, action, amount, reverse);
             return;
         }
+        if (fluidStorage != null || aspectStorage != null) {
+            if (!fromPlayer && storedSlot < 0) return;
+            moveContainers(hovered, storedSlot, fromPlayer, action, amount, fluidStorage != null);
+            return;
+        }
+        moveItems(slotNumber, hovered, storedSlot, fromPlayer, action, amount, reverse);
+    }
+
+    private void moveItems(int slotNumber, Slot hovered, int storedSlot, boolean fromPlayer, Action action, int amount,
+        boolean reverse) {
+        int count = menu.getTransferSlotCount();
         boolean wheel = action == Action.PUSH || action == Action.PULL;
         if (wheel) {
             if (fromPlayer) {
@@ -138,12 +166,13 @@ public class StorageTransfers {
         }
     }
 
-    private void moveContainers(Slot hovered, int storedSlot, boolean fromPlayer, Action action, int amount) {
+    private void moveContainers(Slot hovered, int storedSlot, boolean fromPlayer, Action action, int amount,
+        boolean fluids) {
         int limit = action == Action.MOVE_ONE || action == Action.MOVE_ONE_EMPTY ? 1
             : action == Action.MOVE_ALL || action == Action.MOVE_SAME ? Integer.MAX_VALUE : amount;
         if (fromPlayer) {
             int inventorySlot = hovered.getSlotIndex();
-            if (fluidStorage != null) {
+            if (fluids) {
                 if (action == Action.PULL) {
                     FluidContainerInteraction.fillInventorySlot(player, fluidStorage, inventorySlot, null, limit);
                 } else if (action == Action.PUSH || action == Action.MOVE_ONE || action == Action.MOVE_ONE_EMPTY) {
@@ -175,7 +204,7 @@ public class StorageTransfers {
             && action != Action.MOVE_ONE_EMPTY) {
             return;
         }
-        if (fluidStorage != null) {
+        if (fluids) {
             BigFluidStack selected = menu.getTransferFluidSnapshot(storedSlot);
             if (action == Action.PULL) {
                 for (int inventorySlot = 0; inventorySlot < player.inventory.mainInventory.length; inventorySlot++) {

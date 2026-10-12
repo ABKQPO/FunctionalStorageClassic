@@ -73,6 +73,12 @@ public class SelectedStorage<S extends StorageSnapshot<S, K>, K extends StorageK
     }
 
     @Override
+    public boolean hasLockedSlots() {
+        for (int slot : slots) if (selected(slot) && storage.isLocked(slot)) return true;
+        return false;
+    }
+
+    @Override
     public boolean isCreative() {
         return storage.isCreative();
     }

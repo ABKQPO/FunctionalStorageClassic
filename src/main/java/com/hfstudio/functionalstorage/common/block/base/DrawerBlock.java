@@ -39,7 +39,6 @@ import com.hfstudio.functionalstorage.common.block.DrawerFaceLayout;
 import com.hfstudio.functionalstorage.common.integration.serverutilities.ServerUtilitiesIntegration;
 import com.hfstudio.functionalstorage.common.presentation.AdaptiveDisplayProvider;
 import com.hfstudio.functionalstorage.common.storage.DrawerLayout;
-import com.hfstudio.functionalstorage.common.tile.AdaptiveDrawerTile;
 import com.hfstudio.functionalstorage.common.tile.FluidDrawerTile;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 import com.hfstudio.functionalstorage.config.FunctionalStorageConfig;
@@ -297,10 +296,6 @@ public abstract class DrawerBlock extends BlockContainer implements IBlockModelP
         }
         int metadata = world.getBlockMetadata(x, y, z);
         int slot = getHitSlot(getInteractionFaceLayout(world, x, y, z), metadata, side, hitX, hitY, hitZ);
-        if (drawer instanceof AdaptiveDrawerTile adaptive
-            && adaptive.handleAdaptiveActivation(player, side, hitX, hitY, hitZ, slot)) {
-            return true;
-        }
         boolean handled = drawer.onSlotActivated(player, side, hitX, hitY, hitZ, slot);
         drawer.sendStorageUpdate(player);
         return handled;
@@ -320,10 +315,6 @@ public abstract class DrawerBlock extends BlockContainer implements IBlockModelP
         }
         int slot = getHitSlot(world, x, y, z, player);
         if (slot >= 0) {
-            if (drawer instanceof AdaptiveDrawerTile adaptive && adaptive.handleAdaptiveClick(player, slot)) {
-                drawer.sendStorageUpdate(player);
-                return;
-            }
             drawer.onSlotClicked(player, slot);
             drawer.sendStorageUpdate(player);
         }
@@ -377,8 +368,8 @@ public abstract class DrawerBlock extends BlockContainer implements IBlockModelP
     @Override
     public ItemStack getPickBlock(MovingObjectPosition target, World world, int x, int y, int z) {
         TileEntity tile = world.getTileEntity(x, y, z);
-        if (tile instanceof ControllableDrawerTile) {
-            return ((ControllableDrawerTile) tile).createDropStack(new ItemStack(this, 1, 0));
+        if (tile instanceof ControllableDrawerTile drawer) {
+            return drawer.createPickBlockStack(new ItemStack(this, 1, 0));
         }
         return new ItemStack(this, 1, 0);
     }

@@ -158,36 +158,44 @@ public interface IBigItemHandler extends IStorageHandler<BigItemStack, ItemStora
         // only discover that. Skipping it removes a full walk plus a probe per occupied
         // index, which is most of the cost of storing a new type.
         int passes = allowsEquivalentResources() ? 3 : 2;
+        boolean prioritizeLocked = hasLockedSlots();
+        int lockPasses = prioritizeLocked ? 2 : 1;
         for (int pass = 0; pass < passes && processedTotal < requested; pass++) {
-            for (int index = 0; index < count && processedTotal < requested; index++) {
-                BigItemStack current = getSnapshot(index);
-                boolean hasTemplate = current.hasTemplate();
-                boolean exact = hasTemplate && current.isSameType(request);
-                if (pass == 0 && !exact) {
-                    continue;
-                }
-                if (passes == 3 && pass == 1) {
-                    if (!hasTemplate || exact) {
+            for (int lockPass = 0; lockPass < lockPasses && processedTotal < requested; lockPass++) {
+                boolean locked = prioritizeLocked && lockPass == 0;
+                for (int index = 0; index < count && processedTotal < requested; index++) {
+                    if (prioritizeLocked && isLocked(index) != locked) {
                         continue;
                     }
-                    TransferResult<BigItemStack, ItemStorageKey> probe = insert(
+                    BigItemStack current = getSnapshot(index);
+                    boolean hasTemplate = current.hasTemplate();
+                    boolean exact = hasTemplate && current.isSameType(request);
+                    if (pass == 0 && !exact) {
+                        continue;
+                    }
+                    if (passes == 3 && pass == 1) {
+                        if (!hasTemplate || exact) {
+                            continue;
+                        }
+                        TransferResult<BigItemStack, ItemStorageKey> probe = insert(
+                            index,
+                            compatibilityProbe,
+                            StorageAction.SIMULATE);
+                        if (probe.getProcessedAmount() <= 0L) {
+                            continue;
+                        }
+                    }
+                    if (pass == passes - 1 && hasTemplate) {
+                        continue;
+                    }
+                    long remaining = requested - processedTotal;
+                    TransferResult<BigItemStack, ItemStorageKey> result = insert(
                         index,
-                        compatibilityProbe,
-                        StorageAction.SIMULATE);
-                    if (probe.getProcessedAmount() <= 0L) {
-                        continue;
-                    }
+                        request.withAmount(remaining),
+                        action);
+                    long processed = Math.min(remaining, Math.max(0L, result.getProcessedAmount()));
+                    processedTotal = saturatedAdd(processedTotal, processed);
                 }
-                if (pass == passes - 1 && hasTemplate) {
-                    continue;
-                }
-                long remaining = requested - processedTotal;
-                TransferResult<BigItemStack, ItemStorageKey> result = insert(
-                    index,
-                    request.withAmount(remaining),
-                    action);
-                long processed = Math.min(remaining, Math.max(0L, result.getProcessedAmount()));
-                processedTotal = saturatedAdd(processedTotal, processed);
             }
         }
         return new TransferResult<>(requested, request.withAmount(processedTotal), action);
@@ -211,22 +219,30 @@ public interface IBigItemHandler extends IStorageHandler<BigItemStack, ItemStora
         }
         long processedTotal = 0L;
         int count = Math.max(0, getStorageCount());
+        boolean prioritizeLocked = hasLockedSlots();
+        int lockPasses = prioritizeLocked ? 2 : 1;
         for (int pass = 0; pass < (allowsEquivalentResources() ? 2 : 1) && processedTotal < requested; pass++) {
-            for (int index = 0; index < count && processedTotal < requested; index++) {
-                BigItemStack current = getSnapshot(index);
-                if (!current.hasTemplate() || (pass == 0 && !current.isSameType(request))) {
-                    continue;
+            for (int lockPass = 0; lockPass < lockPasses && processedTotal < requested; lockPass++) {
+                boolean locked = prioritizeLocked && lockPass == 0;
+                for (int index = 0; index < count && processedTotal < requested; index++) {
+                    if (prioritizeLocked && isLocked(index) != locked) {
+                        continue;
+                    }
+                    BigItemStack current = getSnapshot(index);
+                    if (!current.hasTemplate() || (pass == 0 && !current.isSameType(request))) {
+                        continue;
+                    }
+                    if (pass == 1 && current.isSameType(request)) {
+                        continue;
+                    }
+                    if (pass == 1
+                        && insert(index, request.withAmount(1L), StorageAction.SIMULATE).getProcessedAmount() <= 0L) {
+                        continue;
+                    }
+                    long remaining = requested - processedTotal;
+                    long processed = insert(index, request.withAmount(remaining), action).getProcessedAmount();
+                    processedTotal = saturatedAdd(processedTotal, Math.min(remaining, Math.max(0L, processed)));
                 }
-                if (pass == 1 && current.isSameType(request)) {
-                    continue;
-                }
-                if (pass == 1
-                    && insert(index, request.withAmount(1L), StorageAction.SIMULATE).getProcessedAmount() <= 0L) {
-                    continue;
-                }
-                long remaining = requested - processedTotal;
-                long processed = insert(index, request.withAmount(remaining), action).getProcessedAmount();
-                processedTotal = saturatedAdd(processedTotal, Math.min(remaining, Math.max(0L, processed)));
             }
         }
         return new TransferResult<>(requested, request.withAmount(processedTotal), action);

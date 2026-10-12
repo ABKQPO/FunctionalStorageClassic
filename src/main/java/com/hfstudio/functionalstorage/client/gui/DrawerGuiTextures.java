@@ -34,6 +34,9 @@ import com.gtnewhorizon.gtnhlib.client.model.loading.ModelRegistry;
 import com.gtnewhorizon.gtnhlib.client.renderer.cel.model.quad.ModelQuadView;
 import com.gtnewhorizon.gtnhlib.client.renderer.cel.model.quad.properties.ModelQuadFacing;
 import com.hfstudio.functionalstorage.FunctionalStorage;
+import com.hfstudio.functionalstorage.common.block.AdaptiveDrawerBlock;
+import com.hfstudio.functionalstorage.common.block.AdaptiveEssentiaDrawerBlock;
+import com.hfstudio.functionalstorage.common.block.AdaptiveFluidDrawerBlock;
 import com.hfstudio.functionalstorage.common.block.FramedBlock;
 import com.hfstudio.functionalstorage.common.container.DrawerGuiLayout;
 import com.hfstudio.functionalstorage.common.storage.FramedDrawerStyle;
@@ -184,9 +187,15 @@ public class DrawerGuiTextures extends Gui implements IResourceManagerReloadList
 
     private ResourceLocation loadFront(Block block) {
         ResourceLocation name = new ResourceLocation(Block.blockRegistry.getNameForObject(block));
-        ResourceLocation model = new ResourceLocation(
-            name.getResourceDomain(),
-            "models/blocks/" + name.getResourcePath() + ".json");
+        String modelName = name.getResourcePath();
+        if (block instanceof AdaptiveDrawerBlock adaptive) {
+            modelName = "adaptive_" + adaptive.getWoodName() + "_drawer_2x2";
+        } else if (block instanceof AdaptiveFluidDrawerBlock) {
+            modelName = "adaptive_fluid_4_online";
+        } else if (block instanceof AdaptiveEssentiaDrawerBlock) {
+            modelName = "adaptive_essentia_4_online";
+        }
+        ResourceLocation model = new ResourceLocation(name.getResourceDomain(), "models/blocks/" + modelName + ".json");
         try (InputStreamReader reader = new InputStreamReader(
             Minecraft.getMinecraft()
                 .getResourceManager()

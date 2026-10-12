@@ -80,6 +80,24 @@ public class EssentiaContainerRegistry {
         return activateBatch(player, cursor, handler, slot, player.inventory::setItemStack, prepareLockedSlot, null);
     }
 
+    public static boolean activate(EntityPlayer player, IBigAspectHandler handler, BigAspectStack selected) {
+        ItemStack held = player.getHeldItem();
+        if (!isEssentiaContainer(held)) return false;
+        if (!selected.hasTemplate()) {
+            Aspect contained = getContainedAspect(held);
+            if (contained == null) return true;
+            selected = new BigAspectStack(contained, 0L);
+        }
+        return activateBatch(
+            player,
+            held,
+            handler,
+            ROUTED,
+            stack -> player.inventory.setInventorySlotContents(player.inventory.currentItem, stack),
+            null,
+            selected);
+    }
+
     public static boolean activateCursor(EntityPlayer player, IBigAspectHandler handler, BigAspectStack selected,
         BiFunction<Integer, BigAspectStack, Runnable> prepareLockedSlot) {
         ItemStack cursor = player.inventory.getItemStack();
@@ -258,13 +276,16 @@ public class EssentiaContainerRegistry {
                 Runnable rollbackFilter = selected != null || prepareLockedSlot == null ? () -> {}
                     : prepareLockedSlot.apply(target, request);
                 if (rollbackFilter != null) {
+                    boolean matching = selected != null && handler.hasMatchingResource(selected);
                     TransferResult<BigAspectStack, AspectStorageKey> simulated = selected == null
                         ? handler.insert(target, request, StorageAction.SIMULATE)
-                        : handler.insertMatchingRouted(request, StorageAction.SIMULATE);
+                        : matching ? handler.insertMatchingRouted(request, StorageAction.SIMULATE)
+                            : handler.insertRouted(request, StorageAction.SIMULATE);
                     if (simulated.isComplete()) {
                         TransferResult<BigAspectStack, AspectStorageKey> inserted = selected == null
                             ? handler.insert(target, request, StorageAction.EXECUTE)
-                            : handler.insertMatchingRouted(request, StorageAction.EXECUTE);
+                            : matching ? handler.insertMatchingRouted(request, StorageAction.EXECUTE)
+                                : handler.insertRouted(request, StorageAction.EXECUTE);
                         if (inserted.isComplete()) {
                             container.setAspects(result, new AspectList());
                             result.setItemDamage(definition.emptyMetadata());
