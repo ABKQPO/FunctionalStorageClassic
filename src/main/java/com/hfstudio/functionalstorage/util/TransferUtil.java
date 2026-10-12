@@ -30,7 +30,7 @@ import com.hfstudio.functionalstorage.api.storage.StorageAction;
 public class TransferUtil {
 
     public static boolean pullItems(@Nonnull IBigItemHandler drawer, @Nullable TileEntity source,
-                                    @Nonnull ForgeDirection sourceSide, long limit) {
+        @Nonnull ForgeDirection sourceSide, long limit) {
         if (source == null || sourceSide == ForgeDirection.UNKNOWN || limit <= 0) {
             return false;
         }
@@ -55,7 +55,7 @@ public class TransferUtil {
                 continue;
             }
             long accepted = drawer.insert(target, probe, StorageAction.SIMULATE)
-                    .getProcessedAmount();
+                .getProcessedAmount();
             if (accepted <= 0) {
                 continue;
             }
@@ -64,7 +64,7 @@ public class TransferUtil {
                 continue;
             }
             long stored = drawer.insert(target, new BigItemStack(extracted, extracted.stackSize), StorageAction.EXECUTE)
-                    .getProcessedAmount();
+                .getProcessedAmount();
             if (stored < extracted.stackSize) {
                 // A forced iterator insertion merges with the source remainder, including output-only slots.
                 slots.insert(new InsertionItemStack(extracted, extracted.stackSize - (int) stored), true);
@@ -76,7 +76,7 @@ public class TransferUtil {
     }
 
     public static boolean pushItems(@Nonnull IBigItemHandler drawer, @Nullable TileEntity target,
-                                    @Nonnull ForgeDirection targetSide, long limit) {
+        @Nonnull ForgeDirection targetSide, long limit) {
         if (target == null || targetSide == ForgeDirection.UNKNOWN || limit <= 0) {
             return false;
         }
@@ -92,13 +92,20 @@ public class TransferUtil {
                 break;
             }
             ItemStack template = view.getSnapshot()
-                    .getTemplate();
+                .getTemplate();
             if (template == null) {
                 continue;
             }
-            int request = nativeAmount(drawer.extractRouted(
-                    new BigItemStack(template, Math.min(remaining, view.getSnapshot().getAmount())),
-                    StorageAction.SIMULATE).getProcessedAmount());
+            int request = nativeAmount(
+                drawer.extractRouted(
+                    new BigItemStack(
+                        template,
+                        Math.min(
+                            remaining,
+                            view.getSnapshot()
+                                .getAmount())),
+                    StorageAction.SIMULATE)
+                    .getProcessedAmount());
             if (request <= 0) {
                 continue;
             }
@@ -116,7 +123,7 @@ public class TransferUtil {
     }
 
     public static boolean pullFluid(@Nonnull IBigFluidHandler drawer, @Nullable TileEntity source,
-                                    @Nonnull ForgeDirection sourceSide, long limit) {
+        @Nonnull ForgeDirection sourceSide, long limit) {
         IFluidHandler handler = asFluidHandler(source);
         if (handler == null || limit <= 0) {
             return false;
@@ -138,7 +145,7 @@ public class TransferUtil {
     }
 
     public static boolean pushFluid(@Nonnull IBigFluidHandler drawer, @Nullable TileEntity target,
-                                    @Nonnull ForgeDirection targetSide, long limit) {
+        @Nonnull ForgeDirection targetSide, long limit) {
         IFluidHandler handler = asFluidHandler(target);
         if (handler == null || limit <= 0) {
             return false;
@@ -156,8 +163,8 @@ public class TransferUtil {
                 continue;
             }
             FluidStack taken = drawer.drainRouted(new BigFluidStack(template, accepted), StorageAction.EXECUTE)
-                    .getProcessed()
-                    .toFluidStack();
+                .getProcessed()
+                .toFluidStack();
             if (taken == null || taken.amount <= 0) {
                 continue;
             }
@@ -178,7 +185,7 @@ public class TransferUtil {
 
     @Nullable
     public static ItemStack insertIntoInventory(@Nonnull IInventory inventory, int[] slots, @Nonnull ItemStack stack,
-                                                @Nonnull ForgeDirection side) {
+        @Nonnull ForgeDirection side) {
         if (stack.stackSize <= 0) {
             return null;
         }
