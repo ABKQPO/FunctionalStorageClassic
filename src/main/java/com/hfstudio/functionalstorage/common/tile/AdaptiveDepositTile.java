@@ -13,6 +13,7 @@ import org.jetbrains.annotations.NotNull;
 import com.hfstudio.functionalstorage.api.storage.IBigAspectHandler;
 import com.hfstudio.functionalstorage.api.storage.IBigFluidHandler;
 import com.hfstudio.functionalstorage.api.storage.IBigItemHandler;
+import com.hfstudio.functionalstorage.api.storage.BigFluidStack;
 import com.hfstudio.functionalstorage.common.integration.AdaptiveLinking;
 import com.hfstudio.functionalstorage.common.integration.Mods;
 import com.hfstudio.functionalstorage.common.inventory.adapter.AdaptiveDepositHandlers;
@@ -65,6 +66,12 @@ public class AdaptiveDepositTile extends ControllerExtensionTile {
     @Override
     public IFluidHandler getForgeFluidHandler() {
         return fluidPort;
+    }
+
+    @Override
+    public Runnable prepareLockedFluidSlot(int index, BigFluidStack request) {
+        AdaptiveMatrixTile matrix = matrix();
+        return matrix == null ? () -> {} : matrix.prepareLockedFluidSlot(index, request);
     }
 
     @Override

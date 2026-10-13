@@ -9,6 +9,7 @@ import net.minecraftforge.fluids.IFluidHandler;
 
 import com.hfstudio.functionalstorage.FunctionalStorage;
 import com.hfstudio.functionalstorage.api.storage.IBigAspectHandler;
+import com.hfstudio.functionalstorage.api.storage.BigFluidStack;
 import com.hfstudio.functionalstorage.api.storage.IBigFluidHandler;
 import com.hfstudio.functionalstorage.api.storage.IBigItemHandler;
 import com.hfstudio.functionalstorage.common.integration.AdaptiveLinking;
@@ -77,6 +78,12 @@ public class AdaptiveGridTile extends ControllerExtensionTile {
     public IFluidHandler getForgeFluidHandler() {
         AdaptiveMatrixTile matrix = matrix();
         return matrix == null ? null : matrix.getForgeFluidHandler();
+    }
+
+    @Override
+    public Runnable prepareLockedFluidSlot(int index, BigFluidStack request) {
+        AdaptiveMatrixTile matrix = matrix();
+        return matrix == null ? () -> {} : matrix.prepareLockedFluidSlot(index, request);
     }
 
     @Optional.Method(modid = "Thaumcraft")
