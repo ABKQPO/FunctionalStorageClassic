@@ -8,8 +8,8 @@ import net.minecraft.inventory.IInventory;
 import net.minecraftforge.fluids.IFluidHandler;
 
 import com.hfstudio.functionalstorage.FunctionalStorage;
-import com.hfstudio.functionalstorage.api.storage.IBigAspectHandler;
 import com.hfstudio.functionalstorage.api.storage.BigFluidStack;
+import com.hfstudio.functionalstorage.api.storage.IBigAspectHandler;
 import com.hfstudio.functionalstorage.api.storage.IBigFluidHandler;
 import com.hfstudio.functionalstorage.api.storage.IBigItemHandler;
 import com.hfstudio.functionalstorage.common.integration.AdaptiveLinking;

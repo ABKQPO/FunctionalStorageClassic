@@ -272,7 +272,8 @@ public abstract class StorageNetworkTile extends ControllableDrawerTile
                 if (!(drawer instanceof FluidDrawerTile fluid) || !drawer.isLocked()) continue;
                 IBigFluidHandler handler = fluid.getFluidHandler();
                 for (int slot = 0; slot < handler.getStorageCount(); slot++) {
-                    if (handler.getSnapshot(slot).hasTemplate() || !handler.supportsFill(slot)) continue;
+                    if (handler.getSnapshot(slot)
+                        .hasTemplate() || !handler.supportsFill(slot)) continue;
                     long capacity = handler.getCapacity(slot);
                     if (capacity <= 0L) continue;
                     long preparedAmount = Math.min(remaining, capacity);
@@ -302,7 +303,8 @@ public abstract class StorageNetworkTile extends ControllableDrawerTile
     private static Runnable combineRollbacks(List<Runnable> rollbacks) {
         return () -> {
             for (int index = rollbacks.size() - 1; index >= 0; index--) {
-                rollbacks.get(index).run();
+                rollbacks.get(index)
+                    .run();
             }
         };
     }
