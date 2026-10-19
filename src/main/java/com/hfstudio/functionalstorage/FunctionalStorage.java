@@ -34,7 +34,6 @@ import cpw.mods.fml.relauncher.Side;
     name = Tags.MODNAME,
     dependencies = "required-after:gtnhlib@[0.11.46,);after:etfuturum;after:appliedenergistics2;after:JABBA;after:LogisticsPipes;before:thaumicenergistics",
     guiFactory = "com.hfstudio.functionalstorage.misc.ConfigGuiFactory",
-    acceptableRemoteVersions = "*",
     acceptedMinecraftVersions = "[1.7.10]")
 public class FunctionalStorage {
 
