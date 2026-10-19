@@ -98,11 +98,7 @@ public abstract class AbstractStorageHandler<S extends StorageSnapshot<S, K>, K 
         }
 
         boolean configured = configuredAt(index);
-        if (!configured) {
-            if (isLocked()) {
-                return emptyResult(requested, action);
-            }
-        } else if (!isCompatible(templates[index], incoming)) {
+        if (configured && !isCompatible(templates[index], incoming)) {
             return emptyResult(requested, action);
         }
 

@@ -17,7 +17,6 @@ import com.hfstudio.functionalstorage.api.storage.BigFluidStack;
 import com.hfstudio.functionalstorage.api.storage.IBigAspectHandler;
 import com.hfstudio.functionalstorage.api.storage.IBigFluidHandler;
 import com.hfstudio.functionalstorage.api.storage.IBigItemHandler;
-import com.hfstudio.functionalstorage.api.storage.StorageAction;
 import com.hfstudio.functionalstorage.api.storage.StorageViewCache;
 import com.hfstudio.functionalstorage.api.upgrade.IStorageUpgrade;
 import com.hfstudio.functionalstorage.common.integration.Mods;
@@ -224,7 +223,7 @@ public abstract class StorageNetworkTile extends ControllableDrawerTile
             && !(held.getItem() instanceof IStorageUpgrade)) {
             IBigFluidHandler fluids = getFluidHandler();
             if (fluids != null && fluids.getStorageCount() > 0
-                && FluidContainerInteraction.activate(player, fluids, ROUTED, this::prepareLockedFluidSlot)) {
+                && FluidContainerInteraction.activateMatching(player, fluids, ROUTED, this::prepareLockedFluidSlot)) {
                 return true;
             }
             IBigAspectHandler aspects = getAspectHandler();
@@ -261,30 +260,9 @@ public abstract class StorageNetworkTile extends ControllableDrawerTile
 
     public Runnable prepareLockedFluidSlot(int index, BigFluidStack request) {
         if (index < 0) {
-            long requested = request == null ? 0L : request.getAmount();
-            if (requested <= 0L) return null;
-            long alreadyRoutable = fluids.fillRouted(request, StorageAction.SIMULATE)
-                .getProcessedAmount();
-            long remaining = Math.max(0L, requested - alreadyRoutable);
-            if (remaining == 0L) return () -> {};
-            List<Runnable> rollbacks = new ArrayList<>();
-            for (ControllableDrawerTile drawer : connectedDrawers()) {
-                if (!(drawer instanceof FluidDrawerTile fluid) || !drawer.isLocked()) continue;
-                IBigFluidHandler handler = fluid.getFluidHandler();
-                for (int slot = 0; slot < handler.getStorageCount(); slot++) {
-                    if (handler.getSnapshot(slot)
-                        .hasTemplate() || !handler.supportsFill(slot)) continue;
-                    long capacity = handler.getCapacity(slot);
-                    if (capacity <= 0L) continue;
-                    long preparedAmount = Math.min(remaining, capacity);
-                    Runnable prepared = fluid.prepareLockedSlot(slot, request.withAmount(preparedAmount));
-                    if (prepared == null) continue;
-                    rollbacks.add(prepared);
-                    remaining -= preparedAmount;
-                    if (remaining == 0L) return combineRollbacks(rollbacks);
-                }
-            }
-            return combineRollbacks(rollbacks);
+            // Nothing is prepared for a routed request: the fill must succeed or fail
+            // on the contents the drawers already retain.
+            return request == null || request.getAmount() <= 0L ? null : () -> {};
         }
         int offset = 0;
         for (ControllableDrawerTile drawer : connectedDrawers()) {
@@ -298,15 +276,6 @@ public abstract class StorageNetworkTile extends ControllableDrawerTile
             offset += count;
         }
         return null;
-    }
-
-    private static Runnable combineRollbacks(List<Runnable> rollbacks) {
-        return () -> {
-            for (int index = rollbacks.size() - 1; index >= 0; index--) {
-                rollbacks.get(index)
-                    .run();
-            }
-        };
     }
 
     public Runnable prepareLockedAspectSlot(int index, BigAspectStack request) {

@@ -933,7 +933,8 @@ public abstract class ControllableDrawerTile extends TileEntity implements Capab
             items.setSlotFilter(slot, new BigItemStack(held, 0L));
         }
         if (held != null) {
-            insertFromInventory(player, handler, target, player.inventory.currentItem, false);
+            boolean matchingDeposit = target < 0 && matchesOnlyOnManualDeposit();
+            insertFromInventory(player, handler, target, player.inventory.currentItem, matchingDeposit);
         }
         if (repeated && acceptsDeposit(handler, slot)) {
             if (prioritizesFluidContainerDeposit()) {

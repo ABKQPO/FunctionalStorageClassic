@@ -34,6 +34,16 @@ public class FluidContainerInteraction {
 
     public static boolean activate(EntityPlayer player, IBigFluidHandler handler, int slot,
         BiFunction<Integer, BigFluidStack, Runnable> prepareLockedSlot) {
+        return activatePlayer(player, handler, slot, prepareLockedSlot, false);
+    }
+
+    public static boolean activateMatching(EntityPlayer player, IBigFluidHandler handler, int slot,
+        BiFunction<Integer, BigFluidStack, Runnable> prepareLockedSlot) {
+        return activatePlayer(player, handler, slot, prepareLockedSlot, true);
+    }
+
+    private static boolean activatePlayer(EntityPlayer player, IBigFluidHandler handler, int slot,
+        BiFunction<Integer, BigFluidStack, Runnable> prepareLockedSlot, boolean matchingOnly) {
         ItemStack held = player.getHeldItem();
         if (!isFluidContainer(held)) {
             return false;
@@ -45,7 +55,8 @@ public class FluidContainerInteraction {
             slot,
             stack -> player.inventory.setInventorySlotContents(player.inventory.currentItem, stack),
             prepareLockedSlot,
-            null);
+            null,
+            matchingOnly);
     }
 
     public static boolean activateCursor(EntityPlayer player, IBigFluidHandler handler, int slot,
@@ -54,7 +65,15 @@ public class FluidContainerInteraction {
         if (!isFluidContainer(cursor)) {
             return false;
         }
-        return activateBatch(player, cursor, handler, slot, player.inventory::setItemStack, prepareLockedSlot, null);
+        return activateBatch(
+            player,
+            cursor,
+            handler,
+            slot,
+            player.inventory::setItemStack,
+            prepareLockedSlot,
+            null,
+            false);
     }
 
     public static boolean activate(EntityPlayer player, IBigFluidHandler handler, BigFluidStack selected) {
@@ -72,7 +91,8 @@ public class FluidContainerInteraction {
             ROUTED,
             stack -> player.inventory.setInventorySlotContents(player.inventory.currentItem, stack),
             null,
-            selected);
+            selected,
+            false);
     }
 
     public static boolean activateCursor(EntityPlayer player, IBigFluidHandler handler, BigFluidStack selected,
@@ -88,21 +108,29 @@ public class FluidContainerInteraction {
             ROUTED,
             player.inventory::setItemStack,
             prepareLockedSlot,
-            selected);
+            selected,
+            false);
     }
 
     private static boolean activateBatch(EntityPlayer player, ItemStack source, IBigFluidHandler handler, int slot,
         Consumer<ItemStack> replace, BiFunction<Integer, BigFluidStack, Runnable> prepareLockedSlot,
-        @Nullable BigFluidStack selected) {
+        @Nullable BigFluidStack selected, boolean matchingOnly) {
         if (player.capabilities.isCreativeMode) {
-            activate(source, handler, slot, result -> {}, prepareLockedSlot, selected);
+            activate(source, handler, slot, result -> {}, prepareLockedSlot, selected, matchingOnly);
             return true;
         }
         ItemStack remaining = source.copy();
         ContainerBatchExchange exchange = new ContainerBatchExchange(player, replace);
         int transfers = source.stackSize;
         for (int index = 0; index < transfers; index++) {
-            if (!activate(singleContainer(remaining), handler, slot, exchange::accept, prepareLockedSlot, selected)) {
+            if (!activate(
+                singleContainer(remaining),
+                handler,
+                slot,
+                exchange::accept,
+                prepareLockedSlot,
+                selected,
+                matchingOnly)) {
                 break;
             }
             remaining.stackSize--;
@@ -123,12 +151,13 @@ public class FluidContainerInteraction {
 
     public static boolean activate(ItemStack held, IBigFluidHandler handler, int slot, Consumer<ItemStack> exchange,
         BiFunction<Integer, BigFluidStack, Runnable> prepareLockedSlot) {
-        return activate(held, handler, slot, exchange, prepareLockedSlot, null);
+        return activate(held, handler, slot, exchange, prepareLockedSlot, null, false);
     }
 
     private static boolean activate(ItemStack held, IBigFluidHandler handler, int slot, Consumer<ItemStack> exchange,
-        BiFunction<Integer, BigFluidStack, Runnable> prepareLockedSlot, @Nullable BigFluidStack selected) {
-        return activateContainer(held, handler, slot, exchange, prepareLockedSlot, false, selected);
+        BiFunction<Integer, BigFluidStack, Runnable> prepareLockedSlot, @Nullable BigFluidStack selected,
+        boolean matchingOnly) {
+        return activateContainer(held, handler, slot, exchange, prepareLockedSlot, matchingOnly, selected);
     }
 
     private static boolean activateContainer(ItemStack held, IBigFluidHandler handler, int slot,
