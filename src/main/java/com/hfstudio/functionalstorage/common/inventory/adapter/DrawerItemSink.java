@@ -62,7 +62,7 @@ public class DrawerItemSink implements ItemSink {
         }
         BigItemStack input = new BigItemStack(stack.toStackFast(), requested);
         if (allowedSlots == null && slotStackLimit == Integer.MAX_VALUE) {
-            return (int) handler.insertRouted(input, StorageAction.EXECUTE)
+            return (int) handler.insertRouted(input, StorageAction.forAutomation(false))
                 .getRemainingAmount();
         }
 
@@ -82,7 +82,7 @@ public class DrawerItemSink implements ItemSink {
                 }
                 if (passes == 3 && pass == 1) {
                     if (!hasTemplate || exact
-                        || handler.insert(index, input.withAmount(1L), StorageAction.SIMULATE)
+                        || handler.insert(index, input.withAmount(1L), StorageAction.forAutomation(true))
                             .getProcessedAmount() == 0L) {
                         continue;
                     }
@@ -92,7 +92,7 @@ public class DrawerItemSink implements ItemSink {
                     continue;
                 }
                 long accepted = handler
-                    .insert(index, input.withAmount(Math.min(remaining, room)), StorageAction.EXECUTE)
+                    .insert(index, input.withAmount(Math.min(remaining, room)), StorageAction.forAutomation(false))
                     .getProcessedAmount();
                 remaining -= (int) Math.min(remaining, accepted);
             }

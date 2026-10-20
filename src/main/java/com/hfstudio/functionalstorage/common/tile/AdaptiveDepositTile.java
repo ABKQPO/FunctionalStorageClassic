@@ -34,7 +34,8 @@ public class AdaptiveDepositTile extends ControllerExtensionTile {
     private final DrawerItemInventory depositInventory = new DrawerItemInventory(
         depositHandler,
         "container.functionalstorage.drawer",
-        this::markDirty);
+        this::markDirty,
+        true);
     private final DrawerFluidHandler fluidPort = new DrawerFluidHandler(depositFluids);
     private boolean automaticLinkChecked;
 

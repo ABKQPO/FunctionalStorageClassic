@@ -27,6 +27,7 @@ public class DrawerItemInventory implements ISidedInventory, IExtendedStackLimit
     private final IBigItemHandler handler;
     private final String name;
     private final Runnable changeListener;
+    private final boolean automation;
     private ItemStack[] exposed;
     private ItemStack[] baseline;
     private ItemStack[] inputExposed;
@@ -41,9 +42,15 @@ public class DrawerItemInventory implements ISidedInventory, IExtendedStackLimit
 
     public DrawerItemInventory(@Nonnull IBigItemHandler handler, @Nonnull String name,
         @Nonnull Runnable changeListener) {
+        this(handler, name, changeListener, false);
+    }
+
+    public DrawerItemInventory(@Nonnull IBigItemHandler handler, @Nonnull String name, @Nonnull Runnable changeListener,
+        boolean automation) {
         this.handler = handler;
         this.name = name;
         this.changeListener = changeListener;
+        this.automation = automation;
         exposed = new ItemStack[handler.getStorageCount()];
         baseline = new ItemStack[exposed.length];
         inputExposed = new ItemStack[exposed.length];
@@ -374,7 +381,7 @@ public class DrawerItemInventory implements ISidedInventory, IExtendedStackLimit
         if (current != null && !sameType(current, stack)) {
             return false;
         }
-        return handler.insert(index, new BigItemStack(stack, 1L), StorageAction.SIMULATE)
+        return handler.insert(index, new BigItemStack(stack, 1L), action(true))
             .getProcessedAmount() > 0L;
     }
 
@@ -498,12 +505,16 @@ public class DrawerItemInventory implements ISidedInventory, IExtendedStackLimit
             return true;
         }
         BigItemStack request = new BigItemStack(stack, amount);
-        if (handler.insert(index, request, StorageAction.SIMULATE)
+        if (handler.insert(index, request, action(true))
             .getProcessedAmount() != amount) {
             return false;
         }
-        return handler.insert(index, request, StorageAction.EXECUTE)
+        return handler.insert(index, request, action(false))
             .getProcessedAmount() == amount;
+    }
+
+    private StorageAction action(boolean simulate) {
+        return automation ? StorageAction.forAutomation(simulate) : StorageAction.fromSimulation(simulate);
     }
 
     private boolean extractExactly(int index, long amount) {

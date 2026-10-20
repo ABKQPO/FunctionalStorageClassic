@@ -9,6 +9,8 @@ public class EnderItemHandler extends BigItemHandler {
     private boolean initialized;
     private boolean locked;
     private boolean voiding;
+    private boolean automationLocking = true;
+    private boolean automationLockingInitialized;
 
     public EnderItemHandler(int slots) {
         super(slots);
@@ -22,6 +24,22 @@ public class EnderItemHandler extends BigItemHandler {
     @Override
     public boolean voidsOverflow() {
         return voiding;
+    }
+
+    @Override
+    public boolean allowsAutomationIntoEmptyLockedSlots() {
+        return automationLocking;
+    }
+
+    public void setAutomationLocking(boolean value) {
+        automationLockingInitialized = true;
+        automationLocking = value;
+    }
+
+    public void initializeAutomationLocking(boolean value) {
+        if (!automationLockingInitialized) {
+            setAutomationLocking(value);
+        }
     }
 
     public void initializePolicy(boolean value) {
@@ -47,11 +65,16 @@ public class EnderItemHandler extends BigItemHandler {
         tag.setBoolean("PolicyInitialized", initialized);
         tag.setBoolean("SharedLocked", locked);
         tag.setBoolean("SharedVoid", voiding);
+        tag.setBoolean("SharedAutomationLocking", automationLocking);
     }
 
     public void readPolicy(NBTTagCompound tag) {
         initialized = tag.getBoolean("PolicyInitialized");
         locked = tag.hasKey("SharedLocked") ? tag.getBoolean("SharedLocked") : tag.getBoolean("Locked");
         voiding = tag.getBoolean("SharedVoid");
+        if (tag.hasKey("SharedAutomationLocking")) {
+            automationLockingInitialized = true;
+            automationLocking = tag.getBoolean("SharedAutomationLocking");
+        }
     }
 }

@@ -50,6 +50,11 @@ public class WoodDrawerTile extends ControllableDrawerTile implements ISidedInve
             }
 
             @Override
+            public boolean allowsAutomationIntoEmptyLockedSlots() {
+                return WoodDrawerTile.this.allowsAutomationIntoEmptyLockedSlots();
+            }
+
+            @Override
             public boolean voidsOverflow() {
                 return WoodDrawerTile.this.voidsOverflow();
             }

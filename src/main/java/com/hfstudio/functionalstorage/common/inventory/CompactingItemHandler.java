@@ -133,7 +133,7 @@ public abstract class CompactingItemHandler implements IBigItemHandler {
         long inserted = Math.min(requested, freeUnits / unit);
         long processed = voidsOverflow() ? requested : inserted;
 
-        if (action == StorageAction.EXECUTE && inserted > 0L) {
+        if (action.isExecute() && inserted > 0L) {
             BigItemStack[] before = snapshots();
             baseAmount = saturatedAdd(baseAmount, saturatedMultiply(inserted, unit));
             publishVisibleDelta(before);
@@ -158,7 +158,7 @@ public abstract class CompactingItemHandler implements IBigItemHandler {
             return emptyResult(requested, action);
         }
 
-        if (action == StorageAction.EXECUTE && !isCreative()) {
+        if (action.isExecute() && !isCreative()) {
             BigItemStack[] before = snapshots();
             baseAmount -= extracted * unit;
             if (baseAmount <= 0L) {

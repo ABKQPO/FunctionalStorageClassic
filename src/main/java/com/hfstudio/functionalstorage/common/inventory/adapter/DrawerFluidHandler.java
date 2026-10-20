@@ -35,7 +35,7 @@ public class DrawerFluidHandler implements IFluidHandler {
             return 0;
         }
         TransferResult<BigFluidStack, FluidStorageKey> result = handler
-            .fillRouted(new BigFluidStack(resource, resource.amount), StorageAction.fromSimulation(!doFill));
+            .fillRouted(new BigFluidStack(resource, resource.amount), StorageAction.forAutomation(!doFill));
         long processed = Math.min(resource.amount, Math.max(0L, result.getProcessedAmount()));
         return processed >= Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) processed;
     }
@@ -47,7 +47,7 @@ public class DrawerFluidHandler implements IFluidHandler {
             return null;
         }
         TransferResult<BigFluidStack, FluidStorageKey> result = handler
-            .drainRouted(new BigFluidStack(resource, resource.amount), StorageAction.fromSimulation(!doDrain));
+            .drainRouted(new BigFluidStack(resource, resource.amount), StorageAction.forAutomation(!doDrain));
         long processed = Math.min(resource.amount, Math.max(0L, result.getProcessedAmount()));
         return processed == 0L ? null
             : result.getProcessed()
@@ -62,7 +62,7 @@ public class DrawerFluidHandler implements IFluidHandler {
             return null;
         }
         TransferResult<BigFluidStack, FluidStorageKey> result = handler
-            .drainRouted(maxDrain, StorageAction.fromSimulation(!doDrain));
+            .drainRouted(maxDrain, StorageAction.forAutomation(!doDrain));
         long processed = Math.min(maxDrain, Math.max(0L, result.getProcessedAmount()));
         return processed == 0L ? null
             : result.getProcessed()

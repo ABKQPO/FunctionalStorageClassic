@@ -58,6 +58,11 @@ public class FluidDrawerTile extends ControllableDrawerTile implements IFluidHan
             }
 
             @Override
+            public boolean allowsAutomationIntoEmptyLockedSlots() {
+                return FluidDrawerTile.this.allowsAutomationIntoEmptyLockedSlots();
+            }
+
+            @Override
             public boolean voidsOverflow() {
                 return FluidDrawerTile.this.voidsOverflow();
             }

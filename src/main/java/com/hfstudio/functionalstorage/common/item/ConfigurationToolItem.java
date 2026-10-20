@@ -34,7 +34,8 @@ public class ConfigurationToolItem extends LayeredToolItem {
         TOGGLE_UPGRADES("upgrades", 1, 0xA628FA, EnumChatFormatting.LIGHT_PURPLE),
         INDICATOR("indicator", 3, 0xFF2828, EnumChatFormatting.RED),
         ADAPTIVE_CELLS("adaptiveCells", 3, 0x28BDBD, EnumChatFormatting.AQUA),
-        ADAPTIVE_RESERVATION("adaptiveReservation", 1, 0xE0C040, EnumChatFormatting.YELLOW);
+        ADAPTIVE_RESERVATION("adaptiveReservation", 1, 0xE0C040, EnumChatFormatting.YELLOW),
+        AUTOMATION_LOCKING("automationLocking", 1, 0xF0D040, EnumChatFormatting.YELLOW);
 
         private final String id;
         private final int maxValue;

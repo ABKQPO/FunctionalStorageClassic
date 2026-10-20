@@ -73,6 +73,11 @@ public class EssentiaDrawerTile extends ControllableDrawerTile
             }
 
             @Override
+            public boolean allowsAutomationIntoEmptyLockedSlots() {
+                return EssentiaDrawerTile.this.allowsAutomationIntoEmptyLockedSlots();
+            }
+
+            @Override
             public boolean voidsOverflow() {
                 return EssentiaDrawerTile.this.voidsOverflow();
             }

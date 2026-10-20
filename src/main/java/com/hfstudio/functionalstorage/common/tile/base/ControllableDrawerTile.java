@@ -202,7 +202,8 @@ public abstract class ControllableDrawerTile extends TileEntity implements Capab
                 itemHandler,
                 getBlockType() == null ? "container.functionalstorage.drawer"
                     : getBlockType().getUnlocalizedName() + ".name",
-                this::onStorageChanged);
+                this::onStorageChanged,
+                true);
         }
         return inventoryView;
     }
@@ -210,6 +211,10 @@ public abstract class ControllableDrawerTile extends TileEntity implements Capab
     @Nonnull
     public DrawerOptions getDrawerOptions() {
         return drawerOptions;
+    }
+
+    public boolean allowsAutomationIntoEmptyLockedSlots() {
+        return drawerOptions.isActive(ConfigurationAction.AUTOMATION_LOCKING);
     }
 
     /**
@@ -574,7 +579,8 @@ public abstract class ControllableDrawerTile extends TileEntity implements Capab
             && drawerOptions.isShowItemCount() == FunctionalStorageConfig.CLIENT.defaultShowItemCount
             && drawerOptions.isShowItemRender() == FunctionalStorageConfig.CLIENT.defaultShowItemRender
             && drawerOptions.isShowUpgrades() == FunctionalStorageConfig.CLIENT.defaultShowUpgrades
-            && drawerOptions.getAdvancedValue(ConfigurationAction.INDICATOR) == 0;
+            && drawerOptions.getAdvancedValue(ConfigurationAction.INDICATOR) == 0
+            && drawerOptions.isActive(ConfigurationAction.AUTOMATION_LOCKING);
     }
 
     public void loadFromItemStack(@Nonnull ItemStack stack) {

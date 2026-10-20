@@ -66,7 +66,7 @@ public class DrawerMEInventoryHandler implements IStorageBusMonitor<IAEItemStack
 
     @Optional.Method(modid = "appliedenergistics2")
     public static StorageAction actionOf(Actionable type) {
-        return type == Actionable.SIMULATE ? StorageAction.SIMULATE : StorageAction.EXECUTE;
+        return StorageAction.forAutomation(type == Actionable.SIMULATE);
     }
 
     @Optional.Method(modid = "appliedenergistics2")
@@ -210,7 +210,7 @@ public class DrawerMEInventoryHandler implements IStorageBusMonitor<IAEItemStack
         if (input == null || input.getItemStack() == null) {
             return false;
         }
-        return handler.insertRouted(new BigItemStack(input.getItemStack(), 1L), StorageAction.SIMULATE)
+        return handler.insertRouted(new BigItemStack(input.getItemStack(), 1L), StorageAction.forAutomation(true))
             .getProcessedAmount() > 0L;
     }
 

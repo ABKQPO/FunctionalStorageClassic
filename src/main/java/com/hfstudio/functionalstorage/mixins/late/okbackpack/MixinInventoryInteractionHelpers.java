@@ -51,7 +51,7 @@ public class MixinInventoryInteractionHelpers {
         long inserted = Math.min(
             Math.max(
                 0L,
-                handler.insertRouted(request, StorageAction.fromSimulation(simulate))
+                handler.insertRouted(request, StorageAction.forAutomation(simulate))
                     .getProcessedAmount()),
             stack.stackSize);
         callbackInfo.setReturnValue((int) inserted);

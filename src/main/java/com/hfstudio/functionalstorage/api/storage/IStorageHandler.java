@@ -61,6 +61,13 @@ public interface IStorageHandler<S extends StorageSnapshot<S, K>, K extends Stor
     }
 
     /**
+     * @return whether automation may configure an empty slot retained by a lock
+     */
+    default boolean allowsAutomationIntoEmptyLockedSlots() {
+        return false;
+    }
+
+    /**
      * Chooses the single index an insertion should target. A slot already holding the
      * same resource type always wins, so a resource stays where it is and a full slot
      * accepts nothing more rather than spilling into a neighbour. Otherwise the first

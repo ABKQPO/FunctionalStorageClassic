@@ -176,7 +176,8 @@ public class LogisticsPipesInventoryHandler extends SpecialInventoryHandler {
     @Override
     public int roomForItem(ItemIdentifier item, int count) {
         long requested = count > 0 ? count : Long.MAX_VALUE;
-        long room = storage.insertRouted(new BigItemStack(item.makeNormalStack(1), requested), StorageAction.SIMULATE)
+        long room = storage
+            .insertRouted(new BigItemStack(item.makeNormalStack(1), requested), StorageAction.forAutomation(true))
             .getProcessedAmount();
         return toInt(room);
     }
@@ -187,9 +188,7 @@ public class LogisticsPipesInventoryHandler extends SpecialInventoryHandler {
             return stack == null ? null : stack.copy();
         }
         long accepted = storage
-            .insertRouted(
-                new BigItemStack(stack, stack.stackSize),
-                doAdd ? StorageAction.EXECUTE : StorageAction.SIMULATE)
+            .insertRouted(new BigItemStack(stack, stack.stackSize), StorageAction.forAutomation(!doAdd))
             .getProcessedAmount();
         ItemStack result = stack.copy();
         result.stackSize = toInt(Math.min(stack.stackSize, Math.max(0L, accepted)));

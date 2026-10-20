@@ -72,7 +72,7 @@ public class MixinDropOffHandler {
         long processed = Math.min(
             Math.max(
                 0L,
-                handler.insertMatchingRouted(request, StorageAction.EXECUTE)
+                handler.insertMatchingRouted(request, StorageAction.forAutomation(false))
                     .getProcessedAmount()),
             stack.stackSize);
         if (processed <= 0L) {

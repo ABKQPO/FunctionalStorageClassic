@@ -101,9 +101,12 @@ public abstract class AbstractStorageHandler<S extends StorageSnapshot<S, K>, K 
         if (configured && !isCompatible(templates[index], incoming)) {
             return emptyResult(requested, action);
         }
+        if (!configured && isLocked() && (!action.isAutomation() || !allowsAutomationIntoEmptyLockedSlots())) {
+            return emptyResult(requested, action);
+        }
 
         if (isCreative()) {
-            if (action == StorageAction.EXECUTE && !configured) {
+            if (action.isExecute() && !configured) {
                 setSlot(index, incoming, Long.MAX_VALUE);
             }
             return processedResult(request, requested, action);
@@ -115,7 +118,7 @@ public abstract class AbstractStorageHandler<S extends StorageSnapshot<S, K>, K 
         long inserted = Math.min(requested, insertable);
         long processed = voidsOverflow() ? requested : inserted;
 
-        if (action == StorageAction.EXECUTE && inserted > 0L) {
+        if (action.isExecute() && inserted > 0L) {
             setSlot(index, capacityTemplate, saturatedAdd(amounts[index], inserted));
         }
         return processedResult(request, processed, action);
@@ -137,7 +140,7 @@ public abstract class AbstractStorageHandler<S extends StorageSnapshot<S, K>, K 
             return emptyResult(requested, action);
         }
 
-        if (action == StorageAction.EXECUTE && !isCreative()) {
+        if (action.isExecute() && !isCreative()) {
             long remaining = amounts[index] - extracted;
             setSlot(index, remaining == 0L && !isLocked() ? resource.empty() : template, remaining);
         }

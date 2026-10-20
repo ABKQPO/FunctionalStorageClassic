@@ -191,7 +191,7 @@ public class DrawerMEEssentiaInventoryHandler implements IStorageBusMonitor<AEEs
     @Optional.Method(modid = "thaumicenergistics")
     public boolean canAccept(AEEssentiaStack input) {
         return input != null && input.getStackSize() > 0L
-            && handler.insertRouted(new BigAspectStack(input.getAspect(), 1L), StorageAction.SIMULATE)
+            && handler.insertRouted(new BigAspectStack(input.getAspect(), 1L), StorageAction.forAutomation(true))
                 .getProcessedAmount() > 0L;
     }
 

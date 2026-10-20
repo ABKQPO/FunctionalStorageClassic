@@ -149,7 +149,7 @@ public abstract class StorageNetworkTile extends ControllableDrawerTile
     public IInventory getInventoryView() {
         refreshNetwork();
         if (inventory == null)
-            inventory = new DrawerItemInventory(items, "container.functionalstorage.drawer", this::markDirty);
+            inventory = new DrawerItemInventory(items, "container.functionalstorage.drawer", this::markDirty, true);
         return inventory;
     }
 

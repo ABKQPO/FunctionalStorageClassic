@@ -13,6 +13,7 @@ import com.hfstudio.functionalstorage.api.storage.IBigItemHandler;
 import com.hfstudio.functionalstorage.common.inventory.EnderItemHandler;
 import com.hfstudio.functionalstorage.common.inventory.adapter.DrawerInventoryAccess;
 import com.hfstudio.functionalstorage.common.inventory.base.BigItemHandler;
+import com.hfstudio.functionalstorage.common.item.ConfigurationToolItem.ConfigurationAction;
 import com.hfstudio.functionalstorage.common.tile.base.ControllableDrawerTile;
 import com.hfstudio.functionalstorage.common.world.EnderSavedData;
 import com.hfstudio.functionalstorage.misc.RegistrationHandler;
@@ -95,6 +96,13 @@ public class EnderDrawerTile extends ControllableDrawerTile implements DrawerInv
         if (frequency == null || worldObj == null || worldObj.isRemote) {
             handler.deserializeNBT(tag.hasKey("Items", 10) ? tag.getCompoundTag("Items") : null);
         }
+        if (handler instanceof EnderItemHandler shared) {
+            if (frequency == null || worldObj == null || worldObj.isRemote) {
+                shared.setAutomationLocking(allowsAutomationIntoEmptyLockedSlots());
+            } else {
+                shared.initializeAutomationLocking(allowsAutomationIntoEmptyLockedSlots());
+            }
+        }
     }
 
     @Override
@@ -154,6 +162,18 @@ public class EnderDrawerTile extends ControllableDrawerTile implements DrawerInv
     @Override
     public boolean isLocked() {
         return handler instanceof EnderItemHandler shared ? shared.isLocked() : super.isLocked();
+    }
+
+    public boolean allowsAutomationIntoEmptyLockedSlots() {
+        return getDrawerOptions().isActive(ConfigurationAction.AUTOMATION_LOCKING);
+    }
+
+    @Override
+    public void applyConfiguration(ConfigurationAction action) {
+        super.applyConfiguration(action);
+        if (action == ConfigurationAction.AUTOMATION_LOCKING && handler instanceof EnderItemHandler shared) {
+            shared.setAutomationLocking(allowsAutomationIntoEmptyLockedSlots());
+        }
     }
 
     @Override

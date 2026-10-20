@@ -44,7 +44,7 @@ public class DrawerEssentiaTransport implements IEssentiaTransport {
             }
             Aspect aspect = source.getEssentiaType(opposite);
             if (aspect != null && storage.get()
-                .insertRouted(new BigAspectStack(aspect, 1L), StorageAction.SIMULATE)
+                .insertRouted(new BigAspectStack(aspect, 1L), StorageAction.forAutomation(true))
                 .isComplete()) {
                 int extracted = source.takeEssentia(aspect, 1, opposite);
                 if (extracted > 0) {
@@ -106,7 +106,7 @@ public class DrawerEssentiaTransport implements IEssentiaTransport {
     @Optional.Method(modid = "Thaumcraft")
     public int addEssentia(Aspect aspect, int amount, ForgeDirection side) {
         return canInputFrom(side) && aspect != null && amount > 0 ? (int) storage.get()
-            .insertRouted(new BigAspectStack(aspect, amount), StorageAction.EXECUTE)
+            .insertRouted(new BigAspectStack(aspect, amount), StorageAction.forAutomation(false))
             .getProcessedAmount() : 0;
     }
 

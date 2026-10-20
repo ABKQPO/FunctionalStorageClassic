@@ -28,6 +28,7 @@ public class DrawerOptions {
         this.toggles.put(
             ConfigurationToolItem.ConfigurationAction.TOGGLE_UPGRADES,
             FunctionalStorageConfig.CLIENT.defaultShowUpgrades);
+        this.toggles.put(ConfigurationToolItem.ConfigurationAction.AUTOMATION_LOCKING, true);
         this.advancedValues.put(ConfigurationToolItem.ConfigurationAction.INDICATOR, 0);
     }
 
