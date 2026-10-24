@@ -11,8 +11,8 @@
   </p>
 
   <p>
-    <a href="https://www.gnu.org/licenses/lgpl-3.0.html">
-      <img src="https://img.shields.io/badge/License-LGPLv3-blue?style=for-the-badge" alt="License">
+    <a href="https://www.gnu.org/licenses/gpl-3.0.html">
+      <img src="https://img.shields.io/badge/License-GPLv3-blue?style=for-the-badge" alt="License">
     </a>
     <img src="https://img.shields.io/badge/Minecraft-1.7.10-green?style=for-the-badge" alt="Minecraft 1.7.10">
     <img src="https://img.shields.io/badge/Forge-10.13.4.1614-orange?style=for-the-badge" alt="Forge">
@@ -366,4 +366,4 @@ for Thaumcraft essentia specifically.
 
 ---
 
-<p align="center">Made with ❤️ for the GTNH Community. Licensed under <strong>LGPLv3</strong>.</p>
+<p align="center">Made with ❤️ for the GTNH Community. Licensed under <strong>GPLv3</strong>.</p>
